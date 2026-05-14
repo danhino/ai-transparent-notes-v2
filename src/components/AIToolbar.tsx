@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
 
 type AiAction = 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare' | 'autodetect';
@@ -11,22 +12,30 @@ interface Props {
 }
 
 const AI_ACTION_META: Record<string, { label: string; title: string }> = {
-  apply:      { label: 'Apply',           title: 'Format / Apply' },
-  autodetect: { label: 'Auto-detect',     title: 'Auto-detect language and format code' },
-  fix:        { label: 'Fix',             title: 'Fix code' },
-  polish:     { label: 'Polish',          title: 'Polish writing' },
-  spellcheck: { label: 'Spell check',     title: 'Fix spelling' },
-  rephrase:   { label: 'Rephrase',        title: 'Rephrase' },
-  suggest:    { label: 'Suggest',         title: 'Suggest improvements' },
-  compare:    { label: 'Compare',         title: 'Compare with another note' },
+  autodetect: { label: 'Auto-detect', title: 'Auto-detect language and format code' },
+  fix:        { label: 'Fix',         title: 'Fix code' },
+  polish:     { label: 'Polish',      title: 'Polish writing' },
+  spellcheck: { label: 'Spell check', title: 'Fix spelling' },
+  rephrase:   { label: 'Rephrase',    title: 'Rephrase' },
+  suggest:    { label: 'Suggest',     title: 'Suggest improvements' },
+  compare:    { label: 'Compare',     title: 'Compare with another note' },
 };
 
 export function AIToolbar({ disabled, selectedFormat, onFormatChange, onAction }: Props) {
   const formatOptions = useSettingsStore((s) => s.settings.formatOptions);
-  const aiToolbarActions = useSettingsStore((s) => s.settings.aiToolbarActions);
+  const rawToolbarActions = useSettingsStore((s) => s.settings.aiToolbarActions);
+  // 'apply' is always shown in the fixed slot before the separator; skip it in the dynamic list
+  const aiToolbarActions = useMemo(
+    () => rawToolbarActions.filter((k) => k !== 'apply'),
+    [rawToolbarActions]
+  );
 
   return (
     <div className="ai-toolbar">
+      <span className="ai-toolbar-label">AI:</span>
+      <div className="ai-toolbar-sep" />
+
+      <span className="ai-toolbar-label">Format:</span>
       <select
         className="format-select"
         value={selectedFormat}
@@ -40,6 +49,16 @@ export function AIToolbar({ disabled, selectedFormat, onFormatChange, onAction }
           </option>
         ))}
       </select>
+      <button
+        className="ai-btn"
+        disabled={disabled}
+        onClick={() => onAction('apply')}
+        title="Format / Apply"
+      >
+        Apply
+      </button>
+
+      <div className="ai-toolbar-sep" />
 
       {aiToolbarActions.map((key) => {
         const meta = AI_ACTION_META[key];

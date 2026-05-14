@@ -255,7 +255,7 @@ export function SettingsDialog() {
   };
 
   return (
-    <div className="modal-overlay" onClick={() => setSettingsOpen(false)}>
+    <div className="modal-overlay">
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Settings</span>

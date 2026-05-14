@@ -19,9 +19,10 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 
 ### AI features
 - Supported providers: Claude (Anthropic) and OpenAI
-- API calls routed through the Tauri HTTP plugin (`@tauri-apps/plugin-http`) to bypass webview CORS restrictions
+- API calls made from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions entirely
+- AI toolbar layout: `AI: | Format: [dropdown] [Apply] | [action buttons...]` — scrolls horizontally on narrow windows
 - Actions: Fix, Polish, Rephrase, Spell check, Suggest, Apply (format), Auto-detect (Code), Compare
-- "Auto-detect (Code)" is both a toolbar button and a format option; it detects the language, formats the code, and shows "Detected: [Language]" in the status bar
+- "Auto-detect (Code)" is both a configurable toolbar button and a format option; it detects the language, formats the code, and shows "Detected: [Language]" in the status bar
 - Actions work on selected text or the full note
 - After every AI action: diff is computed (LCS line-level), changes highlighted inline in green and yellow, Accept/Revert banner shown with 30-second auto-accept countdown
 - Typing in the editor implicitly accepts the diff
@@ -61,7 +62,7 @@ Focus mode hides all chrome: titlebar, toolbar, tab bar, workspace panel, per-pa
 The Focus button in the toolbar shows an active/highlighted state while focus mode is on. Focus mode state is persisted to settings so it restores on next launch.
 
 ### Settings
-- Dialog is resizable (drag the bottom-right corner); minimum 520x500px, maximum 90vh tall
+- Dialog is fixed-size (560px wide, max 90vh tall), scrollable, centered; only the Cancel or X button closes it
 - Each section has a bold accent-colored title and a 12px description line beneath it
 - AI configuration: provider (Claude or OpenAI), model filtered by provider, API key with eye-icon show/hide toggle, helper link to API keys page
 - Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size (14 sizes)

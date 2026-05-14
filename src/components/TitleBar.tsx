@@ -1,13 +1,19 @@
+import { useRef, useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useUiStore } from '../stores/uiStore';
 
 export function TitleBar() {
   const platform = useUiStore((s) => s.platform);
-  const win = getCurrentWindow();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const winRef = useRef<any>(null);
 
-  const minimize = async () => { await win.minimize(); };
-  const maximize = async () => { await win.toggleMaximize(); };
-  const close = async () => { await win.close(); };
+  useEffect(() => {
+    winRef.current = getCurrentWindow();
+  }, []);
+
+  const minimize = async () => { await winRef.current?.minimize(); };
+  const maximize = async () => { await winRef.current?.toggleMaximize(); };
+  const close = async () => { await winRef.current?.close(); };
 
   return (
     <div className="titlebar" data-tauri-drag-region>
