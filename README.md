@@ -5,8 +5,10 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 ## Features
 
 ### Notes and tabs
-- Up to 4 note tabs, renameable by double-click
-- Unsaved indicator dot on tab label
+- Up to 4 note tabs, renameable by double-click on the tab label
+- Per-pane rename button (pencil icon) next to the note selector for inline rename
+- Per-pane export button (↓ icon) with options: export as .txt, .md, or current format extension
+- Saved/Unsaved indicator in the pane header, right-aligned: green "Saved" or amber "Unsaved"
 - Scratch notes (stored in settings) and file-backed notes (written to disk on save)
 - Auto-save with 400ms debounce per pane
 
@@ -17,11 +19,15 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 
 ### AI features
 - Supported providers: Claude (Anthropic) and OpenAI
-- Actions: Fix, Polish, Rephrase, Spell check, Suggest, Apply (format), Compare
+- API calls routed through the Tauri HTTP plugin (`@tauri-apps/plugin-http`) to bypass webview CORS restrictions
+- Actions: Fix, Polish, Rephrase, Spell check, Suggest, Apply (format), Auto-detect (Code), Compare
+- "Auto-detect (Code)" is both a toolbar button and a format option; it detects the language, formats the code, and shows "Detected: [Language]" in the status bar
 - Actions work on selected text or the full note
 - After every AI action: diff is computed (LCS line-level), changes highlighted inline in green and yellow, Accept/Revert banner shown with 30-second auto-accept countdown
 - Typing in the editor implicitly accepts the diff
-- Apply action detects language automatically when "Auto-detect (Code)" is selected
+- Changing the format selection resets the detected language label
+- AI errors shown as a red banner above the status bar in the affected pane; auto-dismisses after 8 seconds or on click
+- Error messages distinguish: no API key, invalid key (401), rate limit (429), timeout (30s), network failure
 
 ### Workspace panel
 - Collapsible left sidebar toggled from toolbar
@@ -55,14 +61,18 @@ Focus mode hides all chrome: titlebar, toolbar, tab bar, workspace panel, per-pa
 The Focus button in the toolbar shows an active/highlighted state while focus mode is on. Focus mode state is persisted to settings so it restores on next launch.
 
 ### Settings
-- AI configuration: provider (Claude or OpenAI), model filtered by provider, API key with show/hide toggle, helper link to API keys page
+- Dialog is resizable (drag the bottom-right corner); minimum 520x500px, maximum 90vh tall
+- Each section has a bold accent-colored title and a 12px description line beneath it
+- AI configuration: provider (Claude or OpenAI), model filtered by provider, API key with eye-icon show/hide toggle, helper link to API keys page
 - Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size (14 sizes)
-- AI toolbar: reorderable list of per-pane AI action buttons with up, down, remove, and add
-- Main toolbar: reorderable list of toolbar items with up, down, remove, and add
-- Format options: reorderable list with add, remove, and reorder; defaults match the original WPF app
+- AI toolbar: reorderable list of per-pane AI action buttons including Auto-detect (Code); click row to select, up/down/remove/add actions. Default order: Format/Apply, Auto-detect (Code), Fix, Spell check, Rephrase, Compare, Suggest, Polish
+- Main toolbar: reorderable list of toolbar items with up/down/remove/add; click row to select
+- Format options: reorderable list with add, remove, and reorder; includes Auto-detect (Code) by default
 - Comparison colors: hex inputs with live color swatch preview for added, deleted, and changed lines
-- Storage: app data folder path with Open button to reveal in file manager
-- About: app name, description, version
+- Storage: data folder path (read-only) with Open button to reveal in file manager
+- About: app name, description, version from tauri.conf.json
+- Section headers are bold and accent-colored with separator lines between sections
+- All form controls are 32px tall for consistent alignment
 - Reset to defaults button restores all settings to original values
 
 ## Tech stack

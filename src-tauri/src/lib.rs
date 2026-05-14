@@ -12,6 +12,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let show_hide = MenuItem::with_id(app, "show_hide", "Show / Hide", true, None::<&str>)?;
             let new_note = MenuItem::with_id(app, "new_note", "New note", true, None::<&str>)?;

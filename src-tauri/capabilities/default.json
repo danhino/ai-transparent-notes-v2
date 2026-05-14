@@ -19,11 +19,17 @@
     "fs:allow-read-dir",
     "fs:allow-watch",
     "fs:scope-home-recursive",
-    "fs:scope-app-data-recursive",
+    "fs:scope-appdata-recursive",
     "dialog:default",
     "dialog:allow-open",
+    "dialog:allow-save",
     "os:default",
     "os:allow-platform",
-    "shell:default"
+    "shell:default",
+    "http:default",
+    "http:allow-fetch",
+    "http:allow-fetch-cancel",
+    "http:allow-fetch-read-body",
+    "http:allow-fetch-send"
   ]
 }

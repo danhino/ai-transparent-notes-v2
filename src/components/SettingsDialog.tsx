@@ -1,5 +1,6 @@
 import { useState, useEffect, CSSProperties } from 'react';
 import { appDataDir } from '@tauri-apps/api/path';
+import { getVersion } from '@tauri-apps/api/app';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
@@ -25,13 +26,14 @@ const THEMES: { value: Theme; label: string }[] = [
 ];
 
 const ALL_AI_ACTIONS: { key: string; label: string }[] = [
-  { key: 'apply',      label: 'Apply' },
+  { key: 'apply',      label: 'Format / Apply' },
+  { key: 'autodetect', label: 'Auto-detect (Code)' },
   { key: 'fix',        label: 'Fix' },
-  { key: 'polish',     label: 'Polish' },
   { key: 'spellcheck', label: 'Spell check' },
   { key: 'rephrase',   label: 'Rephrase' },
-  { key: 'suggest',    label: 'Suggest' },
   { key: 'compare',    label: 'Compare' },
+  { key: 'suggest',    label: 'Suggest' },
+  { key: 'polish',     label: 'Polish' },
 ];
 
 const ALL_MAIN_ITEMS: { key: string; label: string }[] = [
@@ -80,6 +82,7 @@ function ReorderList({
   labelMap: Map<string, string>;
   onChange: (v: string[]) => void;
 }) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const available = allItems.filter((a) => !items.includes(a.key));
 
   function move(i: number, dir: -1 | 1) {
@@ -91,6 +94,7 @@ function ReorderList({
   }
 
   function remove(key: string) {
+    if (selectedKey === key) setSelectedKey(null);
     onChange(items.filter((k) => k !== key));
   }
 
@@ -112,12 +116,17 @@ function ReorderList({
     <div>
       <div className="format-list">
         {items.map((key, i) => (
-          <div key={key} className="format-list-item" style={{ justifyContent: 'space-between' }}>
+          <div
+            key={key}
+            className={`format-list-item${selectedKey === key ? ' selected' : ''}`}
+            style={{ justifyContent: 'space-between' }}
+            onClick={() => setSelectedKey(key === selectedKey ? null : key)}
+          >
             <span>{labelMap.get(key) ?? key}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <button style={btnStyle} disabled={i === 0} onClick={() => move(i, -1)} title="Move up">▲</button>
-              <button style={btnStyle} disabled={i === items.length - 1} onClick={() => move(i, 1)} title="Move down">▼</button>
-              <button style={removeBtnStyle} onClick={() => remove(key)} title="Remove">×</button>
+              <button style={btnStyle} disabled={i === 0} onClick={(e) => { e.stopPropagation(); move(i, -1); }} title="Move up">▲</button>
+              <button style={btnStyle} disabled={i === items.length - 1} onClick={(e) => { e.stopPropagation(); move(i, 1); }} title="Move down">▼</button>
+              <button style={removeBtnStyle} onClick={(e) => { e.stopPropagation(); remove(key); }} title="Remove">×</button>
             </div>
           </div>
         ))}
@@ -163,9 +172,11 @@ export function SettingsDialog() {
     settings.mainToolbarItems ?? DEFAULT_SETTINGS.mainToolbarItems
   );
   const [dataPath, setDataPath] = useState('');
+  const [appVersion, setAppVersion] = useState('');
 
   useEffect(() => {
     void appDataDir().then((p) => setDataPath(p)).catch(() => {});
+    void getVersion().then((v) => setAppVersion(v)).catch(() => {});
   }, []);
 
   const models = localProvider === 'claude' ? CLAUDE_MODELS : OPENAI_MODELS;
@@ -256,6 +267,7 @@ export function SettingsDialog() {
           {/* AI Configuration */}
           <div className="settings-section">
             <div className="settings-section-title">AI configuration</div>
+            <div className="settings-section-desc">Configure your AI provider, model, and API key for note assistance features.</div>
 
             <div className="settings-row">
               <span className="settings-label">Provider</span>
@@ -304,9 +316,20 @@ export function SettingsDialog() {
                   className="settings-btn"
                   onClick={() => setShowKey((v) => !v)}
                   title={showKey ? 'Hide key' : 'Show key'}
-                  style={{ flexShrink: 0 }}
+                  style={{ flexShrink: 0, padding: '5px 10px', lineHeight: 0 }}
                 >
-                  {showKey ? 'Hide' : 'Show'}
+                  {showKey ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
@@ -320,6 +343,7 @@ export function SettingsDialog() {
           {/* Appearance */}
           <div className="settings-section">
             <div className="settings-section-title">Appearance</div>
+            <div className="settings-section-desc">Customize the look and feel of the application.</div>
 
             <div className="settings-row">
               <span className="settings-label">Theme</span>
@@ -365,6 +389,7 @@ export function SettingsDialog() {
           {/* AI toolbar */}
           <div className="settings-section">
             <div className="settings-section-title">AI toolbar</div>
+            <div className="settings-section-desc">Add, remove, or reorder the buttons shown in the AI toolbar of each note pane.</div>
             <ReorderList
               items={localAiActions}
               allItems={ALL_AI_ACTIONS}
@@ -376,6 +401,7 @@ export function SettingsDialog() {
           {/* Main toolbar */}
           <div className="settings-section">
             <div className="settings-section-title">Main toolbar</div>
+            <div className="settings-section-desc">Add, remove, or reorder the groups shown in the main toolbar (theme, font, opacity, etc.).</div>
             <ReorderList
               items={localMainItems}
               allItems={ALL_MAIN_ITEMS}
@@ -387,6 +413,7 @@ export function SettingsDialog() {
           {/* Format options */}
           <div className="settings-section">
             <div className="settings-section-title">Format options</div>
+            <div className="settings-section-desc">Manage the list of formats shown in the AI Format dropdown. Add custom languages or text types.</div>
             <div className="format-list">
               {localFormats.map((f, i) => (
                 <div key={f} className="format-list-item" style={{ justifyContent: 'space-between' }}>
@@ -414,6 +441,7 @@ export function SettingsDialog() {
           {/* Comparison colors */}
           <div className="settings-section">
             <div className="settings-section-title">Comparison colors</div>
+            <div className="settings-section-desc">Background colors used in the Compare diff view (hex, e.g. #1A4D1A).</div>
             <ColorRow label="Added lines" value={addedColor} onChange={setAddedColor} />
             <ColorRow label="Deleted lines" value={deletedColor} onChange={setDeletedColor} />
             <ColorRow label="Changed lines" value={changedColor} onChange={setChangedColor} />
@@ -422,26 +450,31 @@ export function SettingsDialog() {
           {/* Storage */}
           <div className="settings-section">
             <div className="settings-section-title">Storage</div>
-            <div className="settings-row" style={{ alignItems: 'flex-start', gap: 8 }}>
-              <span
-                className="settings-label"
-                style={{ color: 'var(--subtle-text)', fontSize: 11, wordBreak: 'break-all', flex: 1 }}
-              >
-                {dataPath || 'Resolving...'}
-              </span>
-              <button className="settings-btn" onClick={openDataFolder}>Open</button>
+            <div className="settings-section-desc">Location where your notes and settings are saved.</div>
+            <div className="settings-row">
+              <span className="settings-label">Data folder</span>
+              <input
+                className="settings-input"
+                readOnly
+                value={dataPath || 'Resolving...'}
+                style={{ fontSize: 11, color: 'var(--text-secondary)', cursor: 'default' }}
+              />
+              <button className="settings-btn" onClick={openDataFolder} style={{ flexShrink: 0 }}>Open</button>
             </div>
           </div>
 
           {/* About */}
           <div className="settings-section">
             <div className="settings-section-title">About</div>
+            <div className="settings-section-desc">Application information and version.</div>
             <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>AI Transparent Notes v2</div>
               <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
                 A modern cross-platform notes app with AI assistance
               </div>
-              <div style={{ color: 'var(--subtle-text)', fontSize: 11 }}>Version 0.1.0</div>
+              <div style={{ color: 'var(--subtle-text)', fontSize: 11 }}>
+                {appVersion ? `Version ${appVersion}` : 'Version 0.1.0'}
+              </div>
             </div>
           </div>
 

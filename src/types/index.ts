@@ -78,6 +78,7 @@ export const OPENAI_MODELS = [
 
 export const DEFAULT_FORMAT_OPTIONS = [
   'Plain text',
+  'Auto-detect (Code)',
   'Markdown',
   'Python',
   'JavaScript',
@@ -118,6 +119,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   workspacePanelWidth: 220,
   workspaceFolders: [],
   focusMode: false,
-  aiToolbarActions: ['apply', 'fix', 'polish', 'spellcheck', 'rephrase', 'suggest', 'compare'],
+  aiToolbarActions: ['apply', 'autodetect', 'fix', 'spellcheck', 'rephrase', 'compare', 'suggest', 'polish'],
   mainToolbarItems: ['pin', 'theme', 'font', 'size', 'opacity', 'layout', 'workspace', 'import', 'focus', 'settings'],
 };

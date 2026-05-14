@@ -21,6 +21,7 @@
   --btn-active: #585B70;
   --danger: #F38BA8;
   --success: #A6E3A1;
+  --warning: #F9B742;
   --splitter: #313244;
   --scrollbar-bg: #2A2A3E;
   --scrollbar-thumb: #45475A;
@@ -49,6 +50,7 @@
   --btn-active: #C7C7CC;
   --danger: #FF3B30;
   --success: #34C759;
+  --warning: #D68910;
   --splitter: #D2D2D7;
   --scrollbar-bg: #F5F5F7;
   --scrollbar-thumb: #C7C7CC;
@@ -77,6 +79,7 @@
   --btn-active: #234A88;
   --danger: #FF6B8A;
   --success: #5CE8A0;
+  --warning: #F9C74F;
   --splitter: #0F2044;
   --scrollbar-bg: #0F2044;
   --scrollbar-thumb: #1A3A6E;
@@ -105,6 +108,7 @@
   --btn-active: #D4B860;
   --danger: #C0392B;
   --success: #27AE60;
+  --warning: #B7770D;
   --splitter: #C8B89A;
   --scrollbar-bg: #F5EDD8;
   --scrollbar-thumb: #C8B89A;
@@ -133,6 +137,7 @@
   --btn-active: #285A28;
   --danger: #FF6060;
   --success: #80FF80;
+  --warning: #C8A72A;
   --splitter: #142814;
   --scrollbar-bg: #142814;
   --scrollbar-thumb: #1E4A1E;
@@ -506,6 +511,86 @@ input {
   padding: 2px 6px;
 }
 
+.pane-rename-input {
+  flex: 1;
+  background: var(--btn-bg);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 2px 6px;
+  outline: none;
+}
+
+.pane-icon-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.pane-icon-btn:hover {
+  background: var(--btn-hover);
+  color: var(--text);
+}
+.pane-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pane-saved {
+  font-size: 10px;
+  color: var(--success);
+  white-space: nowrap;
+  padding-right: 2px;
+  opacity: 0.85;
+}
+
+.pane-unsaved {
+  font-size: 10px;
+  color: var(--warning);
+  white-space: nowrap;
+  padding-right: 2px;
+  opacity: 0.9;
+}
+
+.export-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 60;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  min-width: 148px;
+  padding: 4px 0;
+}
+
+.export-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.export-menu-item:hover {
+  background: var(--btn-hover);
+}
+
 /* ─── AI toolbar ─── */
 .ai-toolbar {
   display: flex;
@@ -606,6 +691,24 @@ input {
   cursor: pointer;
 }
 
+/* ─── Error banner ─── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: color-mix(in srgb, var(--danger) 12%, var(--panel-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
+  font-size: 12px;
+  color: var(--danger);
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.error-banner:hover {
+  background: color-mix(in srgb, var(--danger) 18%, var(--panel-bg));
+}
+
 /* ─── Status bar ─── */
 .status-bar {
   display: flex;
@@ -692,11 +795,14 @@ input {
   border-radius: 8px;
   padding: 0;
   width: 560px;
+  min-width: 520px;
+  min-height: 500px;
   max-width: 95vw;
-  max-height: 85vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  resize: both;
 }
 
 .modal-lg {
@@ -752,15 +858,26 @@ input {
 
 /* ─── Settings ─── */
 .settings-section {
-  margin-bottom: 20px;
+  padding-bottom: 20px;
+}
+
+.settings-section:not(:first-child) {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
 }
 
 .settings-section-title {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.settings-section-desc {
+  font-size: 12px;
+  color: var(--subtle-text);
+  margin-bottom: 12px;
+  line-height: 1.4;
 }
 
 .settings-row {
@@ -778,12 +895,14 @@ input {
 
 .settings-input {
   flex: 1;
+  height: 32px;
+  box-sizing: border-box;
   background: var(--btn-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
   font-size: 13px;
-  padding: 5px 9px;
+  padding: 0 9px;
   outline: none;
 }
 .settings-input:focus {
@@ -792,12 +911,14 @@ input {
 
 .settings-select {
   flex: 1;
+  height: 32px;
+  box-sizing: border-box;
   background: var(--btn-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
   font-size: 13px;
-  padding: 5px 9px;
+  padding: 0 9px;
 }
 
 .color-preview {
@@ -809,13 +930,17 @@ input {
 }
 
 .settings-btn {
-  padding: 5px 14px;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 14px;
   background: var(--btn-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .settings-btn:hover {
   background: var(--btn-hover);
@@ -848,11 +973,14 @@ input {
 .format-list-item:last-child {
   border-bottom: none;
 }
+.format-list-item:nth-child(even) {
+  background: color-mix(in srgb, var(--toolbar-bg) 60%, transparent);
+}
 .format-list-item:hover {
   background: var(--btn-hover);
 }
 .format-list-item.selected {
-  background: var(--tab-selected-bg);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 /* ─── Compare dialog ─── */
