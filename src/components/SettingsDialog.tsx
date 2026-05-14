@@ -1,8 +1,25 @@
-import { useState } from 'react';
-import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { useState, useEffect } from 'react';
+import { appDataDir } from '@tauri-apps/api/path';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
-import { AiProvider, CLAUDE_MODELS, OPENAI_MODELS } from '../types';
+import { AiProvider, Theme, CLAUDE_MODELS, OPENAI_MODELS } from '../types';
+
+const FONT_FAMILIES = [
+  'Segoe UI', 'Consolas', 'Cascadia Code', 'Courier New', 'Georgia',
+  'Times New Roman', 'Calibri', 'Arial', 'Verdana', 'Tahoma',
+  'Trebuchet MS', 'Comic Sans MS',
+];
+
+const FONT_SIZES = [10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32];
+
+const THEMES: { value: Theme; label: string }[] = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+  { value: 'blue', label: 'Blue' },
+  { value: 'sepia', label: 'Sepia' },
+  { value: 'green', label: 'Green' },
+];
 
 function isValidHex(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color);
@@ -41,10 +58,18 @@ export function SettingsDialog() {
   const [localKey, setLocalKey] = useState(settings.aiApiKey);
   const [localProvider, setLocalProvider] = useState<AiProvider>(settings.aiProvider);
   const [localModel, setLocalModel] = useState(settings.aiModel);
+  const [localTheme, setLocalTheme] = useState<Theme>(settings.theme);
+  const [localFontFamily, setLocalFontFamily] = useState(settings.fontFamily);
+  const [localFontSize, setLocalFontSize] = useState(settings.fontSize);
   const [addedColor, setAddedColor] = useState(settings.diffAddedColor);
   const [deletedColor, setDeletedColor] = useState(settings.diffDeletedColor);
   const [changedColor, setChangedColor] = useState(settings.diffChangedColor);
   const [newFormat, setNewFormat] = useState('');
+  const [dataPath, setDataPath] = useState('');
+
+  useEffect(() => {
+    void appDataDir().then((p) => setDataPath(p)).catch(() => {});
+  }, []);
 
   const models = localProvider === 'claude' ? CLAUDE_MODELS : OPENAI_MODELS;
 
@@ -52,6 +77,9 @@ export function SettingsDialog() {
     setAiProvider(localProvider);
     setAiModel(localModel);
     update({
+      theme: localTheme,
+      fontFamily: localFontFamily,
+      fontSize: localFontSize,
       aiApiKey: localKey,
       diffAddedColor: isValidHex(addedColor) ? addedColor : settings.diffAddedColor,
       diffDeletedColor: isValidHex(deletedColor) ? deletedColor : settings.diffDeletedColor,
@@ -71,9 +99,42 @@ export function SettingsDialog() {
     update({ formatOptions: settings.formatOptions.filter((x) => x !== f) });
   }
 
-  async function openDataFolder() {
-    await openDialog({ directory: true });
+  function moveFormat(index: number, dir: -1 | 1) {
+    const list = [...settings.formatOptions];
+    const target = index + dir;
+    if (target < 0 || target >= list.length) return;
+    [list[index], list[target]] = [list[target], list[index]];
+    update({ formatOptions: list });
   }
+
+  async function openDataFolder() {
+    if (!dataPath) return;
+    try {
+      await revealItemInDir(dataPath);
+    } catch (err) {
+      console.error('[Settings] Failed to reveal data folder:', err);
+    }
+  }
+
+  const reorderBtnStyle: React.CSSProperties = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--text-secondary)',
+    fontSize: 12,
+    padding: '0 3px',
+    lineHeight: 1,
+  };
+
+  const removeBtnStyle: React.CSSProperties = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--danger)',
+    fontSize: 14,
+    padding: '0 3px',
+    lineHeight: 1,
+  };
 
   return (
     <div className="modal-overlay" onClick={() => setSettingsOpen(false)}>
@@ -86,6 +147,51 @@ export function SettingsDialog() {
         </div>
 
         <div className="modal-body">
+          {/* Appearance */}
+          <div className="settings-section">
+            <div className="settings-section-title">Appearance</div>
+
+            <div className="settings-row">
+              <span className="settings-label">Theme</span>
+              <select
+                className="settings-select"
+                value={localTheme}
+                onChange={(e) => setLocalTheme(e.target.value as Theme)}
+              >
+                {THEMES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="settings-row">
+              <span className="settings-label">Font family</span>
+              <select
+                className="settings-select"
+                value={localFontFamily}
+                onChange={(e) => setLocalFontFamily(e.target.value)}
+              >
+                {FONT_FAMILIES.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="settings-row">
+              <span className="settings-label">Font size</span>
+              <select
+                className="settings-select"
+                style={{ width: 80 }}
+                value={localFontSize}
+                onChange={(e) => setLocalFontSize(Number(e.target.value))}
+              >
+                {FONT_SIZES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* AI provider */}
           <div className="settings-section">
             <div className="settings-section-title">AI provider</div>
@@ -114,9 +220,7 @@ export function SettingsDialog() {
                 onChange={(e) => setLocalModel(e.target.value)}
               >
                 {models.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
+                  <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </div>
@@ -148,15 +252,34 @@ export function SettingsDialog() {
           <div className="settings-section">
             <div className="settings-section-title">Format options</div>
             <div className="format-list">
-              {settings.formatOptions.map((f) => (
+              {settings.formatOptions.map((f, i) => (
                 <div key={f} className="format-list-item" style={{ justifyContent: 'space-between' }}>
                   <span>{f}</span>
-                  <button
-                    style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}
-                    onClick={() => removeFormat(f)}
-                  >
-                    ×
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <button
+                      style={reorderBtnStyle}
+                      disabled={i === 0}
+                      onClick={() => moveFormat(i, -1)}
+                      title="Move up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      style={reorderBtnStyle}
+                      disabled={i === settings.formatOptions.length - 1}
+                      onClick={() => moveFormat(i, 1)}
+                      title="Move down"
+                    >
+                      ▼
+                    </button>
+                    <button
+                      style={removeBtnStyle}
+                      onClick={() => removeFormat(f)}
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -177,12 +300,15 @@ export function SettingsDialog() {
           {/* Data folder */}
           <div className="settings-section">
             <div className="settings-section-title">Data</div>
-            <div className="settings-row">
-              <span className="settings-label" style={{ color: 'var(--subtle-text)', fontSize: 12 }}>
-                Settings stored in app data directory
+            <div className="settings-row" style={{ alignItems: 'flex-start', gap: 8 }}>
+              <span
+                className="settings-label"
+                style={{ color: 'var(--subtle-text)', fontSize: 11, wordBreak: 'break-all', flex: 1 }}
+              >
+                {dataPath || 'Resolving...'}
               </span>
               <button className="settings-btn" onClick={openDataFolder}>
-                Open folder
+                Open
               </button>
             </div>
           </div>

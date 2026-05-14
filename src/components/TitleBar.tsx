@@ -5,12 +5,12 @@ export function TitleBar() {
   const platform = useUiStore((s) => s.platform);
   const win = getCurrentWindow();
 
-  const minimize = () => void win.minimize();
-  const maximize = () => void win.toggleMaximize();
-  const close = () => void win.close();
+  const minimize = async () => { await win.minimize(); };
+  const maximize = async () => { await win.toggleMaximize(); };
+  const close = async () => { await win.close(); };
 
   return (
-    <div className="titlebar">
+    <div className="titlebar" data-tauri-drag-region>
       {/* macOS: leave space for native traffic lights */}
       <div
         className="titlebar-drag"
@@ -22,7 +22,7 @@ export function TitleBar() {
 
       {/* Windows/Linux: custom window controls */}
       {platform !== 'macos' && (
-        <div className="titlebar-controls">
+        <div className="titlebar-controls" onMouseDown={(e) => e.stopPropagation()}>
           <button className="titlebar-btn" onClick={minimize} title="Minimize">
             <svg width="10" height="1" viewBox="0 0 10 1">
               <rect width="10" height="1" fill="currentColor" />

@@ -24,10 +24,11 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 - Apply action detects language automatically when "Auto-detect (Code)" is selected
 
 ### Workspace panel
-- Collapsible left sidebar
+- Collapsible left sidebar toggled from toolbar
 - Add folders via button or right-click menu
 - Lazy-loaded file tree with language icons
-- Double-click or right-click to open files in active pane or new tab
+- Single-click to highlight, double-click to open file in active pane
+- Right-click context menu: open in active pane, open in new tab, remove from workspace
 - Duplicate tab detection (switches to existing tab instead of reopening)
 - Real-time file system sync via Tauri watch plugin
 - Resizable panel via drag handle
@@ -43,10 +44,13 @@ Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green.
 - System tray with Show/Hide, New note, Exit
 
 ### Settings
-- AI provider, model, and API key
-- Diff highlight colors with live preview
-- Configurable format options list
-- Font family and size
+- Theme selector: Dark, Light, Blue, Sepia, Green
+- Font family: 12 options including Segoe UI, Consolas, Cascadia Code, Courier New, Georgia, and more
+- Font size: 10 to 32 in preset steps
+- AI provider (Claude or OpenAI), model, and API key
+- Diff highlight colors with live hex preview swatches
+- Configurable format options list with add, remove, and reorder
+- Data folder path display with Open button to reveal in file manager
 
 ## Tech stack
 
@@ -57,7 +61,6 @@ Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green.
 | Build tool | Vite 6 |
 | Editor | CodeMirror 6 |
 | State | Zustand 5 |
-| Animations | Framer Motion |
 | Diff | Custom LCS algorithm |
 | Styling | Tailwind CSS 4, CSS custom properties |
 
@@ -76,7 +79,7 @@ src/
     diffService.ts        # LCS-based line diff computation
     storageService.ts     # Tauri fs plugin read/write
   components/
-    TitleBar.tsx          # Custom frameless titlebar
+    TitleBar.tsx          # Custom frameless titlebar with drag region
     Toolbar.tsx           # Main toolbar (pin, theme, font, opacity, layout, files)
     TabBar.tsx            # Tab bar with rename, close, add
     NoteEditor.tsx        # CodeMirror 6 wrapper with diff decorations

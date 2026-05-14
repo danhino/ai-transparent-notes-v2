@@ -20,7 +20,8 @@
         "minHeight": 400,
         "decorations": false,
         "shadow": true,
-        "center": true
+        "center": true,
+        "dragDropEnabled": true
       }
     ],
     "trayIcon": {

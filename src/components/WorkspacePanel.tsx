@@ -38,12 +38,13 @@ interface TreeItemProps {
   entry: WorkspaceEntry;
   depth: number;
   selectedPath: string | null;
-  onSelect: (entry: WorkspaceEntry) => void;
+  onOpen: (entry: WorkspaceEntry) => void;
+  onHighlight: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry, isRoot: boolean) => void;
   rootPath: string;
 }
 
-function TreeItem({ entry, depth, selectedPath, onSelect, onContextMenu, rootPath }: TreeItemProps) {
+function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMenu, rootPath }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<WorkspaceEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -71,7 +72,7 @@ function TreeItem({ entry, depth, selectedPath, onSelect, onContextMenu, rootPat
 
   function toggle() {
     if (!entry.isDirectory) {
-      onSelect(entry);
+      onHighlight(entry.path);
       return;
     }
     const next = !expanded;
@@ -89,6 +90,10 @@ function TreeItem({ entry, depth, selectedPath, onSelect, onContextMenu, rootPat
         className={`tree-item${selectedPath === entry.path ? ' selected' : ''}`}
         style={{ paddingLeft: 8 + depth * 14 }}
         onClick={toggle}
+        onDoubleClick={() => {
+          console.log('[WorkspacePanel] dblclick', entry.path, 'isDir', entry.isDirectory);
+          if (!entry.isDirectory) onOpen(entry);
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           onContextMenu(e, entry, isRoot);
@@ -99,8 +104,15 @@ function TreeItem({ entry, depth, selectedPath, onSelect, onContextMenu, rootPat
             {expanded ? '▾' : '▸'}
           </span>
         ) : null}
-        <span>{entry.isDirectory ? '📁' : fileIcon(entry.name)}</span>
-        <span className="tree-item-name">{entry.name}</span>
+        <span onDoubleClick={(e) => { if (!entry.isDirectory) { e.stopPropagation(); onOpen(entry); } }}>
+          {entry.isDirectory ? '📁' : fileIcon(entry.name)}
+        </span>
+        <span
+          className="tree-item-name"
+          onDoubleClick={(e) => { if (!entry.isDirectory) { e.stopPropagation(); onOpen(entry); } }}
+        >
+          {entry.name}
+        </span>
       </div>
 
       {entry.isDirectory && expanded && loaded &&
@@ -110,7 +122,8 @@ function TreeItem({ entry, depth, selectedPath, onSelect, onContextMenu, rootPat
             entry={child}
             depth={depth + 1}
             selectedPath={selectedPath}
-            onSelect={onSelect}
+            onOpen={onOpen}
+            onHighlight={onHighlight}
             onContextMenu={onContextMenu}
             rootPath={rootPath}
           />
@@ -133,12 +146,14 @@ export function WorkspacePanel() {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const unwatchRefs = useRef<UnwatchFn[]>([]);
 
-  // Build root entries from stored folder paths
+  // Build root entries from stored folder paths — normalize to forward slashes
+  // so child paths built with `${root}/${name}` don't get mixed separators on Windows
   useEffect(() => {
     setRoots(
       settings.workspaceFolders.map((p) => {
-        const parts = p.replace(/\\/g, '/').split('/');
-        return { name: parts[parts.length - 1], path: p, isDirectory: true };
+        const normalized = p.replace(/\\/g, '/');
+        const parts = normalized.split('/');
+        return { name: parts[parts.length - 1], path: normalized, isDirectory: true };
       })
     );
   }, [settings.workspaceFolders]);
@@ -193,11 +208,13 @@ export function WorkspacePanel() {
     }
   }
 
-  function openFileInPane(entry: WorkspaceEntry, newTab: boolean) {
-    // Check for existing tab with this path
+  async function openFileInPane(entry: WorkspaceEntry, _newTab: boolean) {
+    console.log('[WorkspacePanel] openFileInPane', entry.path, 'pane', focusedPaneIndex);
+
     const existing = notes.find((n) => n.sourceFilePath === entry.path);
     if (existing) {
       const idx = notes.indexOf(existing);
+      console.log('[WorkspacePanel] switching to existing tab', idx);
       setActiveNoteIndex(idx);
       setPaneNoteId(focusedPaneIndex, existing.id);
       setSelectedPath(entry.path);
@@ -205,15 +222,19 @@ export function WorkspacePanel() {
       return;
     }
 
-    void readSourceFile(entry.path).then((content) => {
+    try {
+      console.log('[WorkspacePanel] reading file:', entry.path);
+      const content = await readSourceFile(entry.path);
+      console.log('[WorkspacePanel] read ok, length:', content.length, 'notes before:', notes.length);
       const note = addNote({ title: entry.name, content, sourceFilePath: entry.path });
-      if (newTab) {
-        setActiveNoteIndex(notes.length);
-      }
+      console.log('[WorkspacePanel] note added id:', note.id, 'setting pane', focusedPaneIndex);
+      setActiveNoteIndex(notes.length);
       setPaneNoteId(focusedPaneIndex, note.id);
       setSelectedPath(entry.path);
       setContextMenu(null);
-    });
+    } catch (err) {
+      console.error('[WorkspacePanel] readTextFile failed for:', entry.path, err);
+    }
   }
 
   function handleSelect(entry: WorkspaceEntry) {
@@ -288,7 +309,8 @@ export function WorkspacePanel() {
             entry={root}
             depth={0}
             selectedPath={selectedPath}
-            onSelect={handleSelect}
+            onOpen={handleSelect}
+            onHighlight={setSelectedPath}
             onContextMenu={handleContextMenu}
             rootPath={root.path}
           />
