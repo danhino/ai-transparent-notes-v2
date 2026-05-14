@@ -1,5 +1,10 @@
 # CLAUDE.md — AI Transparent Notes v2
 
+Before writing any code, fetch and read the source files listed
+at the bottom of CLAUDE.md from the original repo at
+https://github.com/danhino/ai-transparent-notes — use them as
+the authoritative reference for all feature behavior.
+
 ## Stack
 - Tauri 2.0 (Rust backend), React 19, TypeScript, Vite 6
 - CodeMirror 6 for the editor (replaces AvalonEdit)
@@ -42,3 +47,30 @@ Cross-platform (Windows + macOS) notes app with:
 The original WPF app is at github.com/danhino/ai-transparent-notes.
 Use it as logic reference for AI prompts, diff behavior, storage
 schema, and theme color values — not for UI patterns.
+
+## Original source code reference
+
+Read these files from the original WPF repo before writing any code.
+Use them as the authoritative reference for feature behavior, AI
+prompts, diff logic, settings schema, and theme color values.
+
+### Key files to read:
+- MainWindow.xaml.cs — main app logic, tab management, pane system,
+  workspace panel, focus mode, tray, opacity, always on top
+- Controls/NotePanel.xaml.cs — per-pane logic, auto-save, status bar,
+  AI action handling, diff banner, detected language
+- Services/AiService.cs — all AI prompts, provider switching, model
+  list, timeout, selection vs full-note logic
+- Services/DiffService.cs — diff computation logic
+- Services/StorageService.cs — settings schema, JSON structure,
+  file paths, what gets persisted
+- Models/AppSettings.cs — all settings fields and defaults
+- Models/NoteModel.cs — note data structure
+- Dialogs/SettingsDialog.xaml.cs — all configurable options
+- Dialogs/CompareDialog.xaml.cs — compare dialog behavior
+- Controls/WorkspacePanel.xaml.cs — workspace panel, tree logic,
+  drag-drop, file watcher, duplicate tab check
+- Resources/Themes/ — all 5 theme color values to match exactly
+
+### Repo URL:
+https://github.com/danhino/ai-transparent-notes
