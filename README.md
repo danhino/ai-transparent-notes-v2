@@ -40,17 +40,26 @@ Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green.
 - Frameless window with custom titlebar (Windows/Linux: custom min/max/close; macOS: native traffic lights space)
 - Always on top toggle
 - Opacity slider (0.2 to 1.0)
-- Focus mode: hides titlebar, toolbar, and tab bar; hover top edge to restore
+- Focus mode: hides titlebar, toolbar, and tab bar for distraction-free writing
 - System tray with Show/Hide, New note, Exit
 
+### Focus mode
+
+Focus mode hides the titlebar, toolbar, and tab bar. To exit:
+
+- Click the **Exit focus** pill button in the top-right corner (appears semi-transparent, fully visible on hover)
+- Press **Escape**
+- Double-click anywhere on the editor area
+
+The Focus button in the toolbar shows an active/highlighted state while focus mode is on. Focus mode state is persisted to settings so it restores on next launch.
+
 ### Settings
-- Theme selector: Dark, Light, Blue, Sepia, Green
-- Font family: 12 options including Segoe UI, Consolas, Cascadia Code, Courier New, Georgia, and more
-- Font size: 10 to 32 in preset steps
-- AI provider (Claude or OpenAI), model, and API key
-- Diff highlight colors with live hex preview swatches
-- Configurable format options list with add, remove, and reorder
-- Data folder path display with Open button to reveal in file manager
+- AI section: provider (Claude or OpenAI), model, and API key with show/hide toggle
+- Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size
+- Editor formats: configurable list with add, remove, and reorder; defaults match the original WPF app
+- Compare/diff colors: hex inputs with live color swatch preview for added, deleted, and changed lines
+- Data: app data folder path with Open button to reveal in file manager
+- Reset to defaults button restores all settings to original values
 
 ## Tech stack
 

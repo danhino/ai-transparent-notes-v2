@@ -26,9 +26,11 @@ export function Pane({ paneIndex }: Props) {
   const { settings } = useSettingsStore();
   const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
   const {
+    focusMode,
     focusedPaneIndex,
     paneStates,
     setFocusedPane,
+    setFocusMode,
     setPaneBusy,
     setPaneDetectedLanguage,
     setPaneDiff,
@@ -194,6 +196,7 @@ export function Pane({ paneIndex }: Props) {
     <div
       className={`pane${isFocused ? ' focused' : ''}`}
       onClick={() => setFocusedPane(paneIndex)}
+      onDoubleClick={() => { if (focusMode) setFocusMode(false); }}
     >
       {/* Note selector */}
       <div className="pane-header">

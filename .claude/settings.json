@@ -3,10 +3,10 @@
     "allow": [
       "Bash(*)",
       "PowerShell(*)",
-      "cmd(*)",
-      "WebFetch(https://raw.githubusercontent.com/*)",
-      "WebFetch(https://github.com/*)",
-      "WebFetch(https://api.anthropic.com/*)"
+      "Cmd(*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.anthropic.com)"
     ]
   }
 }

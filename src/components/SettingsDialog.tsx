@@ -3,7 +3,7 @@ import { appDataDir } from '@tauri-apps/api/path';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
-import { AiProvider, Theme, CLAUDE_MODELS, OPENAI_MODELS } from '../types';
+import { AiProvider, Theme, CLAUDE_MODELS, OPENAI_MODELS, DEFAULT_SETTINGS, DEFAULT_FORMAT_OPTIONS } from '../types';
 
 const FONT_FAMILIES = [
   'Segoe UI', 'Consolas', 'Cascadia Code', 'Courier New', 'Georgia',
@@ -11,7 +11,7 @@ const FONT_FAMILIES = [
   'Trebuchet MS', 'Comic Sans MS',
 ];
 
-const FONT_SIZES = [10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32];
+const FONT_SIZES = [10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 28, 32];
 
 const THEMES: { value: Theme; label: string }[] = [
   { value: 'dark', label: 'Dark' },
@@ -42,6 +42,7 @@ function ColorRow({ label, value, onChange }: ColorRowProps) {
         onChange={(e) => onChange(e.target.value)}
         maxLength={7}
         placeholder="#rrggbb"
+        style={{ width: 90 }}
       />
       <div
         className="color-preview"
@@ -56,6 +57,7 @@ export function SettingsDialog() {
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
   const [localKey, setLocalKey] = useState(settings.aiApiKey);
+  const [showKey, setShowKey] = useState(false);
   const [localProvider, setLocalProvider] = useState<AiProvider>(settings.aiProvider);
   const [localModel, setLocalModel] = useState(settings.aiModel);
   const [localTheme, setLocalTheme] = useState<Theme>(settings.theme);
@@ -65,6 +67,7 @@ export function SettingsDialog() {
   const [deletedColor, setDeletedColor] = useState(settings.diffDeletedColor);
   const [changedColor, setChangedColor] = useState(settings.diffChangedColor);
   const [newFormat, setNewFormat] = useState('');
+  const [localFormats, setLocalFormats] = useState<string[]>(settings.formatOptions);
   const [dataPath, setDataPath] = useState('');
 
   useEffect(() => {
@@ -84,27 +87,41 @@ export function SettingsDialog() {
       diffAddedColor: isValidHex(addedColor) ? addedColor : settings.diffAddedColor,
       diffDeletedColor: isValidHex(deletedColor) ? deletedColor : settings.diffDeletedColor,
       diffChangedColor: isValidHex(changedColor) ? changedColor : settings.diffChangedColor,
+      formatOptions: localFormats,
     });
     setSettingsOpen(false);
   }
 
+  function resetToDefaults() {
+    setLocalKey(DEFAULT_SETTINGS.aiApiKey);
+    setLocalProvider(DEFAULT_SETTINGS.aiProvider as AiProvider);
+    setLocalModel(DEFAULT_SETTINGS.aiModel);
+    setLocalTheme(DEFAULT_SETTINGS.theme as Theme);
+    setLocalFontFamily(DEFAULT_SETTINGS.fontFamily);
+    setLocalFontSize(DEFAULT_SETTINGS.fontSize);
+    setAddedColor(DEFAULT_SETTINGS.diffAddedColor);
+    setDeletedColor(DEFAULT_SETTINGS.diffDeletedColor);
+    setChangedColor(DEFAULT_SETTINGS.diffChangedColor);
+    setLocalFormats([...DEFAULT_FORMAT_OPTIONS]);
+  }
+
   function addFormat() {
     const f = newFormat.trim();
-    if (!f || settings.formatOptions.includes(f)) return;
-    update({ formatOptions: [...settings.formatOptions, f] });
+    if (!f || localFormats.includes(f)) return;
+    setLocalFormats((prev) => [...prev, f]);
     setNewFormat('');
   }
 
   function removeFormat(f: string) {
-    update({ formatOptions: settings.formatOptions.filter((x) => x !== f) });
+    setLocalFormats((prev) => prev.filter((x) => x !== f));
   }
 
   function moveFormat(index: number, dir: -1 | 1) {
-    const list = [...settings.formatOptions];
+    const list = [...localFormats];
     const target = index + dir;
     if (target < 0 || target >= list.length) return;
     [list[index], list[target]] = [list[target], list[index]];
-    update({ formatOptions: list });
+    setLocalFormats(list);
   }
 
   async function openDataFolder() {
@@ -147,6 +164,65 @@ export function SettingsDialog() {
         </div>
 
         <div className="modal-body">
+          {/* AI provider */}
+          <div className="settings-section">
+            <div className="settings-section-title">AI</div>
+
+            <div className="settings-row">
+              <span className="settings-label">Provider</span>
+              <select
+                className="settings-select"
+                value={localProvider}
+                onChange={(e) => {
+                  const p = e.target.value as AiProvider;
+                  setLocalProvider(p);
+                  setLocalModel(p === 'claude' ? CLAUDE_MODELS[0] : OPENAI_MODELS[0]);
+                }}
+              >
+                <option value="claude">Claude (Anthropic)</option>
+                <option value="openai">OpenAI</option>
+              </select>
+            </div>
+
+            <div className="settings-row">
+              <span className="settings-label">Model</span>
+              <select
+                className="settings-select"
+                value={localModel}
+                onChange={(e) => setLocalModel(e.target.value)}
+              >
+                {models.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="settings-row">
+              <span className="settings-label">
+                {localProvider === 'claude' ? 'Anthropic API key' : 'OpenAI API key'}
+              </span>
+              <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  className="settings-input"
+                  style={{ flex: 1 }}
+                  value={localKey}
+                  onChange={(e) => setLocalKey(e.target.value)}
+                  placeholder="sk-..."
+                  autoComplete="off"
+                />
+                <button
+                  className="settings-btn"
+                  onClick={() => setShowKey((v) => !v)}
+                  title={showKey ? 'Hide key' : 'Show key'}
+                  style={{ flexShrink: 0 }}
+                >
+                  {showKey ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Appearance */}
           <div className="settings-section">
             <div className="settings-section-title">Appearance</div>
@@ -192,67 +268,11 @@ export function SettingsDialog() {
             </div>
           </div>
 
-          {/* AI provider */}
-          <div className="settings-section">
-            <div className="settings-section-title">AI provider</div>
-
-            <div className="settings-row">
-              <span className="settings-label">Provider</span>
-              <select
-                className="settings-select"
-                value={localProvider}
-                onChange={(e) => {
-                  const p = e.target.value as AiProvider;
-                  setLocalProvider(p);
-                  setLocalModel(p === 'claude' ? CLAUDE_MODELS[0] : OPENAI_MODELS[0]);
-                }}
-              >
-                <option value="claude">Claude (Anthropic)</option>
-                <option value="openai">OpenAI</option>
-              </select>
-            </div>
-
-            <div className="settings-row">
-              <span className="settings-label">Model</span>
-              <select
-                className="settings-select"
-                value={localModel}
-                onChange={(e) => setLocalModel(e.target.value)}
-              >
-                {models.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="settings-row">
-              <span className="settings-label">
-                {localProvider === 'claude' ? 'Anthropic API key' : 'OpenAI API key'}
-              </span>
-              <input
-                type="password"
-                className="settings-input"
-                value={localKey}
-                onChange={(e) => setLocalKey(e.target.value)}
-                placeholder="sk-..."
-                autoComplete="off"
-              />
-            </div>
-          </div>
-
-          {/* Diff colors */}
-          <div className="settings-section">
-            <div className="settings-section-title">Diff colors</div>
-            <ColorRow label="Added" value={addedColor} onChange={setAddedColor} />
-            <ColorRow label="Deleted" value={deletedColor} onChange={setDeletedColor} />
-            <ColorRow label="Changed" value={changedColor} onChange={setChangedColor} />
-          </div>
-
           {/* Format options */}
           <div className="settings-section">
-            <div className="settings-section-title">Format options</div>
+            <div className="settings-section-title">Editor formats</div>
             <div className="format-list">
-              {settings.formatOptions.map((f, i) => (
+              {localFormats.map((f, i) => (
                 <div key={f} className="format-list-item" style={{ justifyContent: 'space-between' }}>
                   <span>{f}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -266,7 +286,7 @@ export function SettingsDialog() {
                     </button>
                     <button
                       style={reorderBtnStyle}
-                      disabled={i === settings.formatOptions.length - 1}
+                      disabled={i === localFormats.length - 1}
                       onClick={() => moveFormat(i, 1)}
                       title="Move down"
                     >
@@ -297,6 +317,14 @@ export function SettingsDialog() {
             </div>
           </div>
 
+          {/* Diff colors */}
+          <div className="settings-section">
+            <div className="settings-section-title">Compare / diff colors</div>
+            <ColorRow label="Added" value={addedColor} onChange={setAddedColor} />
+            <ColorRow label="Deleted" value={deletedColor} onChange={setDeletedColor} />
+            <ColorRow label="Changed" value={changedColor} onChange={setChangedColor} />
+          </div>
+
           {/* Data folder */}
           <div className="settings-section">
             <div className="settings-section-title">Data</div>
@@ -315,6 +343,9 @@ export function SettingsDialog() {
         </div>
 
         <div className="modal-footer">
+          <button className="settings-btn" onClick={resetToDefaults} style={{ marginRight: 'auto' }}>
+            Reset to defaults
+          </button>
           <button className="settings-btn" onClick={() => setSettingsOpen(false)}>
             Cancel
           </button>

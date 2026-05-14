@@ -21,7 +21,7 @@ function scheduleSave(settings: Parameters<typeof saveSettings>[0]) {
 
 export default function App() {
   const { notes, addNote, setActiveNoteIndex, setNotes } = useNoteStore();
-  const { settings, setSettings, setPaneNoteId } = useSettingsStore();
+  const { settings, setSettings, setPaneNoteId, update } = useSettingsStore();
   const { focusMode, setFocusMode, settingsOpen, compareOpen, setPlatform } = useUiStore();
 
   // ─── Init ────────────────────────────────────────────────────────────────────
@@ -38,6 +38,7 @@ export default function App() {
       setSettings(saved);
       setNotes(saved.notes);
       setActiveNoteIndex(saved.activeNoteIndex ?? 0);
+      setFocusMode(saved.focusMode ?? false);
 
       if (saved.notes.length === 0) {
         const note = addNote();
@@ -73,6 +74,11 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [focusMode, setFocusMode]);
 
+  // ─── Persist focus mode to settings so it restores on next launch ─────────────
+  useEffect(() => {
+    update({ focusMode });
+  }, [focusMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Persist settings ────────────────────────────────────────────────────────
   useEffect(() => {
     scheduleSave({
@@ -93,7 +99,13 @@ export default function App() {
   return (
     <div className={`app${focusMode ? ' focus-mode' : ''}`} data-theme={settings.theme}>
       {focusMode && (
-        <div className="focus-restore" onClick={() => setFocusMode(false)} title="Exit focus mode" />
+        <button
+          className="focus-exit-btn"
+          onClick={() => setFocusMode(false)}
+          title="Exit focus mode (Esc)"
+        >
+          Exit focus
+        </button>
       )}
 
       <TitleBar />

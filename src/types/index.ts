@@ -51,6 +51,7 @@ export interface AppSettings {
   workspacePanelVisible: boolean;
   workspacePanelWidth: number;
   workspaceFolders: string[];
+  focusMode: boolean;
 }
 
 export interface WorkspaceEntry {
@@ -76,20 +77,18 @@ export const OPENAI_MODELS = [
 export const DEFAULT_FORMAT_OPTIONS = [
   'Plain text',
   'Markdown',
-  'Bullet list',
-  'Numbered list',
-  'Bold headers',
-  'Code block',
-  'HTML',
-  'JSON',
-  'CSV',
-  'RTF',
   'Python',
   'JavaScript',
   'TypeScript',
-  'CSS',
+  'Java',
+  'C#',
+  'C',
+  'C++',
   'SQL',
-  'Auto-detect (Code)',
+  'HTML/CSS',
+  'PowerShell',
+  'Bash',
+  'JSON',
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -116,4 +115,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   workspacePanelVisible: false,
   workspacePanelWidth: 220,
   workspaceFolders: [],
+  focusMode: false,
 };

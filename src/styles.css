@@ -915,18 +915,25 @@ input {
   display: none;
 }
 
-.focus-restore {
+.focus-exit-btn {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  z-index: 50;
+  top: 10px;
+  right: 14px;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-family: inherit;
   cursor: pointer;
+  opacity: 0.25;
+  transition: opacity 0.18s;
+  user-select: none;
 }
-.focus-restore:hover {
-  background: var(--accent);
-  opacity: 0.6;
+.focus-exit-btn:hover {
+  opacity: 1;
 }
 
 /* ─── Context menu ─── */

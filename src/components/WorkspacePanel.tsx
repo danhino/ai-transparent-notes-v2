@@ -211,29 +211,42 @@ export function WorkspacePanel() {
   async function openFileInPane(entry: WorkspaceEntry, _newTab: boolean) {
     console.log('[WorkspacePanel] openFileInPane', entry.path, 'pane', focusedPaneIndex);
 
-    const existing = notes.find((n) => n.sourceFilePath === entry.path);
+    // Normalize path separators so the duplicate-check works on Windows
+    const normalizedPath = entry.path.replace(/\\/g, '/');
+
+    const currentNotes = useNoteStore.getState().notes;
+    const existing = currentNotes.find(
+      (n) => n.sourceFilePath?.replace(/\\/g, '/') === normalizedPath
+    );
     if (existing) {
-      const idx = notes.indexOf(existing);
+      const idx = currentNotes.indexOf(existing);
       console.log('[WorkspacePanel] switching to existing tab', idx);
       setActiveNoteIndex(idx);
       setPaneNoteId(focusedPaneIndex, existing.id);
-      setSelectedPath(entry.path);
+      setSelectedPath(normalizedPath);
       setContextMenu(null);
       return;
     }
 
+    if (currentNotes.length >= 4) {
+      console.warn('[WorkspacePanel] max 4 notes reached, cannot open file');
+      return;
+    }
+
     try {
-      console.log('[WorkspacePanel] reading file:', entry.path);
-      const content = await readSourceFile(entry.path);
-      console.log('[WorkspacePanel] read ok, length:', content.length, 'notes before:', notes.length);
-      const note = addNote({ title: entry.name, content, sourceFilePath: entry.path });
+      console.log('[WorkspacePanel] reading file:', normalizedPath);
+      const content = await readSourceFile(normalizedPath);
+      console.log('[WorkspacePanel] read ok, length:', content.length);
+      const note = addNote({ title: entry.name, content, sourceFilePath: normalizedPath });
       console.log('[WorkspacePanel] note added id:', note.id, 'setting pane', focusedPaneIndex);
-      setActiveNoteIndex(notes.length);
+      // Use getState() to get the up-to-date note count after the synchronous store update
+      const newIndex = useNoteStore.getState().notes.length - 1;
+      setActiveNoteIndex(newIndex);
       setPaneNoteId(focusedPaneIndex, note.id);
-      setSelectedPath(entry.path);
+      setSelectedPath(normalizedPath);
       setContextMenu(null);
     } catch (err) {
-      console.error('[WorkspacePanel] readTextFile failed for:', entry.path, err);
+      console.error('[WorkspacePanel] readTextFile failed for:', normalizedPath, err);
     }
   }
 

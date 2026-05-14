@@ -21,7 +21,8 @@
         "decorations": false,
         "shadow": true,
         "center": true,
-        "dragDropEnabled": true
+        "dragDropEnabled": true,
+        "devtools": true
       }
     ],
     "trayIcon": {
