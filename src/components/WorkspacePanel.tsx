@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { readDir, watch, UnwatchFn } from '@tauri-apps/plugin-fs';
+import { readDir, readTextFile, watch, UnwatchFn } from '@tauri-apps/plugin-fs';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useNoteStore } from '../stores/noteStore';
 import { useUiStore } from '../stores/uiStore';
-import { readSourceFile } from '../services/storageService';
 import { WorkspaceEntry } from '../types';
 
 // ─── Context menu ─────────────────────────────────────────────────────────────
@@ -70,47 +69,46 @@ function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMe
     }
   }
 
-  function toggle() {
-    if (!entry.isDirectory) {
+  const isRoot = entry.path === rootPath;
+
+  function handleClick() {
+    if (entry.isDirectory) {
+      const next = !expanded;
+      setExpanded(next);
+      if (next && !loaded) void loadChildren();
+    } else {
       onHighlight(entry.path);
-      return;
-    }
-    const next = !expanded;
-    setExpanded(next);
-    if (next && !loaded) {
-      void loadChildren();
     }
   }
 
-  const isRoot = entry.path === rootPath;
+  function handleDoubleClick() {
+    if (!entry.isDirectory) {
+      console.log('[WorkspacePanel] dblclick', entry.path);
+      onOpen(entry);
+    }
+  }
 
   return (
     <>
       <div
         className={`tree-item${selectedPath === entry.path ? ' selected' : ''}`}
         style={{ paddingLeft: 8 + depth * 14 }}
-        onClick={toggle}
-        onDoubleClick={() => {
-          console.log('[WorkspacePanel] dblclick', entry.path, 'isDir', entry.isDirectory);
-          if (!entry.isDirectory) onOpen(entry);
-        }}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => {
           e.preventDefault();
           onContextMenu(e, entry, isRoot);
         }}
       >
         {entry.isDirectory ? (
-          <span style={{ fontSize: 11, color: 'var(--subtle-text)' }}>
+          <span style={{ fontSize: 11, color: 'var(--subtle-text)', pointerEvents: 'none' }}>
             {expanded ? '▾' : '▸'}
           </span>
         ) : null}
-        <span onDoubleClick={(e) => { if (!entry.isDirectory) { e.stopPropagation(); onOpen(entry); } }}>
+        <span style={{ pointerEvents: 'none' }}>
           {entry.isDirectory ? '📁' : fileIcon(entry.name)}
         </span>
-        <span
-          className="tree-item-name"
-          onDoubleClick={(e) => { if (!entry.isDirectory) { e.stopPropagation(); onOpen(entry); } }}
-        >
+        <span className="tree-item-name" style={{ pointerEvents: 'none' }}>
           {entry.name}
         </span>
       </div>
@@ -137,7 +135,7 @@ function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMe
 export function WorkspacePanel() {
   const { settings, addWorkspaceFolder, removeWorkspaceFolder, setWorkspacePanelWidth } =
     useSettingsStore();
-  const { notes, addNote, setActiveNoteIndex } = useNoteStore();
+  const { notes } = useNoteStore();
   const { focusedPaneIndex } = useUiStore();
   const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
 
@@ -208,51 +206,31 @@ export function WorkspacePanel() {
     }
   }
 
-  async function openFileInPane(entry: WorkspaceEntry, _newTab: boolean) {
-    console.log('[WorkspacePanel] openFileInPane', entry.path, 'pane', focusedPaneIndex);
-
-    // Normalize path separators so the duplicate-check works on Windows
-    const normalizedPath = entry.path.replace(/\\/g, '/');
-
-    const currentNotes = useNoteStore.getState().notes;
-    const existing = currentNotes.find(
-      (n) => n.sourceFilePath?.replace(/\\/g, '/') === normalizedPath
-    );
-    if (existing) {
-      const idx = currentNotes.indexOf(existing);
-      console.log('[WorkspacePanel] switching to existing tab', idx);
-      setActiveNoteIndex(idx);
-      setPaneNoteId(focusedPaneIndex, existing.id);
-      setSelectedPath(normalizedPath);
-      setContextMenu(null);
-      return;
-    }
-
-    if (currentNotes.length >= 4) {
-      console.warn('[WorkspacePanel] max 4 notes reached, cannot open file');
-      return;
-    }
-
+  const handleFileOpen = async (filePath: string) => {
     try {
-      console.log('[WorkspacePanel] reading file:', normalizedPath);
-      const content = await readSourceFile(normalizedPath);
-      console.log('[WorkspacePanel] read ok, length:', content.length);
-      const note = addNote({ title: entry.name, content, sourceFilePath: normalizedPath });
-      console.log('[WorkspacePanel] note added id:', note.id, 'setting pane', focusedPaneIndex);
-      // Use getState() to get the up-to-date note count after the synchronous store update
-      const newIndex = useNoteStore.getState().notes.length - 1;
-      setActiveNoteIndex(newIndex);
-      setPaneNoteId(focusedPaneIndex, note.id);
-      setSelectedPath(normalizedPath);
-      setContextMenu(null);
+      console.log('Opening file:', filePath);
+      const content = await readTextFile(filePath);
+      console.log('Content read, length:', content.length);
+      const note = useNoteStore.getState().openWorkspaceFile(content, filePath);
+      if (note) {
+        setPaneNoteId(focusedPaneIndex, note.id);
+        setSelectedPath(filePath.replace(/\\/g, '/'));
+        setContextMenu(null);
+      } else {
+        console.warn('[WorkspacePanel] max 4 notes reached, cannot open file');
+      }
     } catch (err) {
-      console.error('[WorkspacePanel] readTextFile failed for:', normalizedPath, err);
+      console.error('Failed to read file:', err);
     }
+  };
+
+  function openFileInPane(entry: WorkspaceEntry, _newTab: boolean) {
+    void handleFileOpen(entry.path);
   }
 
   function handleSelect(entry: WorkspaceEntry) {
     if (!entry.isDirectory) {
-      openFileInPane(entry, false);
+      void handleFileOpen(entry.path);
     }
   }
 

@@ -1,15 +1,28 @@
 import { useSettingsStore } from '../stores/settingsStore';
 
+type AiAction = 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare';
+
 interface Props {
   paneIndex: number;
   disabled: boolean;
   selectedFormat: string;
   onFormatChange: (format: string) => void;
-  onAction: (action: 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare') => void;
+  onAction: (action: AiAction) => void;
 }
+
+const AI_ACTION_META: Record<string, { label: string; title: string }> = {
+  apply:      { label: 'Apply',       title: 'Format / Apply' },
+  fix:        { label: 'Fix',         title: 'Fix code' },
+  polish:     { label: 'Polish',      title: 'Polish writing' },
+  spellcheck: { label: 'Spell check', title: 'Fix spelling' },
+  rephrase:   { label: 'Rephrase',    title: 'Rephrase' },
+  suggest:    { label: 'Suggest',     title: 'Suggest improvements' },
+  compare:    { label: 'Compare',     title: 'Compare with another note' },
+};
 
 export function AIToolbar({ disabled, selectedFormat, onFormatChange, onAction }: Props) {
   const formatOptions = useSettingsStore((s) => s.settings.formatOptions);
+  const aiToolbarActions = useSettingsStore((s) => s.settings.aiToolbarActions);
 
   return (
     <div className="ai-toolbar">
@@ -27,27 +40,21 @@ export function AIToolbar({ disabled, selectedFormat, onFormatChange, onAction }
         ))}
       </select>
 
-      <button className="ai-btn" disabled={disabled} onClick={() => onAction('apply')} title="Format / Apply">
-        Apply
-      </button>
-      <button className="ai-btn" disabled={disabled} onClick={() => onAction('fix')} title="Fix code">
-        Fix
-      </button>
-      <button className="ai-btn" disabled={disabled} onClick={() => onAction('polish')} title="Polish writing">
-        Polish
-      </button>
-      <button className="ai-btn" disabled={disabled} onClick={() => onAction('spellcheck')} title="Fix spelling">
-        Spell check
-      </button>
-      <button className="ai-btn" disabled={disabled} onClick={() => onAction('rephrase')} title="Rephrase">
-        Rephrase
-      </button>
-      <button className="ai-btn" disabled={disabled} onClick={() => onAction('suggest')} title="Suggest improvements">
-        Suggest
-      </button>
-      <button className="ai-btn" disabled={disabled} onClick={() => onAction('compare')} title="Compare with another note">
-        Compare
-      </button>
+      {aiToolbarActions.map((key) => {
+        const meta = AI_ACTION_META[key];
+        if (!meta) return null;
+        return (
+          <button
+            key={key}
+            className="ai-btn"
+            disabled={disabled}
+            onClick={() => onAction(key as AiAction)}
+            title={meta.title}
+          >
+            {meta.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

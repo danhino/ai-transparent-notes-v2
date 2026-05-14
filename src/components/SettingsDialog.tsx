@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, CSSProperties } from 'react';
 import { appDataDir } from '@tauri-apps/api/path';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
-import { AiProvider, Theme, CLAUDE_MODELS, OPENAI_MODELS, DEFAULT_SETTINGS, DEFAULT_FORMAT_OPTIONS } from '../types';
+import {
+  AiProvider, Theme, CLAUDE_MODELS, OPENAI_MODELS,
+  DEFAULT_SETTINGS, DEFAULT_FORMAT_OPTIONS,
+} from '../types';
 
 const FONT_FAMILIES = [
   'Segoe UI', 'Consolas', 'Cascadia Code', 'Courier New', 'Georgia',
@@ -21,17 +24,34 @@ const THEMES: { value: Theme; label: string }[] = [
   { value: 'green', label: 'Green' },
 ];
 
+const ALL_AI_ACTIONS: { key: string; label: string }[] = [
+  { key: 'apply',      label: 'Apply' },
+  { key: 'fix',        label: 'Fix' },
+  { key: 'polish',     label: 'Polish' },
+  { key: 'spellcheck', label: 'Spell check' },
+  { key: 'rephrase',   label: 'Rephrase' },
+  { key: 'suggest',    label: 'Suggest' },
+  { key: 'compare',    label: 'Compare' },
+];
+
+const ALL_MAIN_ITEMS: { key: string; label: string }[] = [
+  { key: 'pin',       label: 'Always on top' },
+  { key: 'theme',     label: 'Theme' },
+  { key: 'font',      label: 'Font' },
+  { key: 'size',      label: 'Font size' },
+  { key: 'opacity',   label: 'Opacity' },
+  { key: 'layout',    label: 'Layout' },
+  { key: 'workspace', label: 'Workspace' },
+  { key: 'import',    label: 'Import' },
+  { key: 'focus',     label: 'Focus' },
+  { key: 'settings',  label: 'Settings' },
+];
+
 function isValidHex(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color);
 }
 
-interface ColorRowProps {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}
-
-function ColorRow({ label, value, onChange }: ColorRowProps) {
+function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const valid = isValidHex(value);
   return (
     <div className="settings-row">
@@ -44,10 +64,78 @@ function ColorRow({ label, value, onChange }: ColorRowProps) {
         placeholder="#rrggbb"
         style={{ width: 90 }}
       />
-      <div
-        className="color-preview"
-        style={{ background: valid ? value : 'transparent' }}
-      />
+      <div className="color-preview" style={{ background: valid ? value : 'transparent' }} />
+    </div>
+  );
+}
+
+function ReorderList({
+  items,
+  allItems,
+  labelMap,
+  onChange,
+}: {
+  items: string[];
+  allItems: { key: string; label: string }[];
+  labelMap: Map<string, string>;
+  onChange: (v: string[]) => void;
+}) {
+  const available = allItems.filter((a) => !items.includes(a.key));
+
+  function move(i: number, dir: -1 | 1) {
+    const list = [...items];
+    const target = i + dir;
+    if (target < 0 || target >= list.length) return;
+    [list[i], list[target]] = [list[target], list[i]];
+    onChange(list);
+  }
+
+  function remove(key: string) {
+    onChange(items.filter((k) => k !== key));
+  }
+
+  function add(key: string) {
+    if (!key) return;
+    onChange([...items, key]);
+  }
+
+  const btnStyle: CSSProperties = {
+    background: 'none', border: 'none', cursor: 'pointer',
+    color: 'var(--text-secondary)', fontSize: 12, padding: '0 3px', lineHeight: 1,
+  };
+  const removeBtnStyle: CSSProperties = {
+    background: 'none', border: 'none', cursor: 'pointer',
+    color: 'var(--danger)', fontSize: 14, padding: '0 3px', lineHeight: 1,
+  };
+
+  return (
+    <div>
+      <div className="format-list">
+        {items.map((key, i) => (
+          <div key={key} className="format-list-item" style={{ justifyContent: 'space-between' }}>
+            <span>{labelMap.get(key) ?? key}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <button style={btnStyle} disabled={i === 0} onClick={() => move(i, -1)} title="Move up">▲</button>
+              <button style={btnStyle} disabled={i === items.length - 1} onClick={() => move(i, 1)} title="Move down">▼</button>
+              <button style={removeBtnStyle} onClick={() => remove(key)} title="Remove">×</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {available.length > 0 && (
+        <div className="settings-row" style={{ marginTop: 8 }}>
+          <select
+            className="settings-select"
+            defaultValue=""
+            onChange={(e) => { add(e.target.value); e.target.value = ''; }}
+          >
+            <option value="" disabled>Add item...</option>
+            {available.map((a) => (
+              <option key={a.key} value={a.key}>{a.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -68,6 +156,12 @@ export function SettingsDialog() {
   const [changedColor, setChangedColor] = useState(settings.diffChangedColor);
   const [newFormat, setNewFormat] = useState('');
   const [localFormats, setLocalFormats] = useState<string[]>(settings.formatOptions);
+  const [localAiActions, setLocalAiActions] = useState<string[]>(
+    settings.aiToolbarActions ?? DEFAULT_SETTINGS.aiToolbarActions
+  );
+  const [localMainItems, setLocalMainItems] = useState<string[]>(
+    settings.mainToolbarItems ?? DEFAULT_SETTINGS.mainToolbarItems
+  );
   const [dataPath, setDataPath] = useState('');
 
   useEffect(() => {
@@ -75,6 +169,9 @@ export function SettingsDialog() {
   }, []);
 
   const models = localProvider === 'claude' ? CLAUDE_MODELS : OPENAI_MODELS;
+
+  const aiLabelMap = new Map(ALL_AI_ACTIONS.map((a) => [a.key, a.label]));
+  const mainLabelMap = new Map(ALL_MAIN_ITEMS.map((a) => [a.key, a.label]));
 
   function save() {
     setAiProvider(localProvider);
@@ -88,6 +185,8 @@ export function SettingsDialog() {
       diffDeletedColor: isValidHex(deletedColor) ? deletedColor : settings.diffDeletedColor,
       diffChangedColor: isValidHex(changedColor) ? changedColor : settings.diffChangedColor,
       formatOptions: localFormats,
+      aiToolbarActions: localAiActions,
+      mainToolbarItems: localMainItems,
     });
     setSettingsOpen(false);
   }
@@ -103,6 +202,8 @@ export function SettingsDialog() {
     setDeletedColor(DEFAULT_SETTINGS.diffDeletedColor);
     setChangedColor(DEFAULT_SETTINGS.diffChangedColor);
     setLocalFormats([...DEFAULT_FORMAT_OPTIONS]);
+    setLocalAiActions([...DEFAULT_SETTINGS.aiToolbarActions]);
+    setLocalMainItems([...DEFAULT_SETTINGS.mainToolbarItems]);
   }
 
   function addFormat() {
@@ -133,24 +234,13 @@ export function SettingsDialog() {
     }
   }
 
-  const reorderBtnStyle: React.CSSProperties = {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    color: 'var(--text-secondary)',
-    fontSize: 12,
-    padding: '0 3px',
-    lineHeight: 1,
+  const reorderBtnStyle: CSSProperties = {
+    background: 'none', border: 'none', cursor: 'pointer',
+    color: 'var(--text-secondary)', fontSize: 12, padding: '0 3px', lineHeight: 1,
   };
-
-  const removeBtnStyle: React.CSSProperties = {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    color: 'var(--danger)',
-    fontSize: 14,
-    padding: '0 3px',
-    lineHeight: 1,
+  const removeBtnStyle: CSSProperties = {
+    background: 'none', border: 'none', cursor: 'pointer',
+    color: 'var(--danger)', fontSize: 14, padding: '0 3px', lineHeight: 1,
   };
 
   return (
@@ -158,15 +248,14 @@ export function SettingsDialog() {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Settings</span>
-          <button className="modal-close" onClick={() => setSettingsOpen(false)}>
-            ×
-          </button>
+          <button className="modal-close" onClick={() => setSettingsOpen(false)}>×</button>
         </div>
 
         <div className="modal-body">
-          {/* AI provider */}
+
+          {/* AI Configuration */}
           <div className="settings-section">
-            <div className="settings-section-title">AI</div>
+            <div className="settings-section-title">AI configuration</div>
 
             <div className="settings-row">
               <span className="settings-label">Provider</span>
@@ -221,6 +310,11 @@ export function SettingsDialog() {
                 </button>
               </div>
             </div>
+            {localProvider === 'claude' && (
+              <div style={{ fontSize: 11, color: 'var(--subtle-text)', marginBottom: 4, paddingLeft: 130 }}>
+                Get your key at console.anthropic.com → API Keys
+              </div>
+            )}
           </div>
 
           {/* Appearance */}
@@ -268,37 +362,39 @@ export function SettingsDialog() {
             </div>
           </div>
 
+          {/* AI toolbar */}
+          <div className="settings-section">
+            <div className="settings-section-title">AI toolbar</div>
+            <ReorderList
+              items={localAiActions}
+              allItems={ALL_AI_ACTIONS}
+              labelMap={aiLabelMap}
+              onChange={setLocalAiActions}
+            />
+          </div>
+
+          {/* Main toolbar */}
+          <div className="settings-section">
+            <div className="settings-section-title">Main toolbar</div>
+            <ReorderList
+              items={localMainItems}
+              allItems={ALL_MAIN_ITEMS}
+              labelMap={mainLabelMap}
+              onChange={setLocalMainItems}
+            />
+          </div>
+
           {/* Format options */}
           <div className="settings-section">
-            <div className="settings-section-title">Editor formats</div>
+            <div className="settings-section-title">Format options</div>
             <div className="format-list">
               {localFormats.map((f, i) => (
                 <div key={f} className="format-list-item" style={{ justifyContent: 'space-between' }}>
                   <span>{f}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <button
-                      style={reorderBtnStyle}
-                      disabled={i === 0}
-                      onClick={() => moveFormat(i, -1)}
-                      title="Move up"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      style={reorderBtnStyle}
-                      disabled={i === localFormats.length - 1}
-                      onClick={() => moveFormat(i, 1)}
-                      title="Move down"
-                    >
-                      ▼
-                    </button>
-                    <button
-                      style={removeBtnStyle}
-                      onClick={() => removeFormat(f)}
-                      title="Remove"
-                    >
-                      ×
-                    </button>
+                    <button style={reorderBtnStyle} disabled={i === 0} onClick={() => moveFormat(i, -1)} title="Move up">▲</button>
+                    <button style={reorderBtnStyle} disabled={i === localFormats.length - 1} onClick={() => moveFormat(i, 1)} title="Move down">▼</button>
+                    <button style={removeBtnStyle} onClick={() => removeFormat(f)} title="Remove">×</button>
                   </div>
                 </div>
               ))}
@@ -311,23 +407,21 @@ export function SettingsDialog() {
                 placeholder="Add format..."
                 onKeyDown={(e) => e.key === 'Enter' && addFormat()}
               />
-              <button className="settings-btn" onClick={addFormat}>
-                Add
-              </button>
+              <button className="settings-btn" onClick={addFormat}>Add</button>
             </div>
           </div>
 
-          {/* Diff colors */}
+          {/* Comparison colors */}
           <div className="settings-section">
-            <div className="settings-section-title">Compare / diff colors</div>
-            <ColorRow label="Added" value={addedColor} onChange={setAddedColor} />
-            <ColorRow label="Deleted" value={deletedColor} onChange={setDeletedColor} />
-            <ColorRow label="Changed" value={changedColor} onChange={setChangedColor} />
+            <div className="settings-section-title">Comparison colors</div>
+            <ColorRow label="Added lines" value={addedColor} onChange={setAddedColor} />
+            <ColorRow label="Deleted lines" value={deletedColor} onChange={setDeletedColor} />
+            <ColorRow label="Changed lines" value={changedColor} onChange={setChangedColor} />
           </div>
 
-          {/* Data folder */}
+          {/* Storage */}
           <div className="settings-section">
-            <div className="settings-section-title">Data</div>
+            <div className="settings-section-title">Storage</div>
             <div className="settings-row" style={{ alignItems: 'flex-start', gap: 8 }}>
               <span
                 className="settings-label"
@@ -335,23 +429,30 @@ export function SettingsDialog() {
               >
                 {dataPath || 'Resolving...'}
               </span>
-              <button className="settings-btn" onClick={openDataFolder}>
-                Open
-              </button>
+              <button className="settings-btn" onClick={openDataFolder}>Open</button>
             </div>
           </div>
+
+          {/* About */}
+          <div className="settings-section">
+            <div className="settings-section-title">About</div>
+            <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>AI Transparent Notes v2</div>
+              <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
+                A modern cross-platform notes app with AI assistance
+              </div>
+              <div style={{ color: 'var(--subtle-text)', fontSize: 11 }}>Version 0.1.0</div>
+            </div>
+          </div>
+
         </div>
 
         <div className="modal-footer">
           <button className="settings-btn" onClick={resetToDefaults} style={{ marginRight: 'auto' }}>
             Reset to defaults
           </button>
-          <button className="settings-btn" onClick={() => setSettingsOpen(false)}>
-            Cancel
-          </button>
-          <button className="settings-btn primary" onClick={save}>
-            Save
-          </button>
+          <button className="settings-btn" onClick={() => setSettingsOpen(false)}>Cancel</button>
+          <button className="settings-btn primary" onClick={save}>Save</button>
         </div>
       </div>
     </div>

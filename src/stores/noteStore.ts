@@ -24,6 +24,7 @@ interface NoteStore {
   markSaved: (id: string) => void;
   getNote: (id: string) => Note | undefined;
   getActiveNote: () => Note | null;
+  openWorkspaceFile: (content: string, sourceFilePath: string) => Note | null;
 }
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
@@ -79,5 +80,22 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   getActiveNote: () => {
     const { notes, activeNoteIndex } = get();
     return notes[activeNoteIndex] ?? null;
+  },
+
+  openWorkspaceFile: (content, sourceFilePath) => {
+    const normalized = sourceFilePath.replace(/\\/g, '/');
+    const { notes } = get();
+    const existing = notes.find((n) => n.sourceFilePath?.replace(/\\/g, '/') === normalized);
+    if (existing) {
+      const idx = notes.indexOf(existing);
+      set({ activeNoteIndex: idx });
+      return existing;
+    }
+    if (notes.length >= 4) return null;
+    const parts = normalized.split('/');
+    const title = parts[parts.length - 1];
+    const note = makeNote({ title, content, sourceFilePath: normalized });
+    set((s) => ({ notes: [...s.notes, note], activeNoteIndex: s.notes.length }));
+    return note;
   },
 }));

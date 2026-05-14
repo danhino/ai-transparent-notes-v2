@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -22,9 +22,6 @@ const LAYOUTS: { value: Layout; label: string }[] = [
   { value: 'grid', label: '2x2 grid' },
 ];
 
-const FONTS = ['Segoe UI', 'Inter', 'Arial', 'Georgia', 'Verdana', 'Cascadia Code'];
-const FONT_SIZES = [11, 12, 13, 14, 15, 16, 18, 20];
-
 export function Toolbar() {
   const {
     settings,
@@ -41,12 +38,10 @@ export function Toolbar() {
   const { addNote, setActiveNoteIndex, notes } = useNoteStore();
   const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
 
-  // Sync always-on-top with window
   useEffect(() => {
     void getCurrentWindow().setAlwaysOnTop(settings.alwaysOnTop);
   }, [settings.alwaysOnTop]);
 
-  // Apply opacity as CSS on the root (visual effect; native window transparency requires Rust)
   useEffect(() => {
     document.documentElement.style.opacity = String(settings.windowOpacity);
   }, [settings.windowOpacity]);
@@ -61,137 +56,152 @@ export function Toolbar() {
     const parts = path.replace(/\\/g, '/').split('/');
     const name = parts[parts.length - 1];
     const note = addNote({ title: name, content, sourceFilePath: path });
-    const newIndex = notes.length; // length before add
+    const newIndex = notes.length;
     setActiveNoteIndex(newIndex);
     if (!settings.paneNoteIds[0]) {
       setPaneNoteId(0, note.id);
     }
   }
 
-  function togglePin() {
-    setAlwaysOnTop(!settings.alwaysOnTop);
-  }
+  const items = settings.mainToolbarItems ?? [
+    'pin', 'theme', 'font', 'size', 'opacity', 'layout', 'workspace', 'import', 'focus', 'settings',
+  ];
 
-  return (
-    <div className="toolbar">
-      {/* Pin */}
-      <button
-        className={`toolbar-btn${settings.alwaysOnTop ? ' active' : ''}`}
-        onClick={togglePin}
-        title="Always on top"
-      >
-        {settings.alwaysOnTop ? '📌' : '📍'}
-      </button>
+  const renderedItems = items.map((key, i) => {
+    switch (key) {
+      case 'pin':
+        return (
+          <button
+            key={`pin-${i}`}
+            className={`toolbar-btn${settings.alwaysOnTop ? ' active' : ''}`}
+            onClick={() => setAlwaysOnTop(!settings.alwaysOnTop)}
+            title="Always on top"
+          >
+            {settings.alwaysOnTop ? '📌' : '📍'}
+          </button>
+        );
+      case 'theme':
+        return (
+          <select
+            key={`theme-${i}`}
+            className="toolbar-select"
+            value={settings.theme}
+            onChange={(e) => setTheme(e.target.value as Theme)}
+            title="Theme"
+          >
+            {THEMES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        );
+      case 'font':
+        return (
+          <select
+            key={`font-${i}`}
+            className="toolbar-select"
+            value={settings.fontFamily}
+            onChange={(e) => setFontFamily(e.target.value)}
+            title="Font"
+          >
+            {['Segoe UI', 'Consolas', 'Cascadia Code', 'Courier New', 'Georgia',
+              'Times New Roman', 'Calibri', 'Arial', 'Verdana', 'Tahoma',
+              'Trebuchet MS', 'Comic Sans MS'].map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+        );
+      case 'size':
+        return (
+          <select
+            key={`size-${i}`}
+            className="toolbar-select"
+            value={settings.fontSize}
+            onChange={(e) => setFontSize(Number(e.target.value))}
+            title="Font size"
+            style={{ width: 54 }}
+          >
+            {[10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 28, 32].map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        );
+      case 'opacity':
+        return (
+          <span key={`opacity-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+              {Math.round(settings.windowOpacity * 100)}%
+            </span>
+            <input
+              type="range"
+              className="opacity-slider"
+              min={0.2}
+              max={1}
+              step={0.05}
+              value={settings.windowOpacity}
+              onChange={(e) => setWindowOpacity(Number(e.target.value))}
+              title="Opacity"
+            />
+          </span>
+        );
+      case 'layout':
+        return (
+          <select
+            key={`layout-${i}`}
+            className="toolbar-select"
+            value={settings.layout}
+            onChange={(e) => setLayout(e.target.value as Layout)}
+            title="Layout"
+          >
+            {LAYOUTS.map((l) => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
+        );
+      case 'workspace':
+        return (
+          <button
+            key={`workspace-${i}`}
+            className={`toolbar-btn${settings.workspacePanelVisible ? ' active' : ''}`}
+            onClick={() => setWorkspacePanelVisible(!settings.workspacePanelVisible)}
+            title="Workspace files"
+          >
+            Files
+          </button>
+        );
+      case 'import':
+        return (
+          <button key={`import-${i}`} className="toolbar-btn" onClick={handleImport} title="Import file">
+            Import
+          </button>
+        );
+      case 'focus':
+        return (
+          <button
+            key={`focus-${i}`}
+            className={`toolbar-btn${focusMode ? ' active' : ''}`}
+            onClick={() => setFocusMode(!focusMode)}
+            title="Focus mode"
+          >
+            Focus
+          </button>
+        );
+      case 'settings':
+        return (
+          <button key={`settings-${i}`} className="toolbar-btn" onClick={() => setSettingsOpen(true)} title="Settings">
+            Settings
+          </button>
+        );
+      default:
+        return null;
+    }
+  });
 
-      <div className="toolbar-sep" />
+  // Insert separators between groups of items
+  const withSeps: ReactNode[] = [];
+  renderedItems.forEach((item, i) => {
+    if (i > 0) withSeps.push(<div key={`sep-${i}`} className="toolbar-sep" />);
+    withSeps.push(item);
+  });
 
-      {/* Theme */}
-      <select
-        className="toolbar-select"
-        value={settings.theme}
-        onChange={(e) => setTheme(e.target.value as Theme)}
-        title="Theme"
-      >
-        {THEMES.map((t) => (
-          <option key={t.value} value={t.value}>
-            {t.label}
-          </option>
-        ))}
-      </select>
-
-      {/* Font family */}
-      <select
-        className="toolbar-select"
-        value={settings.fontFamily}
-        onChange={(e) => setFontFamily(e.target.value)}
-        title="Font"
-      >
-        {FONTS.map((f) => (
-          <option key={f} value={f}>
-            {f}
-          </option>
-        ))}
-      </select>
-
-      {/* Font size */}
-      <select
-        className="toolbar-select"
-        value={settings.fontSize}
-        onChange={(e) => setFontSize(Number(e.target.value))}
-        title="Font size"
-        style={{ width: 54 }}
-      >
-        {FONT_SIZES.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </select>
-
-      <div className="toolbar-sep" />
-
-      {/* Opacity */}
-      <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-        {Math.round(settings.windowOpacity * 100)}%
-      </span>
-      <input
-        type="range"
-        className="opacity-slider"
-        min={0.2}
-        max={1}
-        step={0.05}
-        value={settings.windowOpacity}
-        onChange={(e) => setWindowOpacity(Number(e.target.value))}
-        title="Opacity"
-      />
-
-      <div className="toolbar-sep" />
-
-      {/* Layout */}
-      <select
-        className="toolbar-select"
-        value={settings.layout}
-        onChange={(e) => setLayout(e.target.value as Layout)}
-        title="Layout"
-      >
-        {LAYOUTS.map((l) => (
-          <option key={l.value} value={l.value}>
-            {l.label}
-          </option>
-        ))}
-      </select>
-
-      <div className="toolbar-sep" />
-
-      {/* Files toggle */}
-      <button
-        className={`toolbar-btn${settings.workspacePanelVisible ? ' active' : ''}`}
-        onClick={() => setWorkspacePanelVisible(!settings.workspacePanelVisible)}
-        title="Workspace files"
-      >
-        Files
-      </button>
-
-      {/* Import */}
-      <button className="toolbar-btn" onClick={handleImport} title="Import file">
-        Import
-      </button>
-
-      <div className="toolbar-sep" />
-
-      {/* Focus mode */}
-      <button
-        className={`toolbar-btn${focusMode ? ' active' : ''}`}
-        onClick={() => setFocusMode(!focusMode)}
-        title="Focus mode"
-      >
-        Focus
-      </button>
-
-      {/* Settings */}
-      <button className="toolbar-btn" onClick={() => setSettingsOpen(true)} title="Settings">
-        Settings
-      </button>
-    </div>
-  );
+  return <div className="toolbar">{withSeps}</div>;
 }

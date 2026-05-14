@@ -19,6 +19,8 @@ interface SettingsStore {
   removeWorkspaceFolder: (path: string) => void;
   setWorkspacePanelVisible: (v: boolean) => void;
   setWorkspacePanelWidth: (v: number) => void;
+  setAiToolbarActions: (v: string[]) => void;
+  setMainToolbarItems: (v: string[]) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -86,4 +88,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 
   setWorkspacePanelWidth: (workspacePanelWidth) =>
     set((s) => ({ settings: { ...s.settings, workspacePanelWidth } })),
+
+  setAiToolbarActions: (aiToolbarActions) =>
+    set((s) => ({ settings: { ...s.settings, aiToolbarActions } })),
+
+  setMainToolbarItems: (mainToolbarItems) =>
+    set((s) => ({ settings: { ...s.settings, mainToolbarItems } })),
 }));

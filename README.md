@@ -38,14 +38,15 @@ Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green.
 
 ### Window controls
 - Frameless window with custom titlebar (Windows/Linux: custom min/max/close; macOS: native traffic lights space)
+- Resizable window with minimum size 600x400
 - Always on top toggle
 - Opacity slider (0.2 to 1.0)
-- Focus mode: hides titlebar, toolbar, and tab bar for distraction-free writing
+- Focus mode: hides all UI except editor content for distraction-free writing
 - System tray with Show/Hide, New note, Exit
 
 ### Focus mode
 
-Focus mode hides the titlebar, toolbar, and tab bar. To exit:
+Focus mode hides all chrome: titlebar, toolbar, tab bar, workspace panel, per-pane headers, AI toolbars, and status bars. Only the CodeMirror editor fills the window. To exit:
 
 - Click the **Exit focus** pill button in the top-right corner (appears semi-transparent, fully visible on hover)
 - Press **Escape**
@@ -54,11 +55,14 @@ Focus mode hides the titlebar, toolbar, and tab bar. To exit:
 The Focus button in the toolbar shows an active/highlighted state while focus mode is on. Focus mode state is persisted to settings so it restores on next launch.
 
 ### Settings
-- AI section: provider (Claude or OpenAI), model, and API key with show/hide toggle
-- Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size
-- Editor formats: configurable list with add, remove, and reorder; defaults match the original WPF app
-- Compare/diff colors: hex inputs with live color swatch preview for added, deleted, and changed lines
-- Data: app data folder path with Open button to reveal in file manager
+- AI configuration: provider (Claude or OpenAI), model filtered by provider, API key with show/hide toggle, helper link to API keys page
+- Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size (14 sizes)
+- AI toolbar: reorderable list of per-pane AI action buttons with up, down, remove, and add
+- Main toolbar: reorderable list of toolbar items with up, down, remove, and add
+- Format options: reorderable list with add, remove, and reorder; defaults match the original WPF app
+- Comparison colors: hex inputs with live color swatch preview for added, deleted, and changed lines
+- Storage: app data folder path with Open button to reveal in file manager
+- About: app name, description, version
 - Reset to defaults button restores all settings to original values
 
 ## Tech stack

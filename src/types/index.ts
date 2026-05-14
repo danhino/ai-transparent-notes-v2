@@ -52,6 +52,8 @@ export interface AppSettings {
   workspacePanelWidth: number;
   workspaceFolders: string[];
   focusMode: boolean;
+  aiToolbarActions: string[];
+  mainToolbarItems: string[];
 }
 
 export interface WorkspaceEntry {
@@ -116,4 +118,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   workspacePanelWidth: 220,
   workspaceFolders: [],
   focusMode: false,
+  aiToolbarActions: ['apply', 'fix', 'polish', 'spellcheck', 'rephrase', 'suggest', 'compare'],
+  mainToolbarItems: ['pin', 'theme', 'font', 'size', 'opacity', 'layout', 'workspace', 'import', 'focus', 'settings'],
 };

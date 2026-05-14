@@ -911,7 +911,12 @@ input {
 /* ─── Focus mode ─── */
 .app.focus-mode .titlebar,
 .app.focus-mode .toolbar,
-.app.focus-mode .tabbar {
+.app.focus-mode .tabbar,
+.app.focus-mode .workspace-panel,
+.app.focus-mode .pane-header,
+.app.focus-mode .ai-toolbar,
+.app.focus-mode .diff-banner,
+.app.focus-mode .status-bar {
   display: none;
 }
 
