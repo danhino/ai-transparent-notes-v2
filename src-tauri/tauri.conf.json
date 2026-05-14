@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ai-transparent-notes-v2",
+  "productName": "AI Transparent Notes",
   "version": "0.1.0",
-  "identifier": "com.danhi.ai-transparent-notes-v2",
+  "identifier": "com.danhi.ai-transparent-notes",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,11 +12,21 @@
   "app": {
     "windows": [
       {
-        "title": "ai-transparent-notes-v2",
-        "width": 800,
-        "height": 600
+        "label": "main",
+        "title": "AI Transparent Notes",
+        "width": 960,
+        "height": 640,
+        "minWidth": 600,
+        "minHeight": 400,
+        "decorations": false,
+        "shadow": true,
+        "center": true
       }
     ],
+    "trayIcon": {
+      "iconPath": "icons/32x32.png",
+      "iconAsTemplate": false
+    },
     "security": {
       "csp": null
     }
