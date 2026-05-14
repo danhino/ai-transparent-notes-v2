@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "PowerShell(*)",
+      "cmd(*)",
+      "WebFetch(https://raw.githubusercontent.com/*)",
+      "WebFetch(https://github.com/*)",
+      "WebFetch(https://api.anthropic.com/*)"
+    ]
+  }
+}
