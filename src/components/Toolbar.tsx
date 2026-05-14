@@ -42,6 +42,11 @@ export function Toolbar() {
     void getCurrentWindow().setAlwaysOnTop(settings.alwaysOnTop);
   }, [settings.alwaysOnTop]);
 
+  // Set native window background transparent once so CSS opacity shows desktop through
+  useEffect(() => {
+    void getCurrentWindow().setBackgroundColor('#00000000');
+  }, []);
+
   useEffect(() => {
     document.documentElement.style.opacity = String(settings.windowOpacity);
   }, [settings.windowOpacity]);
@@ -138,6 +143,7 @@ export function Toolbar() {
               max={1}
               step={0.05}
               value={settings.windowOpacity}
+              onInput={(e) => setWindowOpacity(Number((e.target as HTMLInputElement).value))}
               onChange={(e) => setWindowOpacity(Number(e.target.value))}
               title="Opacity"
             />

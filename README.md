@@ -5,7 +5,7 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 ## Features
 
 ### Notes and tabs
-- Up to 4 note tabs, renameable by double-click on the tab label
+- Up to 8 note tabs, renameable by double-click on the tab label
 - Per-pane rename button (pencil icon) next to the note selector for inline rename
 - Per-pane export button (↓ icon) with options: export as .txt, .md, or current format extension
 - Saved/Unsaved indicator in the pane header, right-aligned: green "Saved" or amber "Unsaved"
@@ -24,7 +24,7 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 - Actions: Fix, Polish, Rephrase, Spell check, Suggest, Apply (format), Auto-detect (Code), Compare
 - "Auto-detect (Code)" is both a configurable toolbar button and a format option; it detects the language, formats the code, and shows "Detected: [Language]" in the status bar
 - Actions work on selected text or the full note
-- After every AI action: diff is computed (LCS line-level), changes highlighted inline in green and yellow, Accept/Revert banner shown with 30-second auto-accept countdown
+- After every AI action: diff is computed (LCS line-level), added/changed lines highlighted green and removed lines shown red inline, Accept/Revert banner shown with 30-second auto-accept countdown
 - Typing in the editor implicitly accepts the diff
 - Changing the format selection resets the detected language label
 - AI errors shown as a red banner above the status bar in the affected pane; auto-dismisses after 8 seconds or on click
@@ -47,7 +47,7 @@ Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green.
 - Frameless window with custom titlebar (Windows/Linux: custom min/max/close; macOS: native traffic lights space)
 - Resizable window with minimum size 600x400
 - Always on top toggle
-- Opacity slider (0.2 to 1.0)
+- Opacity slider (20% to 100%) — uses native window transparency via Tauri's transparent window mode
 - Focus mode: hides all UI except editor content for distraction-free writing
 - System tray with Show/Hide, New note, Exit
 

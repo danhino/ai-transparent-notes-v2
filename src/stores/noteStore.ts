@@ -91,7 +91,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       set({ activeNoteIndex: idx });
       return existing;
     }
-    if (notes.length >= 4) return null;
+    if (notes.length >= 8) return null;
     const parts = normalized.split('/');
     const title = parts[parts.length - 1];
     const note = makeNote({ title, content, sourceFilePath: normalized });

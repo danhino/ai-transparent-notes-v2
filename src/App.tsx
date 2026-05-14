@@ -56,7 +56,7 @@ export default function App() {
     const p = listen('tray-new-note', () => {
       const { notes: n } = useNoteStore.getState();
       const { settings: s } = useSettingsStore.getState();
-      if (n.length >= 4) return;
+      if (n.length >= 8) return;
       const note = addNote();
       setActiveNoteIndex(n.length);
       const emptyPane = s.paneNoteIds.findIndex((id) => !id);

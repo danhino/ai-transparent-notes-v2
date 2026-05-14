@@ -20,6 +20,7 @@
         "minHeight": 400,
         "resizable": true,
         "decorations": false,
+        "transparent": true,
         "shadow": true,
         "center": true,
         "dragDropEnabled": true,

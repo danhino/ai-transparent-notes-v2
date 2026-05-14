@@ -8,23 +8,17 @@ interface Props {
 
 export function DiffBanner({ diff, onAccept, onRevert }: Props) {
   const { diffBlocks, countdown } = diff;
-  const added = diffBlocks.filter((b) => b.type === 'added' || b.type === 'changed').length;
-  const deleted = diffBlocks.filter((b) => b.type === 'deleted' || b.type === 'changed').length;
+  const changeCount = diffBlocks.filter((b) => b.type !== 'equal').length;
 
   return (
     <div className="diff-banner">
-      <span style={{ color: 'var(--success)' }}>+{added}</span>
-      <span style={{ color: 'var(--danger)' }}>-{deleted}</span>
-      <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
-        AI changes applied
+      <span className="diff-banner-text">
+        AI made {changeCount} change{changeCount !== 1 ? 's' : ''} &middot; Auto-accepting in {countdown}s...
       </span>
-      <button className="diff-accept" onClick={onAccept}>
-        Accept
-      </button>
-      <button className="diff-revert" onClick={onRevert}>
-        Revert
-      </button>
-      <span className="diff-countdown">Auto-accept in {countdown}s</span>
+      <div className="diff-banner-actions">
+        <button className="diff-revert" onClick={onRevert}>Revert</button>
+        <button className="diff-accept" onClick={onAccept}>Accept all</button>
+      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import {
   forwardRef,
   useCallback,
 } from 'react';
-import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers, highlightActiveLine, WidgetType } from '@codemirror/view';
 import { EditorState, StateField, StateEffect, Extension } from '@codemirror/state';
 import { Decoration, DecorationSet } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
@@ -18,9 +18,50 @@ import { cpp } from '@codemirror/lang-cpp';
 import { java } from '@codemirror/lang-java';
 import { DiffBlock } from '../types';
 
+// ─── Deleted-line widget (shows removed lines inline with red background) ────
+
+class DeletedLinesWidget extends WidgetType {
+  constructor(
+    private readonly lines: string[],
+    private readonly color: string,
+  ) { super(); }
+
+  toDOM(): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = [
+      `background: ${this.color}`,
+      'padding: 0 12px',
+      'font-family: inherit',
+      'font-size: inherit',
+      'line-height: inherit',
+      'white-space: pre-wrap',
+      'border-left: 2px solid rgba(220,60,60,0.55)',
+      'pointer-events: none',
+      'user-select: none',
+    ].join(';');
+    wrap.textContent = this.lines.join('\n');
+    return wrap;
+  }
+
+  eq(other: DeletedLinesWidget): boolean {
+    return this.color === other.color && this.lines.join('\n') === other.lines.join('\n');
+  }
+
+  get estimatedHeight(): number {
+    return this.lines.length * 20;
+  }
+
+  ignoreEvent(): boolean { return true; }
+}
+
 // ─── Diff decoration state ───────────────────────────────────────────────────
 
-const setDiffEffect = StateEffect.define<{ postText: string; blocks: DiffBlock[]; addedColor: string; changedColor: string } | null>();
+const setDiffEffect = StateEffect.define<{
+  postText: string;
+  blocks: DiffBlock[];
+  addedColor: string;
+  deletedColor: string;
+} | null>();
 
 const diffDecorationField = StateField.define<DecorationSet>({
   create() {
@@ -30,29 +71,45 @@ const diffDecorationField = StateField.define<DecorationSet>({
     for (const effect of tr.effects) {
       if (effect.is(setDiffEffect)) {
         if (!effect.value) return Decoration.none;
-        const { blocks, addedColor, changedColor } = effect.value;
-        const marks: { from: number; to: number; deco: Decoration }[] = [];
+        const { blocks, addedColor, deletedColor } = effect.value;
+        const marks: { from: number; deco: Decoration }[] = [];
         const doc = tr.state.doc;
 
         for (const block of blocks) {
-          if (block.type === 'equal' || block.type === 'deleted') continue;
-          const color = block.type === 'added' ? addedColor : changedColor;
-          // startB is the line index in the post text
-          const lineStart = block.startB;
-          const lineCount = block.linesB.length;
-          for (let l = 0; l < lineCount; l++) {
-            const lineNo = lineStart + l + 1; // 1-indexed
-            if (lineNo < 1 || lineNo > doc.lines) continue;
-            const line = doc.line(lineNo);
+          if (block.type === 'equal') continue;
+
+          // Green highlight on added/changed lines in the post text
+          if (block.type === 'added' || block.type === 'changed') {
+            for (let l = 0; l < block.linesB.length; l++) {
+              const lineNo = block.startB + l + 1; // 1-indexed
+              if (lineNo < 1 || lineNo > doc.lines) continue;
+              const line = doc.line(lineNo);
+              marks.push({
+                from: line.from,
+                deco: Decoration.line({ attributes: { style: `background: ${addedColor}` } }),
+              });
+            }
+          }
+
+          // Red widget showing removed lines before their insertion point
+          if ((block.type === 'deleted' || block.type === 'changed') && block.linesA.length > 0) {
+            const insertLineNo = block.startB + 1; // 1-indexed line before which to insert
+            const insertPos = insertLineNo <= doc.lines
+              ? doc.line(insertLineNo).from
+              : doc.length;
             marks.push({
-              from: line.from,
-              to: line.from,
-              deco: Decoration.line({ attributes: { style: `background: ${color}` } }),
+              from: insertPos,
+              deco: Decoration.widget({
+                widget: new DeletedLinesWidget(block.linesA, deletedColor),
+                side: -1,
+                block: true,
+              }),
             });
           }
         }
+
         marks.sort((a, b) => a.from - b.from);
-        return Decoration.set(marks.map((m) => m.deco.range(m.from, m.to)));
+        return Decoration.set(marks.map((m) => m.deco.range(m.from, m.from)), true);
       }
     }
     return decs.map(tr.changes);
@@ -108,7 +165,7 @@ export interface NoteEditorRef {
   getSelection: () => string;
   hasSelection: () => boolean;
   applyText: (text: string) => void;
-  applyDiff: (postText: string, blocks: DiffBlock[], addedColor: string, changedColor: string) => void;
+  applyDiff: (postText: string, blocks: DiffBlock[], addedColor: string, deletedColor: string) => void;
   clearDiff: () => void;
   getLineNumber: () => number;
 }
@@ -250,13 +307,12 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
       });
     },
 
-    applyDiff: (postText, blocks, addedColor, changedColor) => {
+    applyDiff: (postText, blocks, addedColor, deletedColor) => {
       const view = viewRef.current;
       if (!view) return;
-      // First apply post text
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: postText },
-        effects: setDiffEffect.of({ postText, blocks, addedColor, changedColor }),
+        effects: setDiffEffect.of({ postText, blocks, addedColor, deletedColor }),
       });
     },
 

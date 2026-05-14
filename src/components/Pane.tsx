@@ -14,6 +14,8 @@ import { writeSourceFile } from '../services/storageService';
 
 const SAVE_DEBOUNCE_MS = 400;
 const DIFF_SECONDS = 30;
+const DIFF_ADDED_COLOR = 'rgba(40,200,100,0.25)';
+const DIFF_DELETED_COLOR = 'rgba(220,60,60,0.3)';
 
 const FORMAT_EXT: Record<string, string> = {
   'Markdown': '.md',
@@ -205,7 +207,7 @@ export function Pane({ paneIndex }: Props) {
       ? view.getText().replace(original, result)
       : result;
     const blocks = computeLineDiff(pre, post);
-    view.applyDiff(post, blocks, settings.diffAddedColor, settings.diffChangedColor);
+    view.applyDiff(post, blocks, DIFF_ADDED_COLOR, DIFF_DELETED_COLOR);
     updateNote(note.id, { content: post });
     setPaneDiff(paneIndex, {
       preSnapshot: pre,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNoteStore } from '../stores/noteStore';
 import { useSettingsStore } from '../stores/settingsStore';
 
-const MAX_TABS = 4;
+const MAX_TABS = 8;
 
 export function TabBar() {
   const { notes, activeNoteIndex, unsavedIds, addNote, removeNote, updateNote, setActiveNoteIndex } =
