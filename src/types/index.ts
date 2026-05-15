@@ -20,13 +20,6 @@ export interface DiffBlock {
   startB: number;
 }
 
-export interface PaneDiffState {
-  preSnapshot: string;
-  postSnapshot: string;
-  diffBlocks: DiffBlock[];
-  countdown: number;
-}
-
 export interface AppSettings {
   theme: Theme;
   fontFamily: string;
@@ -54,6 +47,8 @@ export interface AppSettings {
   focusMode: boolean;
   aiToolbarActions: string[];
   mainToolbarItems: string[];
+  paneLineNumbers: boolean[];
+  showLineNumbersByDefault: boolean;
 }
 
 export interface WorkspaceEntry {
@@ -92,6 +87,7 @@ export const DEFAULT_FORMAT_OPTIONS = [
   'PowerShell',
   'Bash',
   'JSON',
+  'HTML Viewer',
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -121,4 +117,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   focusMode: false,
   aiToolbarActions: ['apply', 'autodetect', 'fix', 'spellcheck', 'rephrase', 'compare', 'suggest', 'polish'],
   mainToolbarItems: ['pin', 'theme', 'font', 'size', 'opacity', 'layout', 'workspace', 'import', 'focus', 'settings'],
+  paneLineNumbers: [true, true, true, true],
+  showLineNumbersByDefault: true,
 };

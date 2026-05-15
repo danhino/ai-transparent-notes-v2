@@ -150,7 +150,7 @@ function ReorderList({
 }
 
 export function SettingsDialog() {
-  const { settings, update, setAiProvider, setAiModel } = useSettingsStore();
+  const { settings, update, setAiProvider, setAiModel, setShowLineNumbersByDefault } = useSettingsStore();
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
   const [localKey, setLocalKey] = useState(settings.aiApiKey);
@@ -164,6 +164,9 @@ export function SettingsDialog() {
   const [deletedColor, setDeletedColor] = useState(settings.diffDeletedColor);
   const [changedColor, setChangedColor] = useState(settings.diffChangedColor);
   const [newFormat, setNewFormat] = useState('');
+  const [localLineNumbers, setLocalLineNumbers] = useState<boolean>(
+    settings.showLineNumbersByDefault ?? true
+  );
   const [localFormats, setLocalFormats] = useState<string[]>(settings.formatOptions);
   const [localAiActions, setLocalAiActions] = useState<string[]>(
     settings.aiToolbarActions ?? DEFAULT_SETTINGS.aiToolbarActions
@@ -187,6 +190,7 @@ export function SettingsDialog() {
   function save() {
     setAiProvider(localProvider);
     setAiModel(localModel);
+    setShowLineNumbersByDefault(localLineNumbers);
     update({
       theme: localTheme,
       fontFamily: localFontFamily,
@@ -198,6 +202,7 @@ export function SettingsDialog() {
       formatOptions: localFormats,
       aiToolbarActions: localAiActions,
       mainToolbarItems: localMainItems,
+      showLineNumbersByDefault: localLineNumbers,
     });
     setSettingsOpen(false);
   }
@@ -215,6 +220,7 @@ export function SettingsDialog() {
     setLocalFormats([...DEFAULT_FORMAT_OPTIONS]);
     setLocalAiActions([...DEFAULT_SETTINGS.aiToolbarActions]);
     setLocalMainItems([...DEFAULT_SETTINGS.mainToolbarItems]);
+    setLocalLineNumbers(DEFAULT_SETTINGS.showLineNumbersByDefault);
   }
 
   function addFormat() {
@@ -383,6 +389,19 @@ export function SettingsDialog() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="settings-row">
+              <span className="settings-label">Line numbers</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={localLineNumbers}
+                  onChange={(e) => setLocalLineNumbers(e.target.checked)}
+                  style={{ accentColor: 'var(--accent)', width: 14, height: 14 }}
+                />
+                Show line numbers by default
+              </label>
             </div>
           </div>
 

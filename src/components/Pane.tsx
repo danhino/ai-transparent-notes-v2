@@ -1,21 +1,18 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
 import { AIToolbar } from './AIToolbar';
-import { DiffBanner } from './DiffBanner';
+import { AiResultDialog } from './AiResultDialog';
 import { StatusBar } from './StatusBar';
 import { useNoteStore } from '../stores/noteStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
-import { computeLineDiff } from '../services/diffService';
 import { runAction, runApply, getAiErrorMessage } from '../services/aiService';
 import { writeSourceFile } from '../services/storageService';
 
 const SAVE_DEBOUNCE_MS = 400;
-const DIFF_SECONDS = 30;
-const DIFF_ADDED_COLOR = 'rgba(40,200,100,0.25)';
-const DIFF_DELETED_COLOR = 'rgba(220,60,60,0.3)';
 
 const FORMAT_EXT: Record<string, string> = {
   'Markdown': '.md',
@@ -28,13 +25,32 @@ const FORMAT_EXT: Record<string, string> = {
   'C++': '.cpp',
   'SQL': '.sql',
   'HTML/CSS': '.html',
+  'HTML Viewer': '.html',
   'PowerShell': '.ps1',
   'Bash': '.sh',
   'JSON': '.json',
 };
 
+const ACTION_LABELS: Record<string, string> = {
+  fix: 'Fix',
+  polish: 'Polish',
+  rephrase: 'Rephrase',
+  spellcheck: 'Spell check',
+  suggest: 'Suggest',
+  apply: 'Apply',
+  autodetect: 'Auto-detect',
+};
+
 function formatToExt(format: string): string {
   return FORMAT_EXT[format] ?? '.txt';
+}
+
+interface AiDialogData {
+  actionName: string;
+  original: string;
+  result: string;
+  wasSelection: boolean;
+  detectedLanguage: string | null;
 }
 
 interface Props {
@@ -44,13 +60,13 @@ interface Props {
 export function Pane({ paneIndex }: Props) {
   const editorRef = useRef<NoteEditorRef>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const diffTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
 
   const { notes, updateNote, markSaved, unsavedIds } = useNoteStore();
   const { settings } = useSettingsStore();
   const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
+  const setPaneLineNumbers = useSettingsStore((s) => s.setPaneLineNumbers);
   const {
     focusMode,
     focusedPaneIndex,
@@ -59,8 +75,6 @@ export function Pane({ paneIndex }: Props) {
     setFocusMode,
     setPaneBusy,
     setPaneDetectedLanguage,
-    setPaneDiff,
-    tickPaneDiffCountdown,
     setPaneSavedVisible,
   } = useUiStore();
 
@@ -69,6 +83,7 @@ export function Pane({ paneIndex }: Props) {
   const paneState = paneStates[paneIndex];
   const isFocused = focusedPaneIndex === paneIndex;
   const isUnsaved = note != null && unsavedIds.has(note.id);
+  const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
   const [selectedFormat, setSelectedFormat] = useState(settings.formatOptions[0] ?? 'Plain text');
   const [lineNumber, setLineNumber] = useState(1);
@@ -78,6 +93,7 @@ export function Pane({ paneIndex }: Props) {
   const [renameValue, setRenameValue] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [paneError, setPaneError] = useState<string | null>(null);
+  const [aiDialogData, setAiDialogData] = useState<AiDialogData | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -85,12 +101,6 @@ export function Pane({ paneIndex }: Props) {
     setCharCount(content.length);
     setWordCount(content.trim() ? content.trim().split(/\s+/).length : 0);
   }, [note?.content]);
-
-  useEffect(() => {
-    return () => {
-      if (diffTimerRef.current) clearInterval(diffTimerRef.current);
-    };
-  }, [noteId]);
 
   useEffect(() => {
     if (isRenaming) renameInputRef.current?.focus();
@@ -107,31 +117,8 @@ export function Pane({ paneIndex }: Props) {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [showExportMenu]);
 
-  function startDiffCountdown() {
-    if (diffTimerRef.current) clearInterval(diffTimerRef.current);
-    diffTimerRef.current = setInterval(() => {
-      tickPaneDiffCountdown(paneIndex);
-    }, 1000);
-  }
-
-  function stopDiffCountdown() {
-    if (diffTimerRef.current) {
-      clearInterval(diffTimerRef.current);
-      diffTimerRef.current = null;
-    }
-  }
-
-  useEffect(() => {
-    if (paneState.diff === null) {
-      stopDiffCountdown();
-    }
-  }, [paneState.diff]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function handleEditorChange(text: string) {
     if (!note) return;
-    if (paneState.diff) {
-      acceptDiff();
-    }
     updateNote(note.id, { content: text });
     setCharCount(text.length);
     setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
@@ -199,25 +186,6 @@ export function Pane({ paneIndex }: Props) {
     return view.getText();
   }
 
-  function replaceWithResult(original: string, result: string, wasSelection: boolean) {
-    const view = editorRef.current;
-    if (!view || !note) return;
-    const pre = wasSelection ? view.getText() : original;
-    const post = wasSelection
-      ? view.getText().replace(original, result)
-      : result;
-    const blocks = computeLineDiff(pre, post);
-    view.applyDiff(post, blocks, DIFF_ADDED_COLOR, DIFF_DELETED_COLOR);
-    updateNote(note.id, { content: post });
-    setPaneDiff(paneIndex, {
-      preSnapshot: pre,
-      postSnapshot: post,
-      diffBlocks: blocks,
-      countdown: DIFF_SECONDS,
-    });
-    startDiffCountdown();
-  }
-
   const handleAction = useCallback(
     async (action: 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare' | 'autodetect') => {
       if (!note || paneState.isBusy) return;
@@ -231,20 +199,33 @@ export function Pane({ paneIndex }: Props) {
       const text = getWorkingText();
       if (!text.trim()) return;
 
-      console.log(`[Pane ${paneIndex}] action=${action} content_len=${text.length}`);
-
       setPaneBusy(paneIndex, true);
       try {
         if (action === 'apply' || action === 'autodetect') {
           const format = action === 'autodetect' ? 'Auto-detect (Code)' : selectedFormat;
-          const { result, detectedLanguage } = await runApply(text, format, settings);
-          replaceWithResult(text, result, wasSelection);
-          if (detectedLanguage) {
-            setPaneDetectedLanguage(paneIndex, detectedLanguage);
+
+          if (format === 'HTML Viewer') {
+            await invoke('open_html_preview', { html: text });
+            return;
           }
+
+          const { result, detectedLanguage } = await runApply(text, format, settings);
+          setAiDialogData({
+            actionName: ACTION_LABELS[action] ?? action,
+            original: text,
+            result,
+            wasSelection,
+            detectedLanguage: detectedLanguage ?? null,
+          });
         } else {
           const result = await runAction(action, text, settings);
-          replaceWithResult(text, result, wasSelection);
+          setAiDialogData({
+            actionName: ACTION_LABELS[action] ?? action,
+            original: text,
+            result,
+            wasSelection,
+            detectedLanguage: null,
+          });
         }
       } catch (err) {
         console.error('AI action failed:', err);
@@ -256,20 +237,24 @@ export function Pane({ paneIndex }: Props) {
     [note, paneState.isBusy, selectedFormat, settings, paneIndex] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  function acceptDiff() {
-    stopDiffCountdown();
-    setPaneDiff(paneIndex, null);
-    editorRef.current?.clearDiff();
-  }
+  function applyAiResult() {
+    if (!aiDialogData || !note) return;
+    const { original, result, wasSelection, detectedLanguage } = aiDialogData;
+    const view = editorRef.current;
 
-  function revertDiff() {
-    if (!paneState.diff || !note) return;
-    stopDiffCountdown();
-    const pre = paneState.diff.preSnapshot;
-    editorRef.current?.applyText(pre);
-    updateNote(note.id, { content: pre });
-    setPaneDiff(paneIndex, null);
-    editorRef.current?.clearDiff();
+    let post: string;
+    if (wasSelection) {
+      const fullText = view?.getText() ?? note.content;
+      post = fullText.replace(original, result);
+    } else {
+      post = result;
+    }
+
+    if (view) view.applyText(post);
+    updateNote(note.id, { content: post });
+    if (detectedLanguage) setPaneDetectedLanguage(paneIndex, detectedLanguage);
+    setAiDialogData(null);
+    void savePersist(note.id, post);
   }
 
   const formatExt = formatToExt(selectedFormat);
@@ -314,9 +299,7 @@ export function Pane({ paneIndex }: Props) {
           >
             <option value="">-- no note --</option>
             {notes.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.title}
-              </option>
+              <option key={n.id} value={n.id}>{n.title}</option>
             ))}
           </select>
         )}
@@ -354,6 +337,16 @@ export function Pane({ paneIndex }: Props) {
           )}
         </div>
 
+        {/* Line numbers toggle */}
+        <button
+          className={`pane-icon-btn${showLineNumbers ? ' active-subtle' : ''}`}
+          onClick={() => setPaneLineNumbers(paneIndex, !showLineNumbers)}
+          title="Toggle line numbers"
+          style={{ fontSize: 11, fontWeight: 600, fontFamily: 'monospace' }}
+        >
+          #
+        </button>
+
         <div style={{ flex: 1 }} />
 
         {note && (
@@ -375,11 +368,6 @@ export function Pane({ paneIndex }: Props) {
         onAction={handleAction}
       />
 
-      {/* Diff banner */}
-      {paneState.diff && (
-        <DiffBanner diff={paneState.diff} onAccept={acceptDiff} onRevert={revertDiff} />
-      )}
-
       {/* Editor */}
       <NoteEditor
         ref={editorRef}
@@ -387,6 +375,7 @@ export function Pane({ paneIndex }: Props) {
         fontFamily={settings.fontFamily}
         fontSize={settings.fontSize}
         detectedLanguage={paneState.detectedLanguage}
+        showLineNumbers={showLineNumbers}
         onChange={handleEditorChange}
         onLineChange={setLineNumber}
       />
@@ -400,7 +389,13 @@ export function Pane({ paneIndex }: Props) {
 
       {/* Error banner */}
       {paneError && (
-        <div className="error-banner" onClick={() => { setPaneError(null); if (errorTimerRef.current) clearTimeout(errorTimerRef.current); }}>
+        <div
+          className="error-banner"
+          onClick={() => {
+            setPaneError(null);
+            if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+          }}
+        >
           <span>⚠ {paneError}</span>
           <span style={{ marginLeft: 'auto', fontSize: 10, opacity: 0.7 }}>Click to dismiss</span>
         </div>
@@ -413,6 +408,18 @@ export function Pane({ paneIndex }: Props) {
         lineNumber={lineNumber}
         detectedLanguage={paneState.detectedLanguage}
       />
+
+      {/* AI result dialog */}
+      {aiDialogData && (
+        <AiResultDialog
+          actionName={aiDialogData.actionName}
+          original={aiDialogData.original}
+          result={aiDialogData.result}
+          settings={settings}
+          onApply={applyAiResult}
+          onClose={() => setAiDialogData(null)}
+        />
+      )}
     </div>
   );
 }

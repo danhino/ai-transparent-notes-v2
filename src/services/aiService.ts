@@ -102,6 +102,18 @@ export async function runApply(
   return { result: raw, detectedLanguage: null };
 }
 
+export async function runAiResultSummary(
+  original: string,
+  result: string,
+  settings: AppSettings
+): Promise<string> {
+  const prompt =
+    'Summarize the changes made to the text in 2-3 sentences. ' +
+    'Focus on what was improved, fixed, or changed.\n\n' +
+    `Original:\n---\n${original}\n\nResult:\n---\n${result}`;
+  return callAI(prompt, '', settings);
+}
+
 export async function runDiffSummary(
   textA: string,
   textB: string,

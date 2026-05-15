@@ -1,24 +1,15 @@
 import { create } from 'zustand';
-import { DiffBlock, Platform } from '../types';
-
-export interface PaneDiffState {
-  preSnapshot: string;
-  postSnapshot: string;
-  diffBlocks: DiffBlock[];
-  countdown: number;
-}
+import { Platform } from '../types';
 
 export interface PaneUiState {
   isBusy: boolean;
   detectedLanguage: string | null;
-  diff: PaneDiffState | null;
   savedVisible: boolean;
 }
 
 const makePaneState = (): PaneUiState => ({
   isBusy: false,
   detectedLanguage: null,
-  diff: null,
   savedVisible: false,
 });
 
@@ -34,8 +25,6 @@ interface UiStore {
   setFocusedPane: (index: number) => void;
   setPaneBusy: (i: number, v: boolean) => void;
   setPaneDetectedLanguage: (i: number, lang: string | null) => void;
-  setPaneDiff: (i: number, diff: PaneDiffState | null) => void;
-  tickPaneDiffCountdown: (i: number) => void;
   setPaneSavedVisible: (i: number, v: boolean) => void;
   setSettingsOpen: (v: boolean) => void;
   setCompareOpen: (v: boolean) => void;
@@ -63,18 +52,6 @@ export const useUiStore = create<UiStore>((set) => ({
 
   setPaneDetectedLanguage: (i, detectedLanguage) =>
     set((s) => ({ paneStates: patchPane(s.paneStates, i, { detectedLanguage }) })),
-
-  setPaneDiff: (i, diff) =>
-    set((s) => ({ paneStates: patchPane(s.paneStates, i, { diff }) })),
-
-  tickPaneDiffCountdown: (i) =>
-    set((s) => {
-      const ps = s.paneStates[i];
-      if (!ps.diff) return s;
-      const countdown = ps.diff.countdown - 1;
-      const diff = countdown <= 0 ? null : { ...ps.diff, countdown };
-      return { paneStates: patchPane(s.paneStates, i, { diff }) };
-    }),
 
   setPaneSavedVisible: (i, savedVisible) =>
     set((s) => ({ paneStates: patchPane(s.paneStates, i, { savedVisible }) })),

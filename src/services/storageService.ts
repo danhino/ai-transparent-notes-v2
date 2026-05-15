@@ -1,5 +1,5 @@
 import { readTextFile, writeTextFile, mkdir, BaseDirectory } from '@tauri-apps/plugin-fs';
-import { AppSettings, DEFAULT_SETTINGS } from '../types';
+import { AppSettings, DEFAULT_SETTINGS, DEFAULT_FORMAT_OPTIONS } from '../types';
 
 async function ensureDir(): Promise<void> {
   try {
@@ -15,9 +15,15 @@ export async function loadSettings(): Promise<AppSettings> {
     const raw = await readTextFile('settings.json', { baseDir: BaseDirectory.AppData });
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
     // Merge with defaults so new fields always have values
+    const savedFormats = Array.isArray(parsed.formatOptions) ? parsed.formatOptions : [];
+    const mergedFormats = [
+      ...savedFormats,
+      ...DEFAULT_FORMAT_OPTIONS.filter((f) => !savedFormats.includes(f)),
+    ];
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
+      formatOptions: mergedFormats,
       paneNoteIds:
         Array.isArray(parsed.paneNoteIds) && parsed.paneNoteIds.length >= 4
           ? parsed.paneNoteIds

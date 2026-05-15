@@ -24,8 +24,8 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 - Actions: Fix, Polish, Rephrase, Spell check, Suggest, Apply (format), Auto-detect (Code), Compare
 - "Auto-detect (Code)" is both a configurable toolbar button and a format option; it detects the language, formats the code, and shows "Detected: [Language]" in the status bar
 - Actions work on selected text or the full note
-- After every AI action: diff is computed (LCS line-level), added/changed lines highlighted green and removed lines shown red inline, Accept/Revert banner shown with 30-second auto-accept countdown
-- Typing in the editor implicitly accepts the diff
+- After every AI action: a modal dialog opens showing the original and AI result side by side (Compare-style view) with diff stats (+added, -deleted, changed), synchronized scrolling, and line numbers. User chooses Apply changes or Revert. An optional AI summary can be generated.
+- Export diff button saves the changes as a .diff file
 - Changing the format selection resets the detected language label
 - AI errors shown as a red banner above the status bar in the affected pane; auto-dismisses after 8 seconds or on click
 - Error messages distinguish: no API key, invalid key (401), rate limit (429), timeout (30s), network failure
@@ -61,14 +61,25 @@ Focus mode hides all chrome: titlebar, toolbar, tab bar, workspace panel, per-pa
 
 The Focus button in the toolbar shows an active/highlighted state while focus mode is on. Focus mode state is persisted to settings so it restores on next launch.
 
+### Line numbers
+- Each pane has a `#` toggle button in its header to show or hide line numbers independently
+- Default: line numbers visible; persisted per pane in settings
+- Global default in Settings under Appearance: "Show line numbers by default" checkbox
+
+### HTML Viewer
+- Select "HTML Viewer" from the format dropdown and click Apply to open the current note as a live webpage
+- Opens a separate resizable window (min 600x400) titled "HTML Preview"
+- Toolbar in the preview window: Refresh (re-renders current note content) and Close
+- Non-blocking: main window stays usable while preview is open
+
 ### Settings
 - Dialog is fixed-size (560px wide, max 90vh tall), scrollable, centered; only the Cancel or X button closes it
 - Each section has a bold accent-colored title and a 12px description line beneath it
 - AI configuration: provider (Claude or OpenAI), model filtered by provider, API key with eye-icon show/hide toggle, helper link to API keys page
-- Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size (14 sizes)
+- Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size (14 sizes), show line numbers by default checkbox
 - AI toolbar: reorderable list of per-pane AI action buttons including Auto-detect (Code); click row to select, up/down/remove/add actions. Default order: Format/Apply, Auto-detect (Code), Fix, Spell check, Rephrase, Compare, Suggest, Polish
 - Main toolbar: reorderable list of toolbar items with up/down/remove/add; click row to select
-- Format options: reorderable list with add, remove, and reorder; includes Auto-detect (Code) by default
+- Format options: reorderable list with add, remove, and reorder; includes Auto-detect (Code) and HTML Viewer by default
 - Comparison colors: hex inputs with live color swatch preview for added, deleted, and changed lines
 - Storage: data folder path (read-only) with Open button to reveal in file manager
 - About: app name, description, version from tauri.conf.json
@@ -106,9 +117,10 @@ src/
     TitleBar.tsx          # Custom frameless titlebar with drag region
     Toolbar.tsx           # Main toolbar (pin, theme, font, opacity, layout, files)
     TabBar.tsx            # Tab bar with rename, close, add
-    NoteEditor.tsx        # CodeMirror 6 wrapper with diff decorations
+    NoteEditor.tsx        # CodeMirror 6 wrapper with optional line numbers
     AIToolbar.tsx         # Per-pane AI action buttons
-    DiffBanner.tsx        # Accept/Revert banner with countdown
+    DiffView.tsx          # Shared side-by-side diff component (CSS grid, line numbers, sync scroll)
+    AiResultDialog.tsx    # Modal shown after every AI action with apply/revert/export
     StatusBar.tsx         # Chars, words, line number, detected language
     Pane.tsx              # Individual pane orchestrating all pane components
     PaneSystem.tsx        # Layout manager with draggable splitters

@@ -21,6 +21,8 @@ interface SettingsStore {
   setWorkspacePanelWidth: (v: number) => void;
   setAiToolbarActions: (v: string[]) => void;
   setMainToolbarItems: (v: string[]) => void;
+  setPaneLineNumbers: (paneIndex: number, v: boolean) => void;
+  setShowLineNumbersByDefault: (v: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -94,4 +96,14 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 
   setMainToolbarItems: (mainToolbarItems) =>
     set((s) => ({ settings: { ...s.settings, mainToolbarItems } })),
+
+  setPaneLineNumbers: (paneIndex, v) =>
+    set((s) => {
+      const paneLineNumbers = [...(s.settings.paneLineNumbers ?? [true, true, true, true])];
+      paneLineNumbers[paneIndex] = v;
+      return { settings: { ...s.settings, paneLineNumbers } };
+    }),
+
+  setShowLineNumbersByDefault: (showLineNumbersByDefault) =>
+    set((s) => ({ settings: { ...s.settings, showLineNumbersByDefault } })),
 }));
