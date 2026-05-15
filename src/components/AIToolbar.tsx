@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
 
-type AiAction = 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare' | 'autodetect';
+type AiAction = 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare';
 
 interface Props {
   paneIndex: number;
@@ -12,7 +12,6 @@ interface Props {
 }
 
 const AI_ACTION_META: Record<string, { label: string; title: string }> = {
-  autodetect: { label: 'Auto-detect', title: 'Auto-detect language and format code' },
   fix:        { label: 'Fix',         title: 'Fix code' },
   polish:     { label: 'Polish',      title: 'Polish writing' },
   spellcheck: { label: 'Spell check', title: 'Fix spelling' },

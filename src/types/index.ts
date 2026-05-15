@@ -115,7 +115,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   workspacePanelWidth: 220,
   workspaceFolders: [],
   focusMode: false,
-  aiToolbarActions: ['apply', 'autodetect', 'fix', 'spellcheck', 'rephrase', 'compare', 'suggest', 'polish'],
+  aiToolbarActions: ['apply', 'fix', 'spellcheck', 'rephrase', 'compare', 'suggest', 'polish'],
   mainToolbarItems: ['pin', 'theme', 'font', 'size', 'opacity', 'layout', 'workspace', 'import', 'focus', 'settings'],
   paneLineNumbers: [true, true, true, true],
   showLineNumbersByDefault: true,

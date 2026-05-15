@@ -27,7 +27,6 @@ const THEMES: { value: Theme; label: string }[] = [
 
 const ALL_AI_ACTIONS: { key: string; label: string }[] = [
   { key: 'apply',      label: 'Format / Apply' },
-  { key: 'autodetect', label: 'Auto-detect (Code)' },
   { key: 'fix',        label: 'Fix' },
   { key: 'spellcheck', label: 'Spell check' },
   { key: 'rephrase',   label: 'Rephrase' },

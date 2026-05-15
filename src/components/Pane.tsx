@@ -38,7 +38,6 @@ const ACTION_LABELS: Record<string, string> = {
   spellcheck: 'Spell check',
   suggest: 'Suggest',
   apply: 'Apply',
-  autodetect: 'Auto-detect',
 };
 
 function formatToExt(format: string): string {
@@ -187,7 +186,7 @@ export function Pane({ paneIndex }: Props) {
   }
 
   const handleAction = useCallback(
-    async (action: 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare' | 'autodetect') => {
+    async (action: 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare') => {
       if (!note || paneState.isBusy) return;
 
       if (action === 'compare') {
@@ -201,8 +200,8 @@ export function Pane({ paneIndex }: Props) {
 
       setPaneBusy(paneIndex, true);
       try {
-        if (action === 'apply' || action === 'autodetect') {
-          const format = action === 'autodetect' ? 'Auto-detect (Code)' : selectedFormat;
+        if (action === 'apply') {
+          const format = selectedFormat;
 
           if (format === 'HTML Viewer') {
             await invoke('open_html_preview', { html: text });

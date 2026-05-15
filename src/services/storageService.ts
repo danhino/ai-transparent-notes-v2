@@ -20,10 +20,13 @@ export async function loadSettings(): Promise<AppSettings> {
       ...savedFormats,
       ...DEFAULT_FORMAT_OPTIONS.filter((f) => !savedFormats.includes(f)),
     ];
+    const savedActions = Array.isArray(parsed.aiToolbarActions) ? parsed.aiToolbarActions : DEFAULT_SETTINGS.aiToolbarActions;
+    const migratedActions = savedActions.filter((a) => a !== 'autodetect');
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
       formatOptions: mergedFormats,
+      aiToolbarActions: migratedActions.length > 0 ? migratedActions : DEFAULT_SETTINGS.aiToolbarActions,
       paneNoteIds:
         Array.isArray(parsed.paneNoteIds) && parsed.paneNoteIds.length >= 4
           ? parsed.paneNoteIds
