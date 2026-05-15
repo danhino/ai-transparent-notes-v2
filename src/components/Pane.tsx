@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { open as openUrl } from '@tauri-apps/plugin-shell';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
@@ -85,6 +86,7 @@ export function Pane({ paneIndex }: Props) {
   const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
   const [selectedFormat, setSelectedFormat] = useState(settings.formatOptions[0] ?? 'Plain text');
+  const [htmlPreviewUrl, setHtmlPreviewUrl] = useState<string | null>(null);
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
   const [wordCount, setWordCount] = useState(0);
@@ -211,7 +213,8 @@ export function Pane({ paneIndex }: Props) {
           const format = selectedFormat;
 
           if (format === 'HTML Viewer') {
-            await invoke('open_html_preview', { html: text });
+            const url = await invoke<string>('open_html_preview', { html: text });
+            setHtmlPreviewUrl(url);
             return;
           }
 
@@ -352,6 +355,18 @@ export function Pane({ paneIndex }: Props) {
         >
           #
         </button>
+
+        {/* Open HTML preview in browser */}
+        {htmlPreviewUrl && (
+          <button
+            className="pane-icon-btn"
+            onClick={() => void openUrl(htmlPreviewUrl)}
+            title="Open HTML preview in browser"
+            style={{ fontSize: 12 }}
+          >
+            ↗
+          </button>
+        )}
 
         <div style={{ flex: 1 }} />
 

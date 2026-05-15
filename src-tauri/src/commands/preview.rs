@@ -32,7 +32,7 @@ fn toolbar_script(url: &str) -> String {
     bar.appendChild(title);
     bar.appendChild(btn('Refresh',function(){window.location.href='__FILE_URL__';}));
     bar.appendChild(btn('Open in browser',function(){
-      try{window.__TAURI_INTERNALS__.invoke('open_preview_in_browser',{});}catch(e){console.error('open_preview_in_browser:',e);}
+      try{window.__TAURI_INTERNALS__.invoke('plugin:shell|open',{path:'__FILE_URL__',with:null});}catch(e){console.error('open in browser:',e);}
     }));
     bar.appendChild(btn('Close',function(){
       try{window.__TAURI_INTERNALS__.invoke('close_html_preview',{});}catch(e){window.close();}
@@ -50,7 +50,7 @@ fn toolbar_script(url: &str) -> String {
 pub async fn open_html_preview(
     app: tauri::AppHandle,
     html: String,
-) -> Result<(), String> {
+) -> Result<String, String> {
     use std::io::Write;
 
     let path = temp_html_path();
@@ -63,7 +63,7 @@ pub async fn open_html_preview(
         let _ = win.eval(&format!("window.location.href={:?};", url));
         let _ = win.show();
         let _ = win.set_focus();
-        return Ok(());
+        return Ok(url);
     }
 
     let script = toolbar_script(&url);
@@ -82,7 +82,7 @@ pub async fn open_html_preview(
     .build()
     .map_err(|e| e.to_string())?;
 
-    Ok(())
+    Ok(url)
 }
 
 #[tauri::command]

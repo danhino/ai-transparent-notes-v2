@@ -26,6 +26,7 @@
     "dialog:allow-save",
     "os:default",
     "os:allow-platform",
-    "shell:default"
+    "shell:default",
+    "shell:allow-open"
   ]
 }

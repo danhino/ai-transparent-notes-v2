@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Dark rounded background -->
+  <rect width="1024" height="1024" rx="180" fill="#1e1e2e"/>
+
+  <!-- Document body: polygon with folded top-right corner -->
+  <path d="M 170,120 L 580,120 L 680,220 L 680,820 L 170,820 Z" fill="#dde3f5"/>
+  <!-- Fold flap (darker triangle) -->
+  <path d="M 580,120 L 680,220 L 580,220 Z" fill="#b0bcd4"/>
+
+  <!-- Text lines — gray, representing note content -->
+  <rect x="225" y="290" width="335" height="18" rx="9" fill="#7c85a2"/>
+  <rect x="225" y="338" width="280" height="18" rx="9" fill="#7c85a2"/>
+  <rect x="225" y="386" width="310" height="18" rx="9" fill="#7c85a2"/>
+  <rect x="225" y="434" width="260" height="18" rx="9" fill="#7c85a2"/>
+  <rect x="225" y="482" width="298" height="18" rx="9" fill="#7c85a2"/>
+  <rect x="225" y="530" width="238" height="18" rx="9" fill="#7c85a2"/>
+
+  <!-- AI-highlighted lines — blue, representing AI-processed text -->
+  <rect x="225" y="578" width="278" height="18" rx="9" fill="#5a9cf7" opacity="0.6"/>
+  <rect x="225" y="626" width="202" height="18" rx="9" fill="#5a9cf7" opacity="0.42"/>
+
+  <!-- AI sparkle: soft glow halo -->
+  <circle cx="720" cy="760" r="126" fill="#5a9cf7" opacity="0.14"/>
+
+  <!-- AI sparkle: 4-pointed star, center (720,760), outer R=100, inner r=38 -->
+  <!-- inner 45° offset = 38 × sin(45°) ≈ 27 -->
+  <path d="M 720,660 L 747,733 L 820,760 L 747,787 L 720,860 L 693,787 L 620,760 L 693,733 Z"
+        fill="#5a9cf7"/>
+
+  <!-- Bright center dot of sparkle -->
+  <circle cx="720" cy="760" r="17" fill="white" opacity="0.88"/>
+</svg>

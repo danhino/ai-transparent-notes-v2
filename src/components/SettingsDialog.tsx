@@ -485,13 +485,22 @@ export function SettingsDialog() {
           <div className="settings-section">
             <div className="settings-section-title">About</div>
             <div className="settings-section-desc">Application information and version.</div>
-            <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>AI Transparent Notes v2</div>
-              <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
-                A modern cross-platform notes app with AI assistance
-              </div>
-              <div style={{ color: 'var(--subtle-text)', fontSize: 11 }}>
-                {appVersion ? `Version ${appVersion}` : 'Version 0.1.0'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <img
+                src="/icon.png"
+                width={64}
+                height={64}
+                alt="AI Transparent Notes icon"
+                style={{ borderRadius: 14, flexShrink: 0 }}
+              />
+              <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>AI Transparent Notes v2</div>
+                <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  A modern cross-platform notes app with AI assistance
+                </div>
+                <div style={{ color: 'var(--subtle-text)', fontSize: 11 }}>
+                  {appVersion ? `Version ${appVersion}` : 'Version 0.1.0'}
+                </div>
               </div>
             </div>
           </div>

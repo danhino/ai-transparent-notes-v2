@@ -84,7 +84,7 @@ The Focus button in the toolbar shows an active/highlighted state while focus mo
 - Format options: reorderable list with add, remove, and reorder; includes Auto-detect (Code) and HTML Viewer by default
 - Comparison colors: hex inputs with live color swatch preview for added, deleted, and changed lines
 - Storage: data folder path (read-only) with Open button to reveal in file manager
-- About: app name, description, version from tauri.conf.json
+- About: app icon (64x64), app name, description, version from tauri.conf.json
 - Section headers are bold and accent-colored with separator lines between sections
 - All form controls are 32px tall for consistent alignment
 - Reset to defaults button restores all settings to original values
@@ -140,6 +140,16 @@ src-tauri/
       preview.rs          # HTML preview commands (temp file, open, close, open in browser)
   capabilities/default.json  # Tauri permission grants
   tauri.conf.json         # App config: frameless window, tray
+  icons/
+    app-icon.svg          # Source icon (1024x1024 SVG, generated via `npx tauri icon`)
+    icon.png              # 512x512 base PNG (auto-generated)
+    icon.ico              # Windows multi-size ICO (auto-generated)
+    icon.icns             # macOS ICNS (auto-generated)
+    32x32.png, 128x128.png, 128x128@2x.png  # Tauri bundle PNGs
+    Square*.png, StoreLogo.png  # Windows Store assets
+public/
+  icon.png               # Copy of 512x512 icon for browser tab favicon
+  icon.ico               # Copy of ICO for browser tab favicon
 ```
 
 ## Setup
