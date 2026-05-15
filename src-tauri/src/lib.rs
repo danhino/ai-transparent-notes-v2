@@ -1,15 +1,10 @@
 mod commands;
 
-use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager,
 };
-
-pub struct PreviewHtmlState {
-    pub html: Mutex<String>,
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,7 +14,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
-        .manage(PreviewHtmlState { html: Mutex::new(String::new()) })
         .setup(|app| {
             let show_hide = MenuItem::with_id(app, "show_hide", "Show / Hide", true, None::<&str>)?;
             let new_note = MenuItem::with_id(app, "new_note", "New note", true, None::<&str>)?;
@@ -74,8 +68,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::ai::call_ai,
             commands::preview::open_html_preview,
-            commands::preview::get_preview_html,
             commands::preview::close_html_preview,
+            commands::preview::open_preview_in_browser,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -68,8 +68,10 @@ The Focus button in the toolbar shows an active/highlighted state while focus mo
 
 ### HTML Viewer
 - Select "HTML Viewer" from the format dropdown and click Apply to open the current note as a live webpage
-- Opens a separate resizable window (min 600x400) titled "HTML Preview"
-- Toolbar in the preview window: Refresh (re-renders current note content) and Close
+- HTML is written to a temp file and loaded as a `file://` URL, so external resources (Google Fonts, CDN scripts, images) resolve correctly, identical to opening the file in Chrome
+- Opens a separate 1000x700 resizable window titled "HTML Preview"
+- Injected toolbar: Refresh (reloads the temp file), Open in browser (opens the file in the default system browser), Close
+- Navigation within the preview (links) is unrestricted
 - Non-blocking: main window stays usable while preview is open
 
 ### Settings
@@ -133,6 +135,9 @@ src-tauri/
   src/
     lib.rs                # Tauri plugins, tray icon, window events
     main.rs               # Entry point
+    commands/
+      ai.rs               # call_ai Tauri command (reqwest HTTP to Claude/OpenAI)
+      preview.rs          # HTML preview commands (temp file, open, close, open in browser)
   capabilities/default.json  # Tauri permission grants
   tauri.conf.json         # App config: frameless window, tray
 ```
