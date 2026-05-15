@@ -153,7 +153,16 @@ public/
   icon.ico               # Copy of ICO for browser tab favicon
 ```
 
-## Setup
+## Download and install (Windows)
+
+1. Go to the [Releases page](https://github.com/danhino/ai-transparent-notes/releases)
+2. Download `ai-transparent-notes-v2_x64-setup.exe`
+3. Double-click and follow the prompts
+4. Launch from the Start menu
+
+Compatible with Windows 10 and Windows 11 (64-bit). All dependencies install automatically, including WebView2 if it is not already present.
+
+## Build from source
 
 ### Prerequisites
 - [Rust](https://rustup.rs)

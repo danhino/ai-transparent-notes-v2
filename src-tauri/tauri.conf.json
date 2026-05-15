@@ -38,6 +38,12 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Daniel Hinojosa",
+    "copyright": "Copyright 2025 Daniel Hinojosa",
+    "category": "Productivity",
+    "shortDescription": "AI-powered notes app with multi-pane editing",
+    "longDescription": "AI Transparent Notes is a modern cross-platform notes app with multi-pane editing, folder workspace browsing, and built-in AI assistance via Claude and OpenAI.",
+    "homepage": "https://github.com/danhino/ai-transparent-notes",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -45,6 +51,20 @@
       "icons/icon.icns",
       "icons/icon.ico",
       "icons/icon.png"
-    ]
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "tsp": false,
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser",
+        "languages": ["English"]
+      }
+    }
   }
 }
