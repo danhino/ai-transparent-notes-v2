@@ -53,8 +53,6 @@ async function callAI(prompt: string, content: string, settings: AppSettings): P
     throw new AiError('No API key configured. Go to Settings to add your key.');
   }
 
-  console.log(`[AI] provider=${settings.aiProvider} model=${settings.aiModel} prompt_len=${prompt.length} content_len=${content.length}`);
-
   try {
     const result = await invoke<string>('call_ai', {
       provider: settings.aiProvider,

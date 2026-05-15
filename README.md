@@ -28,7 +28,7 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 - Export diff button saves the changes as a .diff file
 - Changing the format selection resets the detected language label
 - AI errors shown as a red banner above the status bar in the affected pane; auto-dismisses after 8 seconds or on click
-- Error messages distinguish: no API key, invalid key (401), rate limit (429), timeout (30s), network failure
+- Error messages distinguish: no API key, invalid key (401), rate limit (429), timeout (120s), network failure
 
 ### Workspace panel
 - Collapsible left sidebar toggled from toolbar

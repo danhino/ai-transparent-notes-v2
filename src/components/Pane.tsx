@@ -116,6 +116,13 @@ export function Pane({ paneIndex }: Props) {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [showExportMenu]);
 
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    };
+  }, []);
+
   function handleEditorChange(text: string) {
     if (!note) return;
     updateNote(note.id, { content: text });
@@ -357,7 +364,6 @@ export function Pane({ paneIndex }: Props) {
 
       {/* AI toolbar */}
       <AIToolbar
-        paneIndex={paneIndex}
         disabled={paneState.isBusy || !note}
         selectedFormat={selectedFormat}
         onFormatChange={(fmt) => {

@@ -4,7 +4,6 @@ import { useSettingsStore } from '../stores/settingsStore';
 type AiAction = 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare';
 
 interface Props {
-  paneIndex: number;
   disabled: boolean;
   selectedFormat: string;
   onFormatChange: (format: string) => void;

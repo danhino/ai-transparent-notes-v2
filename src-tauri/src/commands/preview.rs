@@ -67,10 +67,11 @@ pub async fn open_html_preview(
     }
 
     let script = toolbar_script(&url);
+    let parsed_url = url.parse().map_err(|e| format!("Invalid URL: {}", e))?;
     tauri::WebviewWindowBuilder::new(
         &app,
         "html-preview",
-        tauri::WebviewUrl::External(url.parse().unwrap()),
+        tauri::WebviewUrl::External(parsed_url),
     )
     .title("HTML Preview")
     .inner_size(1000.0, 700.0)

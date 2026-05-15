@@ -83,7 +83,6 @@ function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMe
 
   function handleDoubleClick() {
     if (!entry.isDirectory) {
-      console.log('[WorkspacePanel] dblclick', entry.path);
       onOpen(entry);
     }
   }
@@ -181,24 +180,6 @@ export function WorkspacePanel() {
     };
   }, [settings.workspaceFolders]);
 
-  // Drag-and-drop folder
-  useEffect(() => {
-    async function handleDrop(e: DragEvent) {
-      e.preventDefault();
-      const items = e.dataTransfer?.items;
-      if (!items) return;
-      for (const item of Array.from(items)) {
-        const entry = item.webkitGetAsEntry?.();
-        if (entry?.isDirectory) {
-          // Path isn't available from webkitGetAsEntry on Tauri; use dialog fallback
-        }
-      }
-    }
-    window.addEventListener('drop', handleDrop);
-    window.addEventListener('dragover', (e) => e.preventDefault());
-    return () => window.removeEventListener('drop', handleDrop);
-  }, []);
-
   async function addFolder() {
     const path = await openDialog({ directory: true, multiple: false });
     if (path && typeof path === 'string') {
@@ -208,19 +189,15 @@ export function WorkspacePanel() {
 
   const handleFileOpen = async (filePath: string) => {
     try {
-      console.log('Opening file:', filePath);
       const content = await readTextFile(filePath);
-      console.log('Content read, length:', content.length);
       const note = useNoteStore.getState().openWorkspaceFile(content, filePath);
       if (note) {
         setPaneNoteId(focusedPaneIndex, note.id);
         setSelectedPath(filePath.replace(/\\/g, '/'));
         setContextMenu(null);
-      } else {
-        console.warn('[WorkspacePanel] max 4 notes reached, cannot open file');
       }
     } catch (err) {
-      console.error('Failed to read file:', err);
+      console.error('[WorkspacePanel] Failed to read file:', err);
     }
   };
 
