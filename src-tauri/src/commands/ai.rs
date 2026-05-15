@@ -9,7 +9,7 @@ pub async fn call_ai(
     content: String,
 ) -> Result<String, String> {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(120))
         .build()
         .map_err(|e| format!("Client error: {}", e))?;
 
@@ -36,7 +36,7 @@ pub async fn call_ai(
                 .await
                 .map_err(|e| {
                     if e.is_timeout() {
-                        "Request timed out after 30 seconds.".to_string()
+                        "Request timed out after 120 seconds.".to_string()
                     } else {
                         format!("Network error: {}", e)
                     }
@@ -76,7 +76,7 @@ pub async fn call_ai(
                 .await
                 .map_err(|e| {
                     if e.is_timeout() {
-                        "Request timed out after 30 seconds.".to_string()
+                        "Request timed out after 120 seconds.".to_string()
                     } else {
                         format!("Network error: {}", e)
                     }

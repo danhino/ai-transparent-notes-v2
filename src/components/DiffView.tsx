@@ -67,11 +67,19 @@ export function DiffView({ labelA, labelB, blocks, addedColor, deletedColor, lef
           borderBottom: '1px solid var(--border)', flexShrink: 0,
           background: 'var(--toolbar-bg)',
         }}>
-          <div style={{ padding: '4px 8px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
+          <div style={{ padding: '4px 8px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              background: 'var(--accent)', color: '#fff', borderRadius: 3,
+              fontSize: 10, fontWeight: 700, padding: '1px 5px', flexShrink: 0,
+            }}>A</span>
             {labelA}
           </div>
           <div style={{ background: 'var(--border)' }} />
-          <div style={{ padding: '4px 8px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
+          <div style={{ padding: '4px 8px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              background: 'var(--accent)', color: '#fff', borderRadius: 3,
+              fontSize: 10, fontWeight: 700, padding: '1px 5px', flexShrink: 0,
+            }}>B</span>
             {labelB}
           </div>
         </div>

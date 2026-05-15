@@ -92,7 +92,7 @@ export function CompareDialog() {
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px 20px', gap: 12, flex: 1 }}>
           {/* Note selector */}
           <div className="settings-row" style={{ marginBottom: 0, flexShrink: 0 }}>
-            <span className="settings-label" style={{ minWidth: 80 }}>Compare with:</span>
+            <span className="settings-label" style={{ minWidth: 80 }}>B — Compare with:</span>
             <select
               className="settings-select"
               value={compareNoteId}
