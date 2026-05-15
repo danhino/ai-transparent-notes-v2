@@ -68,10 +68,11 @@ The Focus button in the toolbar shows an active/highlighted state while focus mo
 
 ### HTML Viewer
 - Select "HTML Viewer" from the format dropdown and click Apply to open the current note as a live webpage
-- HTML is written to a temp file and loaded as a `file://` URL, so external resources (Google Fonts, CDN scripts, images) resolve correctly, identical to opening the file in Chrome
+- HTML is rendered in an iframe inside a dedicated `preview.html` window served by Tauri's internal asset server
+- A temp file is also written so "Open in browser" opens the exact content in the default system browser via the file:// URL
 - Opens a separate 1000x700 resizable window titled "HTML Preview"
-- Injected toolbar: Refresh (reloads the temp file), Open in browser (opens the file in the default system browser), Close
-- Navigation within the preview (links) is unrestricted
+- Toolbar: Refresh (reloads the iframe with the last-sent content), Open in browser (opens temp file in default browser), Close
+- All toolbar buttons use the Tauri IPC bridge, which is reliably available in internal app windows
 - Non-blocking: main window stays usable while preview is open
 
 ### Settings

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #16161e; }
+    #toolbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 38px;
+      background: #16161e; border-bottom: 1px solid #45475a;
+      display: flex; align-items: center; gap: 8px; padding: 0 12px;
+      font-family: system-ui, -apple-system, sans-serif; z-index: 9999;
+    }
+    #toolbar-title { color: #89b4fa; font-size: 13px; flex: 1; }
+    .tbtn {
+      background: #313244; color: #cdd6f4;
+      border: 1px solid #45475a; padding: 3px 12px;
+      cursor: pointer; border-radius: 3px;
+      font-size: 12px; height: 26px; font-family: inherit;
+    }
+    .tbtn:hover { background: #45475a; }
+    #preview-frame {
+      position: fixed; top: 38px; left: 0; right: 0; bottom: 0;
+      width: 100%; height: calc(100vh - 38px); border: none; background: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <span id="toolbar-title">HTML Preview</span>
+    <button class="tbtn" id="btn-refresh">Refresh</button>
+    <button class="tbtn" id="btn-browser">Open in browser</button>
+    <button class="tbtn" id="btn-close">Close</button>
+  </div>
+  <iframe id="preview-frame" title="HTML preview content"></iframe>
+  <script>
+    var frame = document.getElementById('preview-frame');
+    var currentHtml = window._htmlContent || '';
+
+    function loadContent(html) {
+      currentHtml = html;
+      frame.srcdoc = '';
+      requestAnimationFrame(function () { frame.srcdoc = currentHtml; });
+    }
+
+    if (currentHtml) {
+      frame.srcdoc = currentHtml;
+    }
+
+    document.getElementById('btn-refresh').onclick = function () {
+      loadContent(currentHtml);
+    };
+
+    document.getElementById('btn-browser').onclick = function () {
+      if (window.__TAURI_INTERNALS__) {
+        window.__TAURI_INTERNALS__.invoke('open_preview_in_browser', {}).catch(function (e) {
+          console.error('open in browser failed:', e);
+        });
+      }
+    };
+
+    document.getElementById('btn-close').onclick = function () {
+      if (window.__TAURI_INTERNALS__) {
+        window.__TAURI_INTERNALS__.invoke('close_html_preview', {}).catch(function (e) {
+          console.error('close failed:', e);
+        });
+      }
+    };
+
+    // Allow main window to push updated content via eval
+    window._updatePreview = function (html) {
+      loadContent(html);
+    };
+  </script>
+</body>
+</html>
