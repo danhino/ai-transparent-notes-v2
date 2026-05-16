@@ -9,6 +9,7 @@ import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirro
 import { EditorState, Compartment, Extension } from '@codemirror/state';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
 import { getLanguageExtension } from '../utils/languageMap';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
@@ -98,7 +99,7 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
       doc: content,
       extensions: [
         langComp.current.of(getLanguageExtension(language) ?? []),
-        syntaxComp.current.of(isSyntaxDarkTheme(activeTheme) ? oneDark : []),
+        syntaxComp.current.of(isSyntaxDarkTheme(activeTheme) ? oneDark : syntaxHighlighting(defaultHighlightStyle)),
         fontComp.current.of(buildBaseTheme(fontFamily, fontSize)),
         lineNumComp.current.of(showLineNumbers ? lineNumbers() : []),
         history(),
@@ -150,7 +151,7 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
     const view = viewRef.current;
     if (!view) return;
     view.dispatch({
-      effects: syntaxComp.current.reconfigure(isSyntaxDarkTheme(activeTheme) ? oneDark : []),
+      effects: syntaxComp.current.reconfigure(isSyntaxDarkTheme(activeTheme) ? oneDark : syntaxHighlighting(defaultHighlightStyle)),
     });
   }, [activeTheme]);
 
