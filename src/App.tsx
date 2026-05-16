@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { platform as getPlatform } from '@tauri-apps/plugin-os';
 import { TitleBar } from './components/TitleBar';
@@ -6,8 +6,9 @@ import { Toolbar } from './components/Toolbar';
 import { TabBar } from './components/TabBar';
 import { PaneSystem } from './components/PaneSystem';
 import { WorkspacePanel } from './components/WorkspacePanel';
-import { SettingsDialog } from './components/SettingsDialog';
-import { CompareDialog } from './components/CompareDialog';
+
+const SettingsDialog = lazy(() => import('./components/SettingsDialog').then((m) => ({ default: m.SettingsDialog })));
+const CompareDialog = lazy(() => import('./components/CompareDialog').then((m) => ({ default: m.CompareDialog })));
 import { useNoteStore } from './stores/noteStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useUiStore } from './stores/uiStore';
@@ -117,8 +118,12 @@ export default function App() {
         <PaneSystem />
       </div>
 
-      {settingsOpen && <SettingsDialog />}
-      {compareOpen && <CompareDialog />}
+      <Suspense fallback={null}>
+        {settingsOpen && <SettingsDialog />}
+      </Suspense>
+      <Suspense fallback={null}>
+        {compareOpen && <CompareDialog />}
+      </Suspense>
     </div>
   );
 }

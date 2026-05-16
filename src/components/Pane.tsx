@@ -1,10 +1,10 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
 import { AIToolbar } from './AIToolbar';
-import { AiResultDialog } from './AiResultDialog';
+const AiResultDialog = lazy(() => import('./AiResultDialog').then((m) => ({ default: m.AiResultDialog })));
 import { StatusBar } from './StatusBar';
 import { useNoteStore } from '../stores/noteStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -417,16 +417,18 @@ export function Pane({ paneIndex }: Props) {
       />
 
       {/* AI result dialog */}
-      {aiDialogData && (
-        <AiResultDialog
-          actionName={aiDialogData.actionName}
-          original={aiDialogData.original}
-          result={aiDialogData.result}
-          settings={settings}
-          onApply={applyAiResult}
-          onClose={() => setAiDialogData(null)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {aiDialogData && (
+          <AiResultDialog
+            actionName={aiDialogData.actionName}
+            original={aiDialogData.original}
+            result={aiDialogData.result}
+            settings={settings}
+            onApply={applyAiResult}
+            onClose={() => setAiDialogData(null)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

@@ -23,4 +23,20 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/@codemirror/theme-one-dark/')) return 'codemirror-theme';
+          if (id.includes('/@codemirror/lang-') || id.includes('/@codemirror/legacy-modes/')) return 'codemirror-langs';
+          if (id.includes('/@codemirror/') || id.includes('/codemirror/')) return 'codemirror-core';
+          if (id.includes('/react-dom/') || id.includes('/react/')) return 'vendor-react';
+          if (id.includes('/zustand/')) return 'vendor-state';
+          if (id.includes('/framer-motion/')) return 'vendor-animation';
+          if (id.includes('/diff-match-patch/')) return 'vendor-diff';
+        },
+      },
+    },
+  },
 }));
