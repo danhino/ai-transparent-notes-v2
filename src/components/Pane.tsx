@@ -380,7 +380,8 @@ export function Pane({ paneIndex }: Props) {
         content={content}
         fontFamily={settings.fontFamily}
         fontSize={settings.fontSize}
-        detectedLanguage={paneState.detectedLanguage}
+        language={paneState.detectedLanguage ?? selectedFormat}
+        activeTheme={settings.theme}
         showLineNumbers={showLineNumbers}
         onChange={handleEditorChange}
         onLineChange={setLineNumber}

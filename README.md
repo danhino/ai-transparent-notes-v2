@@ -17,6 +17,16 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 - Draggable dividers between panes
 - Each pane has an independent note selector
 
+### Syntax highlighting
+
+Selecting a format from the Format dropdown immediately applies CodeMirror syntax highlighting for that language, before clicking Apply. Supported languages:
+
+Python, JavaScript, TypeScript, Java, C, C++, C# (via legacy mode), Rust, SQL, HTML/CSS, CSS, Markdown, JSON, Bash/Shell, PowerShell
+
+Dark and Blue themes use the CodeMirror oneDark color scheme. Light, Sepia, and Green themes use the default light syntax colors. Changing themes reconfigures the syntax colors instantly via compartment reconfiguration — no editor rebuild.
+
+When Auto-detect (Code) Apply completes and the user accepts the result, the detected language is applied to the highlighter and shown in the status bar.
+
 ### AI features
 - Supported providers: Claude (Anthropic) and OpenAI
 - API calls made from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions entirely

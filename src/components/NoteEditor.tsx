@@ -6,19 +6,14 @@ import {
   useCallback,
 } from 'react';
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
-import { EditorState, Extension } from '@codemirror/state';
+import { EditorState, Compartment, Extension } from '@codemirror/state';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-import { javascript } from '@codemirror/lang-javascript';
-import { python } from '@codemirror/lang-python';
-import { markdown } from '@codemirror/lang-markdown';
-import { html } from '@codemirror/lang-html';
-import { sql } from '@codemirror/lang-sql';
-import { cpp } from '@codemirror/lang-cpp';
-import { java } from '@codemirror/lang-java';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { getLanguageExtension } from '../utils/languageMap';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 
-function buildTheme(fontFamily: string, fontSize: number): Extension {
+function buildBaseTheme(fontFamily: string, fontSize: number): Extension {
   return EditorView.theme({
     '&': {
       height: '100%',
@@ -44,17 +39,8 @@ function buildTheme(fontFamily: string, fontSize: number): Extension {
   });
 }
 
-function langExtension(lang: string | null): Extension {
-  if (!lang) return [];
-  const l = lang.toLowerCase();
-  if (l === 'javascript' || l === 'js' || l === 'typescript' || l === 'ts') return javascript({ typescript: l.includes('t') });
-  if (l === 'python' || l === 'py') return python();
-  if (l === 'markdown' || l === 'md') return markdown();
-  if (l === 'html') return html();
-  if (l === 'sql') return sql();
-  if (l === 'cpp' || l === 'c++' || l === 'c') return cpp();
-  if (l === 'java') return java();
-  return [];
+function isSyntaxDarkTheme(activeTheme: string): boolean {
+  return activeTheme === 'dark' || activeTheme === 'blue';
 }
 
 // ─── Public interface ─────────────────────────────────────────────────────────
@@ -71,14 +57,15 @@ interface Props {
   content: string;
   fontFamily: string;
   fontSize: number;
-  detectedLanguage: string | null;
+  language: string;
+  activeTheme: string;
   showLineNumbers?: boolean;
   onChange: (text: string) => void;
   onLineChange?: (line: number) => void;
 }
 
 export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
-  { content, fontFamily, fontSize, detectedLanguage, showLineNumbers = true, onChange, onLineChange },
+  { content, fontFamily, fontSize, language, activeTheme, showLineNumbers = true, onChange, onLineChange },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,7 +75,15 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
   onChangeRef.current = onChange;
   onLineChangeRef.current = onLineChange;
 
-  function buildExtensions(doc: string): EditorState {
+  // Stable compartment refs — created once, reused for the lifetime of the editor
+  const langComp = useRef(new Compartment());
+  const syntaxComp = useRef(new Compartment());
+  const fontComp = useRef(new Compartment());
+  const lineNumComp = useRef(new Compartment());
+
+  const initEditor = useCallback(() => {
+    if (!containerRef.current) return;
+
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         onChangeRef.current(update.state.doc.toString());
@@ -99,27 +94,23 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
       }
     });
 
-    return EditorState.create({
-      doc,
+    const state = EditorState.create({
+      doc: content,
       extensions: [
-        buildTheme(fontFamily, fontSize),
-        langExtension(detectedLanguage),
+        langComp.current.of(getLanguageExtension(language) ?? []),
+        syntaxComp.current.of(isSyntaxDarkTheme(activeTheme) ? oneDark : []),
+        fontComp.current.of(buildBaseTheme(fontFamily, fontSize)),
+        lineNumComp.current.of(showLineNumbers ? lineNumbers() : []),
         history(),
-        ...(showLineNumbers ? [lineNumbers()] : []),
         highlightActiveLine(),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         updateListener,
         EditorView.lineWrapping,
       ],
     });
-  }
 
-  const initEditor = useCallback(() => {
-    if (!containerRef.current) return;
-    const state = buildExtensions(content);
-    const view = new EditorView({ state, parent: containerRef.current });
-    viewRef.current = view;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    viewRef.current = new EditorView({ state, parent: containerRef.current });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Mount once
@@ -131,7 +122,7 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
     };
   }, [initEditor]);
 
-  // Sync content when note changes (not on every keystroke)
+  // Sync content when note changes (tab switch, external file write, etc.)
   const lastContentRef = useRef(content);
   useEffect(() => {
     const view = viewRef.current;
@@ -145,17 +136,41 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
     lastContentRef.current = content;
   }, [content]);
 
-  // Rebuild when font, language, or line number visibility changes
+  // Reconfigure language compartment when format or detected language changes
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    const currentDoc = view.state.doc.toString();
-    view.destroy();
-    viewRef.current = null;
-    if (!containerRef.current) return;
-    const state = buildExtensions(currentDoc);
-    viewRef.current = new EditorView({ state, parent: containerRef.current });
-  }, [fontFamily, fontSize, detectedLanguage, showLineNumbers]); // eslint-disable-line react-hooks/exhaustive-deps
+    view.dispatch({
+      effects: langComp.current.reconfigure(getLanguageExtension(language) ?? []),
+    });
+  }, [language]);
+
+  // Reconfigure syntax theme compartment when app theme changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: syntaxComp.current.reconfigure(isSyntaxDarkTheme(activeTheme) ? oneDark : []),
+    });
+  }, [activeTheme]);
+
+  // Reconfigure base theme compartment when font or size changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: fontComp.current.reconfigure(buildBaseTheme(fontFamily, fontSize)),
+    });
+  }, [fontFamily, fontSize]);
+
+  // Reconfigure line numbers compartment
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: lineNumComp.current.reconfigure(showLineNumbers ? lineNumbers() : []),
+    });
+  }, [showLineNumbers]);
 
   // Expose imperative API
   useImperativeHandle(ref, () => ({
