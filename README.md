@@ -23,6 +23,66 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
   </tr>
 </table>
 
+## 📥 Download and install
+
+### Windows
+
+1. Go to the [Releases page](https://github.com/danhino/ai-transparent-notes-v2/releases)
+2. Download `ai-transparent-notes-v2_x64-setup.exe`
+3. Double-click and follow the prompts
+4. Launch from the Start menu or desktop shortcut
+
+No additional software required. WebView2 installs automatically if not already present.
+Compatible with Windows 10 and Windows 11 (64-bit).
+
+### macOS
+
+macOS support is coming soon.
+
+### First launch — AI setup
+
+To use AI features you need an API key from one of these providers:
+
+**Claude (Anthropic) — recommended**
+1. Go to https://console.anthropic.com
+2. Sign in and click API Keys in the sidebar
+3. Create a key and copy it
+
+**OpenAI**
+1. Go to https://platform.openai.com
+2. Click API Keys in the sidebar
+3. Create a new secret key and copy it
+
+**Enter your key**
+1. Open the app and click Settings in the toolbar
+2. Under AI Configuration select your provider
+3. Paste your API key and click Save
+4. Select your preferred model
+
+### Troubleshooting
+
+**App will not open on Windows 10**
+Download WebView2 manually from:
+https://developer.microsoft.com/microsoft-edge/webview2/
+
+**AI features not working**
+- Check your API key is entered correctly in Settings
+- Verify you have API credits at console.anthropic.com or platform.openai.com
+- Check your internet connection
+- The app connects only to api.anthropic.com or api.openai.com. Allow these in your firewall if blocked.
+
+**Workspace panel shows no files**
+Click the folder button and select a folder, or drag a folder from Windows Explorer onto the app window.
+
+**Windows firewall prompt on first launch**
+Click Allow. The app needs internet access only for AI features. No other connections are made.
+
+### Settings storage
+
+Your notes and settings are saved here:
+- Windows: `%APPDATA%\com.danhi.ai-transparent-notes\settings.json`
+- macOS: `~/Library/Application Support/com.danhi.ai-transparent-notes/settings.json`
+
 ## Features
 
 ### Notes and tabs
@@ -183,51 +243,3 @@ public/
   icon.png               # Copy of 512x512 icon for browser tab favicon
   icon.ico               # Copy of ICO for browser tab favicon
 ```
-
-## Download and install (Windows)
-
-1. Go to the [Releases page](https://github.com/danhino/ai-transparent-notes/releases)
-2. Download `ai-transparent-notes-v2_x64-setup.exe`
-3. Double-click and follow the prompts
-4. Launch from the Start menu
-
-Compatible with Windows 10 and Windows 11 (64-bit). All dependencies install automatically, including WebView2 if it is not already present.
-
-## Build from source
-
-### Prerequisites
-- [Rust](https://rustup.rs)
-- [Node.js 18+](https://nodejs.org)
-- Tauri CLI: `cargo install tauri-cli` or `npm install -D @tauri-apps/cli`
-
-### Install dependencies
-
-```bash
-npm install
-```
-
-### Development
-
-```bash
-npm run tauri dev
-```
-
-### Build
-
-```bash
-npm run tauri build
-```
-
-### Settings storage
-
-Settings and scratch notes are saved to the OS app data directory:
-- Windows: `%APPDATA%\com.danhi.ai-transparent-notes\settings.json`
-- macOS: `~/Library/Application Support/com.danhi.ai-transparent-notes/settings.json`
-
-### AI API keys
-
-Set your API key in Settings (gear icon in the toolbar). Keys are stored in settings.json in the app data directory.
-
-## Reference
-
-This is a full rebuild of the original WPF app at [github.com/danhino/ai-transparent-notes](https://github.com/danhino/ai-transparent-notes). AI prompts, diff behavior, storage schema, and theme colors match the original implementation.
