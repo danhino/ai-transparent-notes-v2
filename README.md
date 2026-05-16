@@ -2,6 +2,16 @@
 
 A cross-platform desktop notes app with multi-pane layouts, AI writing tools, and real-time diff highlighting. Built with Tauri 2.0, React 19, TypeScript, and CodeMirror 6.
 
+## Screenshots
+
+| Light theme, syntax highlighting | Dark theme, compare dialog |
+|---|---|
+| ![Light theme with Python syntax highlighting in 2x2 grid layout](docs/screenshots/light-theme-syntax-highlighting.png) | ![Dark theme compare notes dialog showing diff view](docs/screenshots/dark-theme-compare-dialog.png) |
+
+| Workspace panel and format options | Always-on-top transparent overlay |
+|---|---|
+| ![Dark theme with workspace file tree and format dropdown](docs/screenshots/dark-theme-workspace-formats.png) | ![App in always-on-top transparent mode over a Teams meeting](docs/screenshots/always-on-top-overlay.png) |
+
 ## Features
 
 ### Notes and tabs
