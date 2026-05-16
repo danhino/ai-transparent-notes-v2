@@ -20,6 +20,7 @@ interface NoteStore {
   addNote: (partial?: Partial<Note>) => Note;
   removeNote: (id: string) => void;
   updateNote: (id: string, updates: Partial<Pick<Note, 'title' | 'content' | 'sourceFilePath'>>) => void;
+  setNoteFormat: (id: string, format: string) => void;
   setActiveNoteIndex: (index: number) => void;
   markSaved: (id: string) => void;
   getNote: (id: string) => Note | undefined;
@@ -63,6 +64,12 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         unsavedIds,
       };
     });
+  },
+
+  setNoteFormat: (id, format) => {
+    set((s) => ({
+      notes: s.notes.map((n) => (n.id === id ? { ...n, format } : n)),
+    }));
   },
 
   setActiveNoteIndex: (activeNoteIndex) => set({ activeNoteIndex }),

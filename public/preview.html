@@ -5,21 +5,24 @@
   <title>HTML Preview</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; background: #16161e; }
+    html, body { height: 100%; overflow: hidden; background: transparent; }
     #toolbar {
       position: fixed; top: 0; left: 0; right: 0; height: 38px;
-      background: #16161e; border-bottom: 1px solid #45475a;
+      background: rgba(30, 30, 35, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(69, 71, 90, 0.5);
       display: flex; align-items: center; gap: 8px; padding: 0 12px;
       font-family: system-ui, -apple-system, sans-serif; z-index: 9999;
     }
     #toolbar-title { color: #89b4fa; font-size: 13px; flex: 1; }
     .tbtn {
-      background: #313244; color: #cdd6f4;
-      border: 1px solid #45475a; padding: 3px 12px;
+      background: rgba(49, 50, 68, 0.8); color: #cdd6f4;
+      border: 1px solid rgba(69, 71, 90, 0.7); padding: 3px 12px;
       cursor: pointer; border-radius: 3px;
       font-size: 12px; height: 26px; font-family: inherit;
     }
-    .tbtn:hover { background: #45475a; }
+    .tbtn:hover { background: rgba(69, 71, 90, 0.9); }
     #preview-frame {
       position: fixed; top: 38px; left: 0; right: 0; bottom: 0;
       width: 100%; height: calc(100vh - 38px); border: none; background: white;
@@ -37,6 +40,11 @@
   <script>
     var frame = document.getElementById('preview-frame');
     var currentHtml = window._htmlContent || '';
+
+    // Apply opacity passed from main window at open time
+    if (window._initialOpacity !== undefined) {
+      document.documentElement.style.opacity = String(window._initialOpacity);
+    }
 
     function loadContent(html) {
       currentHtml = html;

@@ -1,5 +1,6 @@
 import { useEffect, ReactNode } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/core';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
@@ -49,6 +50,8 @@ export function Toolbar() {
 
   useEffect(() => {
     document.documentElement.style.opacity = String(settings.windowOpacity);
+    // Keep the HTML preview window in sync if it's open
+    invoke('set_preview_opacity', { opacity: settings.windowOpacity }).catch(() => {});
   }, [settings.windowOpacity]);
 
   async function handleImport() {

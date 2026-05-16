@@ -8,6 +8,7 @@ fn temp_html_path() -> std::path::PathBuf {
 pub async fn open_html_preview(
     app: tauri::AppHandle,
     html: String,
+    opacity: f64,
 ) -> Result<(), String> {
     use std::io::Write;
 
@@ -19,10 +20,9 @@ pub async fn open_html_preview(
     let html_json = serde_json::to_string(&html).map_err(|e| e.to_string())?;
 
     if let Some(win) = app.get_webview_window("html-preview") {
-        // Push updated content into the existing window
         let js = format!(
-            "if(window._updatePreview){{window._updatePreview({});}}",
-            html_json
+            "document.documentElement.style.opacity='{}';if(window._updatePreview){{window._updatePreview({});}}",
+            opacity, html_json
         );
         let _ = win.eval(&js);
         let _ = win.show();
@@ -30,10 +30,12 @@ pub async fn open_html_preview(
         return Ok(());
     }
 
-    // Inject HTML content before page scripts run
-    let init_script = format!("window._htmlContent = {};", html_json);
+    let init_script = format!(
+        "window._htmlContent={};window._initialOpacity={};",
+        html_json, opacity
+    );
 
-    tauri::WebviewWindowBuilder::new(
+    let _win = tauri::WebviewWindowBuilder::new(
         &app,
         "html-preview",
         tauri::WebviewUrl::App("preview.html".into()),
@@ -42,10 +44,23 @@ pub async fn open_html_preview(
     .inner_size(1000.0, 700.0)
     .min_inner_size(600.0, 400.0)
     .resizable(true)
+    .transparent(true)
     .initialization_script(&init_script)
     .build()
     .map_err(|e| e.to_string())?;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_preview_opacity(
+    app: tauri::AppHandle,
+    opacity: f64,
+) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("html-preview") {
+        let js = format!("document.documentElement.style.opacity='{}';", opacity);
+        win.eval(&js).map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 

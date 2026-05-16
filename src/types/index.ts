@@ -10,6 +10,7 @@ export interface Note {
   content: string;
   lastModified: string;
   sourceFilePath?: string;
+  format?: string;
 }
 
 export interface DiffBlock {

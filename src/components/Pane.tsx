@@ -62,7 +62,7 @@ export function Pane({ paneIndex }: Props) {
   const renameInputRef = useRef<HTMLInputElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
 
-  const { notes, updateNote, markSaved, unsavedIds } = useNoteStore();
+  const { notes, updateNote, markSaved, unsavedIds, setNoteFormat } = useNoteStore();
   const { settings } = useSettingsStore();
   const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
   const setPaneLineNumbers = useSettingsStore((s) => s.setPaneLineNumbers);
@@ -84,7 +84,7 @@ export function Pane({ paneIndex }: Props) {
   const isUnsaved = note != null && unsavedIds.has(note.id);
   const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
-  const [selectedFormat, setSelectedFormat] = useState(settings.formatOptions[0] ?? 'Plain text');
+  const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Plain text');
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
   const [wordCount, setWordCount] = useState(0);
@@ -100,6 +100,13 @@ export function Pane({ paneIndex }: Props) {
     setCharCount(content.length);
     setWordCount(content.trim() ? content.trim().split(/\s+/).length : 0);
   }, [note?.content]);
+
+  // Sync format selector when the note displayed in this pane changes
+  useEffect(() => {
+    if (note?.format) {
+      setSelectedFormat(note.format);
+    }
+  }, [note?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isRenaming) renameInputRef.current?.focus();
@@ -211,7 +218,7 @@ export function Pane({ paneIndex }: Props) {
           const format = selectedFormat;
 
           if (format === 'HTML Viewer') {
-            await invoke('open_html_preview', { html: text });
+            await invoke('open_html_preview', { html: text, opacity: settings.windowOpacity });
             return;
           }
 
@@ -370,6 +377,7 @@ export function Pane({ paneIndex }: Props) {
         onFormatChange={(fmt) => {
           setSelectedFormat(fmt);
           setPaneDetectedLanguage(paneIndex, null);
+          if (note) setNoteFormat(note.id, fmt);
         }}
         onAction={handleAction}
       />

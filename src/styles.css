@@ -253,7 +253,9 @@ input {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: var(--toolbar-bg);
+  background: color-mix(in srgb, var(--toolbar-bg) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   overflow-x: auto;
@@ -309,35 +311,47 @@ input {
 /* ─── TabBar ─── */
 .tabbar {
   display: flex;
-  align-items: stretch;
+  align-items: flex-end;
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
-  height: 34px;
+  height: 38px;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 0 8px;
+  gap: 2px;
 }
 
 .tab {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 0 10px;
-  background: var(--tab-bg);
-  border-right: 1px solid var(--border);
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
   cursor: pointer;
   min-width: 90px;
   max-width: 180px;
+  height: 32px;
   font-size: 12px;
+  font-weight: 400;
   color: var(--text-secondary);
-  transition: background 0.1s;
+  transition: all 0.15s ease;
   position: relative;
+  flex-shrink: 0;
 }
 .tab:hover {
   background: var(--tab-hover-bg);
+  border-color: var(--border);
+  color: var(--text);
 }
 .tab.active {
-  background: var(--tab-selected-bg);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  border-top: 2px solid var(--accent);
   color: var(--text);
+  font-weight: 500;
 }
 
 .tab-title {
@@ -347,12 +361,18 @@ input {
   white-space: nowrap;
 }
 
-.tab-unsaved {
+.tab-lang-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent);
   flex-shrink: 0;
+}
+
+.tab-unsaved {
+  color: #f59e0b;
+  font-size: 9px;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .tab-close {
@@ -361,14 +381,20 @@ input {
   justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: 3px;
+  border-radius: 50%;
   font-size: 12px;
   color: var(--text-secondary);
   flex-shrink: 0;
   line-height: 1;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s;
+}
+.tab:hover .tab-close,
+.tab.active .tab-close {
+  opacity: 1;
 }
 .tab-close:hover {
-  background: var(--btn-hover);
+  background: rgba(255, 255, 255, 0.15);
   color: var(--text);
 }
 
@@ -376,12 +402,15 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  width: 32px;
+  height: 32px;
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 18px;
   flex-shrink: 0;
-  border-left: 1px solid var(--border);
+  border-radius: 8px;
+  margin-left: 4px;
+  transition: background 0.15s ease;
 }
 .tab-add:hover {
   background: var(--tab-hover-bg);

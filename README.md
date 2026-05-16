@@ -87,6 +87,12 @@ Your notes and settings are saved here:
 
 ### Notes and tabs
 - Up to 8 note tabs, renameable by double-click on the tab label
+- Redesigned tab bar: rounded top corners (8px), accent-colored top border on the active tab, tabs sit on a shared baseline
+- Active tab: 15% accent background, 40% accent border, 2px solid accent top line, font-weight 500
+- Inactive tabs: transparent background, hover reveals secondary background and border
+- Language dot: 6px colored circle on the left of each tab label when a format is selected (Python=blue, JavaScript=yellow, TypeScript=blue, Rust=orange, SQL=green, HTML=red, Markdown=purple)
+- Unsaved indicator: amber ● before the close button with tooltip "Unsaved changes"
+- Close button: circular (16x16, border-radius 50%), hidden on inactive tabs, visible on active tab and on hover of any tab
 - Per-pane rename button (pencil icon) next to the note selector for inline rename
 - Per-pane export button (↓ icon) with options: export as .txt, .md, or current format extension
 - Saved/Unsaved indicator in the pane header, right-aligned: green "Saved" or amber "Unsaved"
@@ -138,7 +144,7 @@ Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green.
 - Frameless window with custom titlebar (Windows/Linux: custom min/max/close; macOS: native traffic lights space)
 - Resizable window with minimum size 600x400
 - Always on top toggle
-- Opacity slider (20% to 100%) — uses native window transparency via Tauri's transparent window mode
+- Opacity slider (20% to 100%) — uses native window transparency via Tauri's transparent window mode; the HTML Preview window automatically matches the main window opacity in real time. The main toolbar uses a frosted glass effect (backdrop-filter blur) so it remains readable at low opacity instead of going fully transparent
 - Focus mode: hides all UI except editor content for distraction-free writing
 - System tray with Show/Hide, New note, Exit
 
@@ -161,7 +167,8 @@ The Focus button in the toolbar shows an active/highlighted state while focus mo
 - Select "HTML Viewer" from the format dropdown and click Apply to open the current note as a live webpage
 - HTML is rendered in an iframe inside a dedicated `preview.html` window served by Tauri's internal asset server
 - A temp file is also written so "Open in browser" opens the exact content in the default system browser via the file:// URL
-- Opens a separate 1000x700 resizable window titled "HTML Preview"
+- Opens a separate 1000x700 resizable window titled "HTML Preview"; window opacity is set to match the main window at open time and stays in sync as the slider changes. The preview window is natively transparent so the desktop shows through at reduced opacity
+- Preview toolbar uses a frosted glass style (rgba background + backdrop-filter blur); the iframe keeps a white background for HTML content
 - Toolbar: Refresh (reloads the iframe with the last-sent content), Open in browser (opens temp file in default browser), Close
 - All toolbar buttons use the Tauri IPC bridge, which is reliably available in internal app windows
 - Non-blocking: main window stays usable while preview is open
@@ -210,7 +217,7 @@ src/
   components/
     TitleBar.tsx          # Custom frameless titlebar with drag region
     Toolbar.tsx           # Main toolbar (pin, theme, font, opacity, layout, files)
-    TabBar.tsx            # Tab bar with rename, close, add
+    TabBar.tsx            # Tab bar with rounded tabs, language dots, rename, close, add
     NoteEditor.tsx        # CodeMirror 6 wrapper with optional line numbers
     AIToolbar.tsx         # Per-pane AI action buttons
     DiffView.tsx          # Shared side-by-side diff component (CSS grid, line numbers, sync scroll)
@@ -229,7 +236,7 @@ src-tauri/
     main.rs               # Entry point
     commands/
       ai.rs               # call_ai Tauri command (reqwest HTTP to Claude/OpenAI)
-      preview.rs          # HTML preview commands (temp file, open, close, open in browser)
+      preview.rs          # HTML preview commands (open with opacity, close, open in browser, set_preview_opacity)
   capabilities/default.json  # Tauri permission grants
   tauri.conf.json         # App config: frameless window, tray
   icons/

@@ -70,6 +70,7 @@ pub fn run() {
             commands::preview::open_html_preview,
             commands::preview::close_html_preview,
             commands::preview::open_preview_in_browser,
+            commands::preview::set_preview_opacity,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

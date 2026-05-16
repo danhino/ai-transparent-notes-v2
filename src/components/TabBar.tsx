@@ -4,6 +4,17 @@ import { useSettingsStore } from '../stores/settingsStore';
 
 const MAX_TABS = 8;
 
+const LANG_DOT_COLORS: Record<string, string> = {
+  'Python':      '#3b82f6',
+  'JavaScript':  '#eab308',
+  'TypeScript':  '#3b82f6',
+  'Rust':        '#f97316',
+  'SQL':         '#22c55e',
+  'HTML/CSS':    '#ef4444',
+  'HTML Viewer': '#ef4444',
+  'Markdown':    '#a855f7',
+};
+
 export function TabBar() {
   const { notes, activeNoteIndex, unsavedIds, addNote, removeNote, updateNote, setActiveNoteIndex } =
     useNoteStore();
@@ -17,7 +28,6 @@ export function TabBar() {
     if (notes.length >= MAX_TABS) return;
     const note = addNote();
     setActiveNoteIndex(notes.length);
-    // Assign the new note to pane 0 if pane 0 is empty
     if (!paneNoteIds[0]) {
       setPaneNoteId(0, note.id);
     }
@@ -25,7 +35,6 @@ export function TabBar() {
 
   function handleClose(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    // Remove from any pane that holds this note
     paneNoteIds.forEach((nid, i) => {
       if (nid === id) setPaneNoteId(i, null);
     });
@@ -46,51 +55,66 @@ export function TabBar() {
 
   return (
     <div className="tabbar">
-      {notes.map((note, idx) => (
-        <div
-          key={note.id}
-          className={`tab${idx === activeNoteIndex ? ' active' : ''}`}
-          onClick={() => setActiveNoteIndex(idx)}
-          onDoubleClick={(e) => handleDoubleClick(e, note.id, note.title)}
-        >
-          {renamingId === note.id ? (
-            <input
-              autoFocus
-              style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: 'inherit',
-                font: 'inherit',
-                width: '100%',
-              }}
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onBlur={() => commitRename(note.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitRename(note.id);
-                if (e.key === 'Escape') setRenamingId(null);
-                e.stopPropagation();
-              }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <span className="tab-title">{note.title}</span>
-          )}
+      {notes.map((note, idx) => {
+        const langDotColor = note.format ? LANG_DOT_COLORS[note.format] : undefined;
+        const isActive = idx === activeNoteIndex;
+        const isUnsaved = unsavedIds.has(note.id);
 
-          {unsavedIds.has(note.id) && <span className="tab-unsaved" />}
+        return (
+          <div
+            key={note.id}
+            className={`tab${isActive ? ' active' : ''}`}
+            onClick={() => setActiveNoteIndex(idx)}
+            onDoubleClick={(e) => handleDoubleClick(e, note.id, note.title)}
+          >
+            {langDotColor && (
+              <span
+                className="tab-lang-dot"
+                style={{ backgroundColor: langDotColor }}
+              />
+            )}
 
-          {notes.length > 1 && (
-            <button
-              className="tab-close"
-              onClick={(e) => handleClose(e, note.id)}
-              title="Close"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      ))}
+            {renamingId === note.id ? (
+              <input
+                autoFocus
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'inherit',
+                  font: 'inherit',
+                  width: '100%',
+                }}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={() => commitRename(note.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitRename(note.id);
+                  if (e.key === 'Escape') setRenamingId(null);
+                  e.stopPropagation();
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span className="tab-title">{note.title}</span>
+            )}
+
+            {isUnsaved && (
+              <span className="tab-unsaved" title="Unsaved changes">●</span>
+            )}
+
+            {notes.length > 1 && (
+              <button
+                className="tab-close"
+                onClick={(e) => handleClose(e, note.id)}
+                title="Close"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        );
+      })}
 
       {notes.length < MAX_TABS && (
         <button className="tab-add" onClick={handleAdd} title="New note">
