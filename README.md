@@ -104,11 +104,37 @@ Your notes and settings are saved here:
 - Draggable dividers between panes
 - Each pane has an independent note selector
 
+### Format list
+
+The Format dropdown follows the order from the original app: Auto-detect (Code), Python, JavaScript, Java, TypeScript, SQL, Markdown, RTF, CSV, XML, C#, PowerShell, Bash, HTML/CSS, C, C++, Plain Text (Structured Notes).
+
+### Contextual toolbars
+
+Selecting RTF, CSV, or XML reveals a format-specific toolbar row immediately below the AI toolbar. It collapses automatically when any other format is chosen.
+
+**RTF toolbar (two rows)**
+Row 1: Style dropdown (Normal, Heading 1-3, Title, Subtitle, Quote, Code), Bold/Italic/Underline/Strikethrough toggles, Font family dropdown, Font size dropdown, Font color swatch picker, Highlight color swatch picker, Align (Left/Center/Right/Justify) toggle group.
+Row 2: Margin dropdown, Indent increase/decrease, Page size dropdown, Bullet list toggle, Numbered list toggle, Insert table (8x8 grid picker), Insert image placeholder, Insert horizontal rule, Show/hide formatting marks, Quick style dropdown, Clear formatting.
+
+Bold and Italic use markdown-style inline markers (`**text**`, `_text_`). The AI Apply action sends these as plain text for the model to interpret and reformat.
+
+**CSV toolbar (two rows)**
+Row 1: Merge cells, Number format dropdown, Increase/Decrease decimal places, Sort A-Z/Z-A, Toggle filter row, Insert row, Delete row.
+Row 2: Insert column, Header row toggle (marks first row as header — excluded from sort), Transpose (swaps rows and columns), Delimiter selector (Comma, Tab, Semicolon, Pipe).
+
+All CSV operations act directly on the plain-text content in the editor. A Table View toggle in the pane header renders the CSV as a styled HTML table below the editor (updates with 400ms debounce). Importing a .csv file auto-enables Table View.
+
+**XML toolbar (two rows)**
+Row 1: Wrap selection in tag (inline tag name input), Unwrap surrounding tag, Collapse all/Expand all, Format (pretty-print with 2-space indent using browser DOMParser), Minify (single-line), Validate (inline error/success banner using browser DOMParser).
+Row 2: Add attribute (inline name/value inputs), Insert child/sibling element, Insert comment, Insert CDATA, Navigate Prev/Next/Parent, XPath search field and Go button (match count shown next to Go).
+
+XML format applies CodeMirror's built-in XML syntax highlighting immediately when selected.
+
 ### Syntax highlighting
 
 Selecting a format from the Format dropdown immediately applies CodeMirror syntax highlighting for that language, before clicking Apply. Supported languages:
 
-Python, JavaScript, TypeScript, Java, C, C++, C# (via legacy mode), Rust, SQL, HTML/CSS, CSS, Markdown, JSON, Bash/Shell, PowerShell
+Python, JavaScript, TypeScript, Java, C, C++, C# (via legacy mode), Rust, SQL, HTML/CSS, CSS, Markdown, JSON, XML, Bash/Shell, PowerShell
 
 Dark and Blue themes use the CodeMirror oneDark color scheme. Light, Sepia, and Green themes use the default light syntax colors. Changing themes reconfigures the syntax colors instantly via compartment reconfiguration — no editor rebuild.
 

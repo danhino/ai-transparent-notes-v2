@@ -8,6 +8,7 @@ import { markdown } from '@codemirror/lang-markdown';
 import { rust } from '@codemirror/lang-rust';
 import { css } from '@codemirror/lang-css';
 import { json } from '@codemirror/lang-json';
+import { xml } from '@codemirror/lang-xml';
 import { StreamLanguage } from '@codemirror/language';
 import { shell } from '@codemirror/legacy-modes/mode/shell';
 import { csharp } from '@codemirror/legacy-modes/mode/clike';
@@ -16,26 +17,30 @@ import type { Extension } from '@codemirror/state';
 
 export function getLanguageExtension(format: string): Extension | null {
   switch (format.toLowerCase().trim()) {
-    case 'python':                 return python();
-    case 'javascript':             return javascript();
-    case 'typescript':             return javascript({ typescript: true });
-    case 'java':                   return java();
+    case 'python':                          return python();
+    case 'javascript':                      return javascript();
+    case 'typescript':                      return javascript({ typescript: true });
+    case 'java':                            return java();
     case 'c':
-    case 'c++':                    return cpp();
-    case 'c#':                     return StreamLanguage.define(csharp);
-    case 'rust':                   return rust();
-    case 'sql':                    return sql();
+    case 'c++':                             return cpp();
+    case 'c#':                              return StreamLanguage.define(csharp);
+    case 'rust':                            return rust();
+    case 'sql':                             return sql();
     case 'html':
-    case 'html/css':               return html();
-    case 'css':                    return css();
-    case 'markdown':               return markdown();
-    case 'json':                   return json();
+    case 'html/css':                        return html();
+    case 'css':                             return css();
+    case 'markdown':                        return markdown();
+    case 'json':                            return json();
+    case 'xml':                             return xml();
     case 'bash':
-    case 'shell':                  return StreamLanguage.define(shell);
-    case 'powershell':             return StreamLanguage.define(powerShell);
+    case 'shell':                           return StreamLanguage.define(shell);
+    case 'powershell':                      return StreamLanguage.define(powerShell);
+    case 'rtf':
+    case 'csv':
     case 'plain text':
+    case 'plain text (structured notes)':
     case 'auto-detect (code)':
     case 'html viewer':
-    default:                       return null;
+    default:                                return null;
   }
 }

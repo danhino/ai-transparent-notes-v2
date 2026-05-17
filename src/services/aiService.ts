@@ -42,6 +42,33 @@ function applyInstruction(format: string): string {
       'On all subsequent lines write only the formatted code with no explanations and no markdown code fences.\n\nCode:'
     );
   }
+  if (format === 'RTF') {
+    return (
+      'Reformat and improve the following rich text content. Enhance structure and readability. ' +
+      'Use **text** for bold, _text_ for italic, # for Heading 1, ## for Heading 2, ### for Heading 3, ' +
+      '> for block quotes where appropriate. Return only the improved content with no explanations:'
+    );
+  }
+  if (format === 'CSV') {
+    return (
+      'Clean and standardize the following CSV data. Fix inconsistent formatting, remove extra whitespace, ' +
+      'ensure consistent delimiter usage, and align data types within columns. ' +
+      'Return only the CSV content with no explanations, no markdown, no code fences:'
+    );
+  }
+  if (format === 'XML') {
+    return (
+      'Reformat and clean the following XML. Ensure proper indentation (2 spaces), valid tag nesting, ' +
+      'and correct attribute quoting. Return only the XML content with no explanations and no markdown code fences:'
+    );
+  }
+  if (format === 'Plain Text (Structured Notes)') {
+    return (
+      'Improve the structure, clarity, and organization of the following notes. ' +
+      'Fix grammar, add logical grouping, and ensure consistent formatting. ' +
+      'Return only the improved text with no explanations:'
+    );
+  }
   return (
     `You are a code formatter. Format the following ${format} code with correct indentation, ` +
     `spacing, and syntax structure. Return only the formatted code with no explanations and no markdown code fences:`

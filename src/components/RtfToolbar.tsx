@@ -1,0 +1,429 @@
+import { useState, useRef, useEffect } from 'react';
+import type { NoteEditorRef } from './NoteEditor';
+import {
+  toggleBold,
+  toggleItalic,
+  toggleUnderline,
+  toggleStrikethrough,
+  clearFormatting,
+  applyRtfStyle,
+  insertHorizontalRule,
+  insertAsciiTable,
+  toggleBulletList,
+  toggleNumberedList,
+  changeIndent,
+} from '../utils/rtfParser';
+
+const FONTS = [
+  'Segoe UI', 'Consolas', 'Cascadia Code', 'Courier New', 'Georgia',
+  'Times New Roman', 'Calibri', 'Arial', 'Verdana', 'Tahoma',
+  'Trebuchet MS', 'Comic Sans MS',
+];
+
+const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 72];
+
+const RTF_STYLES = [
+  'Normal', 'Heading 1', 'Heading 2', 'Heading 3',
+  'Title', 'Subtitle', 'Quote', 'Code',
+];
+
+const MARGIN_OPTIONS = ['Normal', 'Narrow', 'Wide', 'Mirrored'];
+const PAGE_SIZES = ['A4', 'Letter', 'Legal', 'A3'];
+
+const SWATCH_COLORS = [
+  '#000000', '#808080', '#C0C0C0', '#FFFFFF', '#FF0000',
+  '#800000', '#FF8000', '#808000', '#FFFF00', '#00FF00',
+  '#008000', '#00FFFF', '#008080', '#0000FF', '#000080',
+  '#FF00FF', '#800080', '#FF69B4', '#8B4513', '#FFA500',
+];
+
+interface ColorSwatchProps {
+  onSelect: (color: string) => void;
+  onClose: () => void;
+}
+
+function ColorSwatch({ onSelect, onClose }: ColorSwatchProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="color-swatch-popup">
+      {SWATCH_COLORS.map((c) => (
+        <button
+          key={c}
+          className="color-swatch-cell"
+          style={{ background: c }}
+          onClick={() => { onSelect(c); onClose(); }}
+          title={c}
+        />
+      ))}
+    </div>
+  );
+}
+
+interface TablePickerProps {
+  onSelect: (rows: number, cols: number) => void;
+  onClose: () => void;
+}
+
+function TablePicker({ onSelect, onClose }: TablePickerProps) {
+  const [hover, setHover] = useState({ r: 0, c: 0 });
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="table-picker-popup">
+      <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4 }}>
+        {hover.r > 0 ? `${hover.r} x ${hover.c}` : 'Select table size'}
+      </div>
+      <div className="table-picker-grid">
+        {Array.from({ length: 8 }, (_, r) =>
+          Array.from({ length: 8 }, (_, c) => (
+            <button
+              key={`${r}-${c}`}
+              className={`table-picker-cell${r < hover.r && c < hover.c ? ' active' : ''}`}
+              onMouseEnter={() => setHover({ r: r + 1, c: c + 1 })}
+              onClick={() => { onSelect(r + 1, c + 1); onClose(); }}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface Props {
+  editorRef: React.RefObject<NoteEditorRef | null>;
+  disabled: boolean;
+}
+
+export function RtfToolbar({ editorRef, disabled }: Props) {
+  const [activeStyle, setActiveStyle] = useState('Normal');
+  const [activeFont, setActiveFont] = useState('Segoe UI');
+  const [activeSize, setActiveSize] = useState(12);
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [isStrike, setIsStrike] = useState(false);
+  const [alignment, setAlignment] = useState<'left' | 'center' | 'right' | 'justify'>('left');
+  const [showFontColor, setShowFontColor] = useState(false);
+  const [showHighlight, setShowHighlight] = useState(false);
+  const [showTable, setShowTable] = useState(false);
+  const [showFormattingMarks, setShowFormattingMarks] = useState(false);
+  const [showBullets, setShowBullets] = useState(false);
+  const [showNumbers, setShowNumbers] = useState(false);
+
+  function getSelAndText() {
+    const sel = editorRef.current?.getSelection() ?? '';
+    const full = editorRef.current?.getText() ?? '';
+    return { sel, full };
+  }
+
+  function applyAndUpdate(newText: string) {
+    editorRef.current?.applyText(newText);
+  }
+
+  function handleBold() {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(toggleBold(full, sel));
+    setIsBold((v) => !v);
+  }
+
+  function handleItalic() {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(toggleItalic(full, sel));
+    setIsItalic((v) => !v);
+  }
+
+  function handleUnderline() {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(toggleUnderline(full, sel));
+    setIsUnderline((v) => !v);
+  }
+
+  function handleStrike() {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(toggleStrikethrough(full, sel));
+    setIsStrike((v) => !v);
+  }
+
+  function handleStyle(style: string) {
+    const { sel, full } = getSelAndText();
+    if (!sel) return;
+    applyAndUpdate(full.replace(sel, applyRtfStyle(sel, style)));
+    setActiveStyle(style);
+  }
+
+  function handleHR() {
+    const offset = editorRef.current?.getCursorOffset() ?? 0;
+    const full = editorRef.current?.getText() ?? '';
+    applyAndUpdate(insertHorizontalRule(full, offset));
+  }
+
+  function handleTable(rows: number, cols: number) {
+    const offset = editorRef.current?.getCursorOffset() ?? 0;
+    const full = editorRef.current?.getText() ?? '';
+    const table = insertAsciiTable(rows, cols);
+    applyAndUpdate(full.slice(0, offset) + table + full.slice(offset));
+  }
+
+  function handleBulletList() {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(toggleBulletList(full, sel));
+    setShowBullets((v) => !v);
+  }
+
+  function handleNumberedList() {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(toggleNumberedList(full, sel));
+    setShowNumbers((v) => !v);
+  }
+
+  function handleIndent(increase: boolean) {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(changeIndent(full, sel, increase));
+  }
+
+  function handleClearFormatting() {
+    const { sel, full } = getSelAndText();
+    applyAndUpdate(clearFormatting(full, sel));
+    setIsBold(false); setIsItalic(false); setIsUnderline(false); setIsStrike(false);
+  }
+
+  function handleColorSelect(color: string) {
+    const { sel, full } = getSelAndText();
+    if (!sel) return;
+    applyAndUpdate(full.replace(sel, `<span style="color:${color}">${sel}</span>`));
+  }
+
+  function handleHighlightSelect(color: string) {
+    const { sel, full } = getSelAndText();
+    if (!sel) return;
+    applyAndUpdate(full.replace(sel, `<mark style="background:${color}">${sel}</mark>`));
+  }
+
+  const sep = <div className="ctx-toolbar-sep" />;
+  const btnClass = (active: boolean) =>
+    `ctx-btn${active ? ' ctx-btn-active' : ''}`;
+
+  return (
+    <div className="contextual-toolbar">
+      {/* Row 1 */}
+      <div className="ctx-toolbar-row">
+        <select
+          className="ctx-select"
+          value={activeStyle}
+          onChange={(e) => handleStyle(e.target.value)}
+          disabled={disabled}
+          title="Paragraph style"
+        >
+          {RTF_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        {sep}
+
+        <button className={btnClass(isBold)} onClick={handleBold} disabled={disabled} title="Bold">
+          <strong>B</strong>
+        </button>
+        <button className={btnClass(isItalic)} onClick={handleItalic} disabled={disabled} title="Italic">
+          <em>I</em>
+        </button>
+        <button className={btnClass(isUnderline)} onClick={handleUnderline} disabled={disabled} title="Underline">
+          <span style={{ textDecoration: 'underline' }}>U</span>
+        </button>
+        <button className={btnClass(isStrike)} onClick={handleStrike} disabled={disabled} title="Strikethrough">
+          <span style={{ textDecoration: 'line-through' }}>S</span>
+        </button>
+
+        {sep}
+
+        <select
+          className="ctx-select"
+          value={activeFont}
+          onChange={(e) => setActiveFont(e.target.value)}
+          disabled={disabled}
+          title="Font family"
+          style={{ maxWidth: 110 }}
+        >
+          {FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+        </select>
+
+        <select
+          className="ctx-select"
+          value={activeSize}
+          onChange={(e) => setActiveSize(Number(e.target.value))}
+          disabled={disabled}
+          title="Font size"
+          style={{ width: 50 }}
+        >
+          {FONT_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        {sep}
+
+        <div style={{ position: 'relative' }}>
+          <button
+            className="ctx-btn"
+            onClick={() => { setShowFontColor((v) => !v); setShowHighlight(false); setShowTable(false); }}
+            disabled={disabled}
+            title="Font color"
+          >
+            <span style={{ borderBottom: '2px solid var(--accent)' }}>A</span>
+          </button>
+          {showFontColor && (
+            <ColorSwatch onSelect={handleColorSelect} onClose={() => setShowFontColor(false)} />
+          )}
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          <button
+            className="ctx-btn"
+            onClick={() => { setShowHighlight((v) => !v); setShowFontColor(false); setShowTable(false); }}
+            disabled={disabled}
+            title="Highlight color"
+          >
+            <span style={{ background: '#FFFF00', color: '#000', padding: '0 2px', fontSize: 9 }}>ab</span>
+          </button>
+          {showHighlight && (
+            <ColorSwatch onSelect={handleHighlightSelect} onClose={() => setShowHighlight(false)} />
+          )}
+        </div>
+
+        {sep}
+
+        {(['left', 'center', 'right', 'justify'] as const).map((align) => (
+          <button
+            key={align}
+            className={btnClass(alignment === align)}
+            onClick={() => setAlignment(align)}
+            disabled={disabled}
+            title={`Align ${align}`}
+          >
+            {align === 'left' ? '⬤≡' : align === 'center' ? '≡' : align === 'right' ? '≡⬤' : '≡≡'}
+          </button>
+        ))}
+      </div>
+
+      {/* Row 2 */}
+      <div className="ctx-toolbar-row">
+        <select
+          className="ctx-select"
+          disabled={disabled}
+          title="Margin"
+          style={{ width: 80 }}
+        >
+          {MARGIN_OPTIONS.map((m) => <option key={m}>{m}</option>)}
+        </select>
+
+        <button className="ctx-btn" onClick={() => handleIndent(true)} disabled={disabled} title="Increase indent">
+          →
+        </button>
+        <button className="ctx-btn" onClick={() => handleIndent(false)} disabled={disabled} title="Decrease indent">
+          ←
+        </button>
+
+        <select
+          className="ctx-select"
+          disabled={disabled}
+          title="Page size"
+          style={{ width: 62 }}
+        >
+          {PAGE_SIZES.map((p) => <option key={p}>{p}</option>)}
+        </select>
+
+        {sep}
+
+        <button
+          className={btnClass(showBullets)}
+          onClick={handleBulletList}
+          disabled={disabled}
+          title="Bullet list"
+        >
+          •≡
+        </button>
+        <button
+          className={btnClass(showNumbers)}
+          onClick={handleNumberedList}
+          disabled={disabled}
+          title="Numbered list"
+        >
+          1.
+        </button>
+
+        <div style={{ position: 'relative' }}>
+          <button
+            className="ctx-btn"
+            onClick={() => { setShowTable((v) => !v); setShowFontColor(false); setShowHighlight(false); }}
+            disabled={disabled}
+            title="Insert table"
+          >
+            ⊞
+          </button>
+          {showTable && (
+            <TablePicker
+              onSelect={handleTable}
+              onClose={() => setShowTable(false)}
+            />
+          )}
+        </div>
+
+        <button className="ctx-btn" disabled={disabled} title="Insert image placeholder"
+          onClick={() => {
+            const offset = editorRef.current?.getCursorOffset() ?? 0;
+            const full = editorRef.current?.getText() ?? '';
+            applyAndUpdate(full.slice(0, offset) + '\n[Image]\n' + full.slice(offset));
+          }}
+        >
+          🖼
+        </button>
+
+        <button className="ctx-btn" onClick={handleHR} disabled={disabled} title="Insert horizontal rule">
+          —
+        </button>
+
+        <button
+          className={btnClass(showFormattingMarks)}
+          onClick={() => setShowFormattingMarks((v) => !v)}
+          disabled={disabled}
+          title="Show/hide formatting marks"
+        >
+          ¶
+        </button>
+
+        {sep}
+
+        <select
+          className="ctx-select"
+          value={activeStyle}
+          onChange={(e) => handleStyle(e.target.value)}
+          disabled={disabled}
+          title="Quick style"
+          style={{ width: 70 }}
+        >
+          {RTF_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        <button
+          className="ctx-btn"
+          onClick={handleClearFormatting}
+          disabled={disabled}
+          title="Clear formatting"
+        >
+          × fmt
+        </button>
+      </div>
+    </div>
+  );
+}

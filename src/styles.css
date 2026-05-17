@@ -685,6 +685,253 @@ input {
   flex-shrink: 0;
 }
 
+/* ─── Contextual toolbars (RTF / CSV / XML) ─── */
+.contextual-toolbar {
+  display: flex;
+  flex-direction: column;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ctx-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  height: 30px;
+}
+
+.ctx-toolbar-row:not(:last-child) {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.ctx-btn {
+  height: 22px;
+  padding: 0 7px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.ctx-btn:hover:not(:disabled) {
+  background: var(--btn-hover);
+}
+.ctx-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ctx-btn-active {
+  background: color-mix(in srgb, var(--accent) 20%, transparent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent);
+}
+
+.ctx-select {
+  height: 22px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 11px;
+  padding: 0 3px;
+  flex-shrink: 0;
+}
+
+.ctx-toolbar-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.ctx-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ctx-inline-input {
+  height: 22px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 11px;
+  padding: 0 6px;
+  outline: none;
+  width: 120px;
+  flex-shrink: 0;
+}
+.ctx-inline-input:focus {
+  border-color: var(--accent);
+}
+
+/* Color swatch popup */
+.color-swatch-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 80;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(5, 18px);
+  gap: 3px;
+}
+
+.color-swatch-cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+  display: block;
+}
+.color-swatch-cell:hover {
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+
+/* Table picker popup */
+.table-picker-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 80;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 8px;
+}
+
+.table-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 16px);
+  gap: 2px;
+}
+
+.table-picker-cell {
+  width: 16px;
+  height: 16px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 1px;
+  cursor: pointer;
+  padding: 0;
+}
+.table-picker-cell.active {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+  border-color: var(--accent);
+}
+.table-picker-cell:hover {
+  border-color: var(--accent);
+}
+
+/* XML status banner */
+.ctx-status-banner {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.ctx-status-success {
+  background: color-mix(in srgb, var(--success) 18%, var(--panel-bg));
+  color: var(--success);
+  border-bottom: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
+}
+.ctx-status-error {
+  background: color-mix(in srgb, var(--danger) 12%, var(--panel-bg));
+  color: var(--danger);
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+/* Focus mode — hide contextual toolbars */
+.app.focus-mode .contextual-toolbar {
+  display: none;
+}
+
+/* ─── Editor area (plain and CSV split view) ─── */
+.editor-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.editor-area-split .editor-wrap {
+  flex: 0 0 50%;
+  min-height: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── CSV table view ─── */
+.csv-table-wrap {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  background: var(--editor-bg);
+}
+
+.csv-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.csv-th {
+  background: color-mix(in srgb, var(--accent) 15%, var(--toolbar-bg));
+  color: var(--text);
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.csv-td {
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  color: var(--text);
+  white-space: nowrap;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+}
+
+.csv-row-even .csv-td {
+  background: var(--editor-bg);
+}
+
+.csv-row-odd .csv-td {
+  background: color-mix(in srgb, var(--toolbar-bg) 40%, var(--editor-bg));
+}
+
+.csv-table-empty {
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
 /* ─── Editor ─── */
 .editor-wrap {
   flex: 1;

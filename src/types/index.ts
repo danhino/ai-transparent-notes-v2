@@ -3,6 +3,10 @@ export type Layout = 'single' | 'side-by-side' | 'top-bottom' | 'grid';
 export type AiProvider = 'claude' | 'openai';
 export type DiffBlockType = 'equal' | 'added' | 'deleted' | 'changed';
 export type Platform = 'windows' | 'macos' | 'linux';
+export type RtfStyle = 'Normal' | 'Heading 1' | 'Heading 2' | 'Heading 3' | 'Title' | 'Subtitle' | 'Quote' | 'Code';
+export type CsvFormat = 'General' | 'Number' | 'Currency' | 'Percentage' | 'Date' | 'Time' | 'Scientific' | 'Text';
+export type Delimiter = 'Comma' | 'Tab' | 'Semicolon' | 'Pipe';
+export type XmlNavDirection = 'prev' | 'next' | 'parent';
 
 export interface Note {
   id: string;
@@ -73,22 +77,23 @@ export const OPENAI_MODELS = [
 ];
 
 export const DEFAULT_FORMAT_OPTIONS = [
-  'Plain text',
   'Auto-detect (Code)',
-  'Markdown',
   'Python',
   'JavaScript',
-  'TypeScript',
   'Java',
-  'C#',
-  'C',
-  'C++',
+  'TypeScript',
   'SQL',
-  'HTML/CSS',
+  'Markdown',
+  'RTF',
+  'CSV',
+  'XML',
+  'C#',
   'PowerShell',
   'Bash',
-  'JSON',
-  'HTML Viewer',
+  'HTML/CSS',
+  'C',
+  'C++',
+  'Plain Text (Structured Notes)',
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {

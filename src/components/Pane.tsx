@@ -4,6 +4,10 @@ import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
 import { AIToolbar } from './AIToolbar';
+import { RtfToolbar } from './RtfToolbar';
+import { CsvToolbar } from './CsvToolbar';
+import { XmlToolbar } from './XmlToolbar';
+import { CsvTableView } from './CsvTableView';
 const AiResultDialog = lazy(() => import('./AiResultDialog').then((m) => ({ default: m.AiResultDialog })));
 import { StatusBar } from './StatusBar';
 import { useNoteStore } from '../stores/noteStore';
@@ -11,6 +15,9 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
 import { runAction, runApply, getAiErrorMessage } from '../services/aiService';
 import { writeSourceFile } from '../services/storageService';
+import { stripRtfTags } from '../utils/rtfParser';
+import { getDelimiterChar } from '../utils/csvParser';
+import type { Delimiter } from '../types';
 
 const SAVE_DEBOUNCE_MS = 400;
 
@@ -29,6 +36,9 @@ const FORMAT_EXT: Record<string, string> = {
   'PowerShell': '.ps1',
   'Bash': '.sh',
   'JSON': '.json',
+  'RTF': '.rtf',
+  'CSV': '.csv',
+  'XML': '.xml',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -84,7 +94,7 @@ export function Pane({ paneIndex }: Props) {
   const isUnsaved = note != null && unsavedIds.has(note.id);
   const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
-  const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Plain text');
+  const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Auto-detect (Code)');
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
   const [wordCount, setWordCount] = useState(0);
@@ -94,6 +104,12 @@ export function Pane({ paneIndex }: Props) {
   const [paneError, setPaneError] = useState<string | null>(null);
   const [aiDialogData, setAiDialogData] = useState<AiDialogData | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // CSV-specific state
+  const [showCsvTableView, setShowCsvTableView] = useState(false);
+  const [csvHasHeader, setCsvHasHeader] = useState(false);
+  const [csvDelimiter, setCsvDelimiter] = useState<Delimiter>('Comma');
+  const [csvFilterText] = useState('');
 
   useEffect(() => {
     const content = note?.content ?? '';
@@ -129,6 +145,11 @@ export function Pane({ paneIndex }: Props) {
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
+
+  // Auto-enable table view when format switches to CSV
+  useEffect(() => {
+    if (selectedFormat === 'CSV') setShowCsvTableView(true);
+  }, [selectedFormat]);
 
   function handleEditorChange(text: string) {
     if (!note) return;
@@ -199,6 +220,13 @@ export function Pane({ paneIndex }: Props) {
     return view.getText();
   }
 
+  // Strip RTF control codes before sending to AI when format is RTF
+  function getAiText(): string {
+    const text = getWorkingText();
+    if (selectedFormat === 'RTF') return stripRtfTags(text);
+    return text;
+  }
+
   const handleAction = useCallback(
     async (action: 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare') => {
       if (!note || paneState.isBusy) return;
@@ -209,7 +237,7 @@ export function Pane({ paneIndex }: Props) {
       }
 
       const wasSelection = editorRef.current?.hasSelection() ?? false;
-      const text = getWorkingText();
+      const text = getAiText();
       if (!text.trim()) return;
 
       setPaneBusy(paneIndex, true);
@@ -280,6 +308,9 @@ export function Pane({ paneIndex }: Props) {
   }
 
   const content = note?.content ?? '';
+  const isRtf = selectedFormat === 'RTF';
+  const isCsv = selectedFormat === 'CSV';
+  const isXml = selectedFormat === 'XML';
 
   return (
     <div
@@ -360,6 +391,17 @@ export function Pane({ paneIndex }: Props) {
           #
         </button>
 
+        {/* CSV table view toggle */}
+        {isCsv && (
+          <button
+            className={`pane-icon-btn${showCsvTableView ? ' active-subtle' : ''}`}
+            onClick={() => setShowCsvTableView((v) => !v)}
+            title="Toggle table view"
+            style={{ fontSize: 10 }}
+          >
+            ⊞
+          </button>
+        )}
 
         <div style={{ flex: 1 }} />
 
@@ -382,18 +424,57 @@ export function Pane({ paneIndex }: Props) {
         onAction={handleAction}
       />
 
-      {/* Editor */}
-      <NoteEditor
-        ref={editorRef}
-        content={content}
-        fontFamily={settings.fontFamily}
-        fontSize={settings.fontSize}
-        language={paneState.detectedLanguage ?? selectedFormat}
-        activeTheme={settings.theme}
-        showLineNumbers={showLineNumbers}
-        onChange={handleEditorChange}
-        onLineChange={setLineNumber}
-      />
+      {/* Contextual toolbar — RTF */}
+      {isRtf && (
+        <RtfToolbar
+          editorRef={editorRef}
+          disabled={paneState.isBusy || !note}
+        />
+      )}
+
+      {/* Contextual toolbar — CSV */}
+      {isCsv && (
+        <CsvToolbar
+          editorRef={editorRef}
+          disabled={paneState.isBusy || !note}
+          hasHeader={csvHasHeader}
+          delimiter={csvDelimiter}
+          onHasHeaderChange={setCsvHasHeader}
+          onDelimiterChange={setCsvDelimiter}
+        />
+      )}
+
+      {/* Contextual toolbar — XML */}
+      {isXml && (
+        <XmlToolbar
+          editorRef={editorRef}
+          disabled={paneState.isBusy || !note}
+        />
+      )}
+
+      {/* Editor area — split view when CSV table is active */}
+      <div className={`editor-area${isCsv && showCsvTableView ? ' editor-area-split' : ''}`}>
+        <NoteEditor
+          ref={editorRef}
+          content={content}
+          fontFamily={settings.fontFamily}
+          fontSize={settings.fontSize}
+          language={paneState.detectedLanguage ?? selectedFormat}
+          activeTheme={settings.theme}
+          showLineNumbers={showLineNumbers}
+          onChange={handleEditorChange}
+          onLineChange={setLineNumber}
+        />
+
+        {isCsv && showCsvTableView && (
+          <CsvTableView
+            content={content}
+            delimiter={getDelimiterChar(csvDelimiter)}
+            hasHeader={csvHasHeader}
+            filterText={csvFilterText}
+          />
+        )}
+      </div>
 
       {/* Busy overlay */}
       {paneState.isBusy && (

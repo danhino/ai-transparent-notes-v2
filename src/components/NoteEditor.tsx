@@ -51,6 +51,8 @@ export interface NoteEditorRef {
   getSelection: () => string;
   hasSelection: () => boolean;
   applyText: (text: string) => void;
+  replaceSelection: (text: string) => void;
+  getCursorOffset: () => number;
   getLineNumber: () => number;
 }
 
@@ -197,6 +199,19 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: text },
       });
+    },
+
+    replaceSelection: (text) => {
+      const view = viewRef.current;
+      if (!view) return;
+      const { from, to } = view.state.selection.main;
+      view.dispatch({ changes: { from, to, insert: text } });
+    },
+
+    getCursorOffset: () => {
+      const view = viewRef.current;
+      if (!view) return 0;
+      return view.state.selection.main.head;
     },
 
     getLineNumber: () => {
