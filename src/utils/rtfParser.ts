@@ -1,3 +1,5 @@
+// ─── Strip RTF for AI input ───────────────────────────────────────────────────
+
 export function stripRtfTags(rtf: string): string {
   return rtf
     .replace(/\{\\rtf[^}]*\}/g, '')
@@ -9,113 +11,146 @@ export function stripRtfTags(rtf: string): string {
     .trim();
 }
 
-export function applyRtfStyle(text: string, style: string): string {
-  switch (style) {
-    case 'Heading 1': return `# ${text}`;
-    case 'Heading 2': return `## ${text}`;
-    case 'Heading 3': return `### ${text}`;
-    case 'Title': return `**${text}**`;
-    case 'Subtitle': return `_${text}_`;
-    case 'Quote': return `> ${text}`;
-    case 'Code': return `\`${text}\``;
-    default: return text;
+// ─── RTF → HTML (for loading into contenteditable) ───────────────────────────
+
+export function rtfToHtml(rtf: string): string {
+  const trimmed = rtf.trim();
+
+  // If it already looks like HTML (saved after editing), pass through
+  if (trimmed.startsWith('<')) return rtf;
+
+  // Not RTF at all — plain-text note with RTF format label
+  if (!trimmed.startsWith('{\\rtf')) {
+    return escapeHtmlChars(rtf).replace(/\n/g, '<br>');
   }
-}
 
-export function toggleBold(fullText: string, selection: string): string {
-  if (!selection) return fullText;
-  const marker = `**${selection}**`;
-  if (fullText.includes(marker)) return fullText.replace(marker, selection);
-  return fullText.replace(selection, marker);
-}
+  let t = rtf;
 
-export function toggleItalic(fullText: string, selection: string): string {
-  if (!selection) return fullText;
-  const marker = `_${selection}_`;
-  if (fullText.includes(marker)) return fullText.replace(marker, selection);
-  return fullText.replace(selection, marker);
-}
+  // Strip common header sections that contain no user text
+  t = t.replace(/\{\\fonttbl(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  t = t.replace(/\{\\colortbl(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  t = t.replace(/\{\\stylesheet(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  t = t.replace(/\{\\info(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  t = t.replace(/\{\\\*[^}]*\}/g, ''); // destination groups like {\* ...}
 
-export function toggleUnderline(fullText: string, selection: string): string {
-  if (!selection) return fullText;
-  const marker = `<u>${selection}</u>`;
-  if (fullText.includes(marker)) return fullText.replace(marker, selection);
-  return fullText.replace(selection, marker);
-}
-
-export function toggleStrikethrough(fullText: string, selection: string): string {
-  if (!selection) return fullText;
-  const marker = `~~${selection}~~`;
-  if (fullText.includes(marker)) return fullText.replace(marker, selection);
-  return fullText.replace(selection, marker);
-}
-
-export function clearFormatting(fullText: string, selection: string): string {
-  const target = selection || fullText;
-  const cleaned = target
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/_(.*?)_/g, '$1')
-    .replace(/<u>(.*?)<\/u>/g, '$1')
-    .replace(/~~(.*?)~~/g, '$1')
-    .replace(/`(.*?)`/g, '$1')
-    .replace(/^#{1,3} /gm, '')
-    .replace(/^> /gm, '');
-  if (!selection) return cleaned;
-  return fullText.replace(selection, cleaned);
-}
-
-export function insertHorizontalRule(fullText: string, cursorOffset: number): string {
-  return fullText.slice(0, cursorOffset) + '\n---\n' + fullText.slice(cursorOffset);
-}
-
-export function insertAsciiTable(rows: number, cols: number): string {
-  const cellWidth = 10;
-  const hLine = '+' + Array(cols).fill('-'.repeat(cellWidth)).join('+') + '+';
-  const dataRow = '|' + Array(cols).fill(' '.repeat(cellWidth)).join('|') + '|';
-  const lines = [hLine];
-  for (let r = 0; r < rows; r++) {
-    lines.push(dataRow);
-    lines.push(hLine);
+  // Inline formatting groups written by htmlToRtf / old toolbar
+  for (let pass = 0; pass < 4; pass++) {
+    t = t.replace(/\{\\b ([^{}]+)\}/g,      '<strong>$1</strong>');
+    t = t.replace(/\{\\i ([^{}]+)\}/g,       '<em>$1</em>');
+    t = t.replace(/\{\\ul ([^{}]+)\}/g,      '<u>$1</u>');
+    t = t.replace(/\{\\strike ([^{}]+)\}/g,  '<s>$1</s>');
+    // heading / style paragraph groups
+    t = t.replace(/\{\\pard[^{]*\{([^{}]+)\}\\par\}/g, '$1<br>');
   }
-  return '\n' + lines.join('\n') + '\n';
+
+  // Paragraph and line breaks
+  t = t.replace(/\\par\b\s*/g,  '<br>');
+  t = t.replace(/\\line\b\s*/g, '<br>');
+  t = t.replace(/\\tab\b/g,     '    ');
+
+  // Unicode escape sequences \uN?
+  t = t.replace(/\\u(\d+)\??/g, (_, n) => String.fromCodePoint(parseInt(n, 10)));
+
+  // Drop the outer RTF wrapper
+  t = t.replace(/^\s*\{\\rtf\d+[^{}]*/, '');
+
+  // Strip remaining control words, groups, and lone braces
+  t = t.replace(/\{\\[^{}]*\}/g, '');
+  t = t.replace(/\{[^{}]*\}/g, '');
+  t = t.replace(/\\[a-zA-Z]+[-\d]* ?/g, '');
+  t = t.replace(/\\./g, '');
+  t = t.replace(/[{}]/g, '');
+
+  // Normalise whitespace
+  t = t.replace(/\r\n|\r/g, '\n');
+  t = t.replace(/\n/g, '<br>');
+  t = t.replace(/(<br>){3,}/g, '<br><br>');
+
+  return t.trim();
 }
 
-export function toggleBulletList(fullText: string, selection: string): string {
-  const target = selection || fullText;
-  const lines = target.split('\n');
-  const hasBullets = lines.every((l) => l.startsWith('• ') || l.trim() === '');
-  const toggled = lines
-    .map((l) => {
-      if (l.trim() === '') return l;
-      return hasBullets ? l.replace(/^• /, '') : `• ${l}`;
-    })
-    .join('\n');
-  if (!selection) return toggled;
-  return fullText.replace(selection, toggled);
+// ─── HTML → RTF (for saving contenteditable output back to disk) ──────────────
+
+export function htmlToRtf(html: string): string {
+  if (!html.trim()) {
+    return '{\\rtf1\\ansi\\deff0\n{\\fonttbl{\\f0\\fnil\\fcharset0 Segoe UI;}}\n\\f0\\fs24\n}';
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  function escapeRtf(text: string): string {
+    return text
+      .replace(/\\/g, '\\\\')
+      .replace(/\{/g, '\\{')
+      .replace(/\}/g, '\\}');
+  }
+
+  function nodeToRtf(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) return escapeRtf(node.textContent ?? '');
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const el = node as Element;
+    const tag = el.tagName.toLowerCase();
+    const children = Array.from(el.childNodes).map(nodeToRtf).join('');
+
+    switch (tag) {
+      case 'strong': case 'b':   return `{\\b ${children}}`;
+      case 'em':     case 'i':   return `{\\i ${children}}`;
+      case 'u':                  return `{\\ul ${children}}`;
+      case 's': case 'del':      return `{\\strike ${children}}`;
+      case 'br':                 return '\\par\n';
+      case 'p':                  return children + (children.endsWith('\\par\n') ? '' : '\\par\n');
+      case 'div':                return children + '\\par\n';
+      case 'h1':                 return `{\\b\\fs40 ${children}}\\par\n`;
+      case 'h2':                 return `{\\b\\fs32 ${children}}\\par\n`;
+      case 'h3':                 return `{\\b\\fs28 ${children}}\\par\n`;
+      case 'li':                 return `\\bullet ${children}\\par\n`;
+      case 'ul': case 'ol':      return children;
+      case 'table': {
+        // Flatten table cells with tab separation
+        return children + '\\par\n';
+      }
+      case 'tr':                 return children + '\\par\n';
+      case 'td': case 'th':      return children + '\\tab ';
+      case 'hr':                 return '\\par ________________________________\\par\n';
+      case 'span': {
+        const style = (el.getAttribute('style') ?? '').toLowerCase();
+        let result = children;
+        if (/font-weight:\s*bold/.test(style))              result = `{\\b ${result}}`;
+        if (/font-style:\s*italic/.test(style))             result = `{\\i ${result}}`;
+        if (/text-decoration:[^;]*underline/.test(style))   result = `{\\ul ${result}}`;
+        if (/text-decoration:[^;]*line-through/.test(style)) result = `{\\strike ${result}}`;
+        return result;
+      }
+      case 'body': return children;
+      default:     return children;
+    }
+  }
+
+  const rtfBody = nodeToRtf(doc.body).trim();
+
+  return [
+    '{\\rtf1\\ansi\\deff0',
+    '{\\fonttbl{\\f0\\fnil\\fcharset0 Segoe UI;}}',
+    '\\f0\\fs24',
+    rtfBody,
+    '}',
+  ].join('\n');
 }
 
-export function toggleNumberedList(fullText: string, selection: string): string {
-  const target = selection || fullText;
-  const lines = target.split('\n');
-  const hasNumbers = lines.every((l) => /^\d+\. /.test(l) || l.trim() === '');
-  let counter = 0;
-  const toggled = lines
-    .map((l) => {
-      if (l.trim() === '') return l;
-      counter++;
-      return hasNumbers ? l.replace(/^\d+\. /, '') : `${counter}. ${l}`;
-    })
-    .join('\n');
-  if (!selection) return toggled;
-  return fullText.replace(selection, toggled);
+// ─── Helper ───────────────────────────────────────────────────────────────────
+
+function escapeHtmlChars(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
-export function changeIndent(fullText: string, selection: string, increase: boolean): string {
-  const target = selection || fullText;
-  const lines = target.split('\n');
-  const indented = lines
-    .map((l) => (increase ? `  ${l}` : l.replace(/^  /, '')))
-    .join('\n');
-  if (!selection) return indented;
-  return fullText.replace(selection, indented);
+// Strip HTML tags to plain text (used by AI pipeline for RTF notes)
+export function stripHtmlTags(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  return doc.body.innerText ?? doc.body.textContent ?? '';
 }

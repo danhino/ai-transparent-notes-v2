@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
+import { RichTextEditor, RichTextEditorRef } from './RichTextEditor';
 import { AIToolbar } from './AIToolbar';
 import { RtfToolbar } from './RtfToolbar';
 import { CsvToolbar } from './CsvToolbar';
@@ -15,7 +16,7 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
 import { runAction, runApply, getAiErrorMessage } from '../services/aiService';
 import { writeSourceFile } from '../services/storageService';
-import { stripRtfTags } from '../utils/rtfParser';
+import { rtfToHtml, htmlToRtf, stripHtmlTags } from '../utils/rtfParser';
 import { getDelimiterChar } from '../utils/csvParser';
 import type { Delimiter } from '../types';
 
@@ -67,8 +68,9 @@ interface Props {
 }
 
 export function Pane({ paneIndex }: Props) {
-  const editorRef = useRef<NoteEditorRef>(null);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorRef     = useRef<NoteEditorRef>(null);
+  const richEditorRef = useRef<RichTextEditorRef>(null);
+  const saveTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
 
@@ -167,7 +169,12 @@ export function Pane({ paneIndex }: Props) {
     const n = useNoteStore.getState().notes.find((x) => x.id === id);
     if (n?.sourceFilePath) {
       try {
-        await writeSourceFile(n.sourceFilePath, content);
+        // content is HTML when editing in RTF mode; convert back to RTF for the file
+        const writeContent =
+          selectedFormat === 'RTF' && n.sourceFilePath.toLowerCase().endsWith('.rtf')
+            ? htmlToRtf(content)
+            : content;
+        await writeSourceFile(n.sourceFilePath, writeContent);
       } catch {
         // ignore write errors
       }
@@ -193,7 +200,15 @@ export function Pane({ paneIndex }: Props) {
   async function exportNote(ext: string) {
     setShowExportMenu(false);
     if (!note) return;
-    const text = editorRef.current?.getText() ?? note.content;
+
+    let text: string;
+    if (isRtf) {
+      const html = richEditorRef.current?.getHTML() ?? note.content;
+      text = ext === '.rtf' ? htmlToRtf(html) : stripHtmlTags(html);
+    } else {
+      text = editorRef.current?.getText() ?? note.content;
+    }
+
     const baseName = note.title.replace(/\.[^.]+$/, '');
     const savePath = await save({
       defaultPath: `${baseName}${ext}`,
@@ -214,17 +229,23 @@ export function Pane({ paneIndex }: Props) {
   }
 
   function getWorkingText(): string {
+    if (isRtf) {
+      const re = richEditorRef.current;
+      if (!re) return note?.content ?? '';
+      // getText() returns innerText — plain text without HTML tags
+      if (re.hasSelection()) return re.getSelection();
+      return re.getText();
+    }
     const view = editorRef.current;
     if (!view) return note?.content ?? '';
     if (view.hasSelection()) return view.getSelection();
     return view.getText();
   }
 
-  // Strip RTF control codes before sending to AI when format is RTF
+  // For RTF notes, getWorkingText already returns plain text (innerText).
+  // For other formats, return the content as-is.
   function getAiText(): string {
-    const text = getWorkingText();
-    if (selectedFormat === 'RTF') return stripRtfTags(text);
-    return text;
+    return getWorkingText();
   }
 
   const handleAction = useCallback(
@@ -281,8 +302,38 @@ export function Pane({ paneIndex }: Props) {
   function applyAiResult() {
     if (!aiDialogData || !note) return;
     const { original, result, wasSelection, detectedLanguage } = aiDialogData;
-    const view = editorRef.current;
 
+    if (isRtf) {
+      // AI result is plain text; convert to basic HTML for the rich text editor
+      const htmlResult = result
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+
+      let post: string;
+      if (wasSelection) {
+        const fullHtml = richEditorRef.current?.getHTML() ?? note.content;
+        // Try to replace the matching plain-text span inside the HTML
+        const escapedOriginal = original
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        post = fullHtml.includes(escapedOriginal)
+          ? fullHtml.replace(escapedOriginal, htmlResult)
+          : htmlResult;
+      } else {
+        post = htmlResult;
+      }
+
+      richEditorRef.current?.setContent(post);
+      updateNote(note.id, { content: post });
+      if (detectedLanguage) setPaneDetectedLanguage(paneIndex, detectedLanguage);
+      setAiDialogData(null);
+      void savePersist(note.id, post);
+      return;
+    }
+
+    // Non-RTF path (CodeMirror)
+    const view = editorRef.current;
     let post: string;
     if (wasSelection) {
       const fullText = view?.getText() ?? note.content;
@@ -290,7 +341,6 @@ export function Pane({ paneIndex }: Props) {
     } else {
       post = result;
     }
-
     if (view) view.applyText(post);
     updateNote(note.id, { content: post });
     if (detectedLanguage) setPaneDetectedLanguage(paneIndex, detectedLanguage);
@@ -311,6 +361,18 @@ export function Pane({ paneIndex }: Props) {
   const isRtf = selectedFormat === 'RTF';
   const isCsv = selectedFormat === 'CSV';
   const isXml = selectedFormat === 'XML';
+
+  // For RTF notes: parse raw RTF to HTML once, then pass HTML on subsequent edits.
+  // useMemo re-runs only when content or isRtf changes.
+  const rtfHtmlContent = useMemo(() => {
+    if (!isRtf) return '';
+    // If the content was already converted to HTML (has been edited this session),
+    // pass it through directly. Otherwise parse from raw RTF.
+    if (content.trim().startsWith('{\\rtf') || !content.trim().startsWith('<')) {
+      return rtfToHtml(content);
+    }
+    return content;
+  }, [isRtf, content]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
@@ -427,7 +489,7 @@ export function Pane({ paneIndex }: Props) {
       {/* Contextual toolbar — RTF */}
       {isRtf && (
         <RtfToolbar
-          editorRef={editorRef}
+          editorRef={richEditorRef}
           disabled={paneState.isBusy || !note}
         />
       )}
@@ -454,17 +516,27 @@ export function Pane({ paneIndex }: Props) {
 
       {/* Editor area — split view when CSV table is active */}
       <div className={`editor-area${isCsv && showCsvTableView ? ' editor-area-split' : ''}`}>
-        <NoteEditor
-          ref={editorRef}
-          content={content}
-          fontFamily={settings.fontFamily}
-          fontSize={settings.fontSize}
-          language={paneState.detectedLanguage ?? selectedFormat}
-          activeTheme={settings.theme}
-          showLineNumbers={showLineNumbers}
-          onChange={handleEditorChange}
-          onLineChange={setLineNumber}
-        />
+        {isRtf ? (
+          <RichTextEditor
+            ref={richEditorRef}
+            htmlContent={rtfHtmlContent}
+            fontFamily={settings.fontFamily}
+            fontSize={settings.fontSize}
+            onChange={handleEditorChange}
+          />
+        ) : (
+          <NoteEditor
+            ref={editorRef}
+            content={content}
+            fontFamily={settings.fontFamily}
+            fontSize={settings.fontSize}
+            language={paneState.detectedLanguage ?? selectedFormat}
+            activeTheme={settings.theme}
+            showLineNumbers={showLineNumbers}
+            onChange={handleEditorChange}
+            onLineChange={setLineNumber}
+          />
+        )}
 
         {isCsv && showCsvTableView && (
           <CsvTableView
