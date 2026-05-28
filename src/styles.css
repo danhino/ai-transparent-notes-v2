@@ -685,6 +685,58 @@ input {
   flex-shrink: 0;
 }
 
+/* ─── Toolbar collapse area ─── */
+.toolbar-area {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+}
+.toolbar-area.collapsed {
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbar-toggle {
+  width: 18px;
+  min-height: 30px;
+  align-self: stretch;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+  user-select: none;
+}
+.toolbar-toggle:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.toolbar-rows {
+  flex: 1;
+  overflow: hidden;
+  max-height: 200px;
+  opacity: 1;
+  transition: max-height 0.2s ease, opacity 0.15s ease;
+}
+.toolbar-rows.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+@media (max-width: 767px) {
+  .toolbar-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* ─── Contextual toolbars (RTF / CSV / XML) ─── */
 .contextual-toolbar {
   display: flex;
@@ -1352,7 +1404,7 @@ input {
 .app.focus-mode .tabbar,
 .app.focus-mode .workspace-panel,
 .app.focus-mode .pane-header,
-.app.focus-mode .ai-toolbar,
+.app.focus-mode .toolbar-area,
 .app.focus-mode .status-bar {
   display: none;
 }

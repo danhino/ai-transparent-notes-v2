@@ -143,8 +143,9 @@ When Auto-detect (Code) Apply completes and the user accepts the result, the det
 ### AI features
 - Supported providers: Claude (Anthropic) and OpenAI
 - API calls made from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions entirely
-- AI toolbar layout: `AI: | Format: [dropdown] [Apply] | [Fix] [Spell check] [Rephrase] [Convo] [Compare] [Suggest] [Polish]` — scrolls horizontally on narrow windows
+- AI toolbar layout: `[‹] AI: | Format: [dropdown] [Apply] | [Fix] [Spell check] [Rephrase] [Convo] [Compare] [Suggest] [Polish]` — scrolls horizontally on narrow windows; `‹/›` toggle on the far left collapses or expands all toolbars per pane
 - Actions: Fix, Polish, Rephrase, Convo, Spell check, Suggest, Compare; Apply runs whatever format is selected in the dropdown; Convo rewrites in a natural, casual conversational tone
+- Toolbar collapse: the `‹` button at the left edge of each pane's AI toolbar collapses all toolbar rows (AI + contextual) to free up editor space; a slim `›` strip remains so you can expand again. Shortcut: Ctrl+Shift+T (Cmd+Shift+T on Mac) toggles the focused pane. On mobile (under 768px) toolbars start collapsed. Each pane collapses independently.
 - "Auto-detect (Code)" is a format option; selecting it and clicking Apply detects the language, formats the code, and shows "Detected: [Language]" in the status bar
 - Actions work on selected text or the full note
 - After every AI action: a modal dialog opens showing the original and AI result side by side (Compare-style view) with diff stats (+added, -deleted, changed), synchronized scrolling, and line numbers. User chooses Apply changes or Revert. An optional AI summary can be generated.

@@ -84,6 +84,7 @@ export function Pane({ paneIndex }: Props) {
     focusMode,
     focusedPaneIndex,
     paneStates,
+    platform,
     setFocusedPane,
     setFocusMode,
     setPaneBusy,
@@ -99,6 +100,7 @@ export function Pane({ paneIndex }: Props) {
   const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
   const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Auto-detect (Code)');
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(() => window.innerWidth < 768);
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
   const [wordCount, setWordCount] = useState(0);
@@ -154,6 +156,20 @@ export function Pane({ paneIndex }: Props) {
   useEffect(() => {
     if (selectedFormat === 'CSV') setShowCsvTableView(true);
   }, [selectedFormat]);
+
+  // Ctrl/Cmd+Shift+T toggles toolbar collapse for the focused pane
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (!isFocused) return;
+      const mod = platform === 'macos' ? e.metaKey : e.ctrlKey;
+      if (mod && e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setToolbarCollapsed((v) => !v);
+      }
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isFocused, platform]);
 
   function handleEditorChange(text: string) {
     if (!note) return;
@@ -476,60 +492,71 @@ export function Pane({ paneIndex }: Props) {
         )}
       </div>
 
-      {/* AI toolbar */}
-      <AIToolbar
-        disabled={paneState.isBusy || !note}
-        selectedFormat={selectedFormat}
-        onFormatChange={(fmt) => {
-          if (note) {
-            // Switching away from RTF (or any format that stored HTML in note.content):
-            // extract plain text before handing the content to CodeMirror.
-            const hasHtmlContent =
-              selectedFormat === 'RTF' ||
-              content.includes('&lt;') ||
-              content.includes('&amp;');
-            if (hasHtmlContent) {
-              const cleanText =
-                selectedFormat === 'RTF' && richEditorRef.current
-                  ? richEditorRef.current.getText()
-                  : stripHtml(content);
-              updateNote(note.id, { content: cleanText });
-            }
-            setNoteFormat(note.id, fmt);
-          }
-          setSelectedFormat(fmt);
-          setPaneDetectedLanguage(paneIndex, null);
-        }}
-        onAction={handleAction}
-      />
+      {/* Toolbar area: collapse toggle + AI/contextual toolbars */}
+      <div className={`toolbar-area${toolbarCollapsed ? ' collapsed' : ''}`}>
+        <button
+          className="toolbar-toggle"
+          onClick={() => setToolbarCollapsed((v) => !v)}
+          title={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
+        >
+          {toolbarCollapsed ? '›' : '‹'}
+        </button>
+        <div className={`toolbar-rows${toolbarCollapsed ? ' collapsed' : ''}`}>
+          <AIToolbar
+            disabled={paneState.isBusy || !note}
+            selectedFormat={selectedFormat}
+            onFormatChange={(fmt) => {
+              if (note) {
+                // Switching away from RTF (or any format that stored HTML in note.content):
+                // extract plain text before handing the content to CodeMirror.
+                const hasHtmlContent =
+                  selectedFormat === 'RTF' ||
+                  content.includes('&lt;') ||
+                  content.includes('&amp;');
+                if (hasHtmlContent) {
+                  const cleanText =
+                    selectedFormat === 'RTF' && richEditorRef.current
+                      ? richEditorRef.current.getText()
+                      : stripHtml(content);
+                  updateNote(note.id, { content: cleanText });
+                }
+                setNoteFormat(note.id, fmt);
+              }
+              setSelectedFormat(fmt);
+              setPaneDetectedLanguage(paneIndex, null);
+            }}
+            onAction={handleAction}
+          />
 
-      {/* Contextual toolbar — RTF */}
-      {isRtf && (
-        <RtfToolbar
-          editorRef={richEditorRef}
-          disabled={paneState.isBusy || !note}
-        />
-      )}
+          {/* Contextual toolbar — RTF */}
+          {isRtf && (
+            <RtfToolbar
+              editorRef={richEditorRef}
+              disabled={paneState.isBusy || !note}
+            />
+          )}
 
-      {/* Contextual toolbar — CSV */}
-      {isCsv && (
-        <CsvToolbar
-          editorRef={editorRef}
-          disabled={paneState.isBusy || !note}
-          hasHeader={csvHasHeader}
-          delimiter={csvDelimiter}
-          onHasHeaderChange={setCsvHasHeader}
-          onDelimiterChange={setCsvDelimiter}
-        />
-      )}
+          {/* Contextual toolbar — CSV */}
+          {isCsv && (
+            <CsvToolbar
+              editorRef={editorRef}
+              disabled={paneState.isBusy || !note}
+              hasHeader={csvHasHeader}
+              delimiter={csvDelimiter}
+              onHasHeaderChange={setCsvHasHeader}
+              onDelimiterChange={setCsvDelimiter}
+            />
+          )}
 
-      {/* Contextual toolbar — XML */}
-      {isXml && (
-        <XmlToolbar
-          editorRef={editorRef}
-          disabled={paneState.isBusy || !note}
-        />
-      )}
+          {/* Contextual toolbar — XML */}
+          {isXml && (
+            <XmlToolbar
+              editorRef={editorRef}
+              disabled={paneState.isBusy || !note}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Editor area — split view when CSV table is active */}
       <div className={`editor-area${isCsv && showCsvTableView ? ' editor-area-split' : ''}`}>
