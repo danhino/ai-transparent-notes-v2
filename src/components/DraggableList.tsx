@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, CSSProperties } from 'react';
+import { useState, useRef, CSSProperties } from 'react';
 
 interface DraggableListProps {
   items: string[];
@@ -12,48 +12,57 @@ interface DraggableListProps {
 export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, onMoveDown }: DraggableListProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
-  // Ref avoids stale closure in onDrop — state from dragStart render isn't visible
-  // to onDrop's function reference without this
+  // Refs hold live values so the pointerUp handler never reads stale closure state
   const dragIndexRef = useRef<number | null>(null);
-  const touchDragIndex = useRef<number | null>(null);
+  const dropIndexRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Register touchmove with passive:false so preventDefault works
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    function onTouchMove(e: TouchEvent) {
-      if (touchDragIndex.current === null) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const row = target?.closest('[data-drag-index]');
-      if (row) {
-        const idx = parseInt(row.getAttribute('data-drag-index') ?? '-1');
-        if (idx >= 0 && idx !== touchDragIndex.current) setDropIndex(idx);
+  function startDrag(e: React.PointerEvent, index: number) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    dragIndexRef.current = index;
+    dropIndexRef.current = null;
+    setDragIndex(index);
+    setDropIndex(null);
+    // Capture so pointermove fires on the container even when cursor leaves it
+    try { containerRef.current?.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (dragIndexRef.current === null) return;
+    e.preventDefault();
+    // elementFromPoint is layout-based (ignores pointer capture) — returns the real target
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const row = el?.closest('[data-drag-index]');
+    if (row && containerRef.current?.contains(row)) {
+      const idx = parseInt(row.getAttribute('data-drag-index') ?? '-1');
+      if (idx >= 0 && idx !== dragIndexRef.current) {
+        dropIndexRef.current = idx;
+        setDropIndex(idx);
       }
     }
-    el.addEventListener('touchmove', onTouchMove, { passive: false });
-    return () => el.removeEventListener('touchmove', onTouchMove);
-  }, []);
-
-  function commitDrop(src: number, target: number) {
-    if (src === target) return;
-    const newItems = [...items];
-    const [moved] = newItems.splice(src, 1);
-    newItems.splice(target, 0, moved);
-    onReorder(newItems);
   }
 
-  function handleTouchStart(index: number) {
-    touchDragIndex.current = index;
-    setDragIndex(index);
+  function handlePointerUp(e: React.PointerEvent) {
+    if (dragIndexRef.current === null) return;
+    e.preventDefault();
+    const src = dragIndexRef.current;
+    const target = dropIndexRef.current;
+    dragIndexRef.current = null;
+    dropIndexRef.current = null;
+    setDragIndex(null);
+    setDropIndex(null);
+    if (src !== null && target !== null && src !== target) {
+      const newItems = [...items];
+      const [moved] = newItems.splice(src, 1);
+      newItems.splice(target, 0, moved);
+      onReorder(newItems);
+    }
   }
 
-  function handleTouchEnd() {
-    const src = touchDragIndex.current;
-    if (src !== null && dropIndex !== null) commitDrop(src, dropIndex);
-    touchDragIndex.current = null;
+  function cancelDrag() {
+    dragIndexRef.current = null;
+    dropIndexRef.current = null;
     setDragIndex(null);
     setDropIndex(null);
   }
@@ -68,7 +77,14 @@ export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, 
   };
 
   return (
-    <div ref={containerRef} className="format-list draggable-list">
+    <div
+      ref={containerRef}
+      className="format-list draggable-list"
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={cancelDrag}
+      style={{ touchAction: 'none', cursor: dragIndex !== null ? 'grabbing' : undefined }}
+    >
       {items.map((item, index) => {
         const isDragged = dragIndex === index;
         const isDropTarget = dropIndex === index && dragIndex !== index;
@@ -77,65 +93,25 @@ export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, 
             key={item}
             data-drag-index={index}
             className="format-list-item"
-            draggable
-            onDragStart={(e) => {
-              // setData required for drop to fire in WebView2 — without it the
-              // browser silently treats the operation as cancelled
-              e.dataTransfer.effectAllowed = 'move';
-              e.dataTransfer.setData('text/plain', String(index));
-              dragIndexRef.current = index;
-              setDragIndex(index);
-            }}
-            onDragEnter={(e) => {
-              e.preventDefault();
-              if (index !== dragIndexRef.current) setDropIndex(index);
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (index !== dragIndexRef.current) setDropIndex(index);
-            }}
-            onDragLeave={(e) => {
-              // Only clear when the cursor truly leaves this item, not when it
-              // crosses into a child element (span, button)
-              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                setDropIndex(null);
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const src = dragIndexRef.current;
-              if (src === null || src === index) {
-                dragIndexRef.current = null;
-                setDragIndex(null);
-                setDropIndex(null);
-                return;
-              }
-              commitDrop(src, index);
-              dragIndexRef.current = null;
-              setDragIndex(null);
-              setDropIndex(null);
-            }}
-            onDragEnd={() => {
-              dragIndexRef.current = null;
-              setDragIndex(null);
-              setDropIndex(null);
-            }}
-            onTouchStart={() => handleTouchStart(index)}
-            onTouchEnd={handleTouchEnd}
             style={{
               justifyContent: 'space-between',
               opacity: isDragged ? 0.4 : 1,
               borderTop: isDropTarget ? '2px solid var(--accent)' : '2px solid transparent',
               userSelect: 'none',
-              cursor: 'default',
               background: isDragged ? 'rgba(255,255,255,0.03)' : 'transparent',
               transition: 'opacity 0.1s, border-color 0.1s',
+              cursor: dragIndex !== null ? 'grabbing' : 'default',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span className="drag-handle" title="Drag to reorder">⠿</span>
+              <span
+                className="drag-handle"
+                title="Drag to reorder"
+                style={{ cursor: dragIndex !== null ? 'grabbing' : 'grab' }}
+                onPointerDown={(e) => startDrag(e, index)}
+              >
+                ⠿
+              </span>
               <span>{getLabel ? getLabel(item) : item}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
