@@ -520,15 +520,16 @@ export function Pane({ paneIndex }: Props) {
 
         {note && (
           <button
+            type="button"
             className={
               isSaving ? 'pane-save-btn saving'
               : isUnsaved ? 'pane-save-btn unsaved'
               : 'pane-save-btn saved'
             }
             onClick={isUnsaved && !isSaving ? () => void handleSaveNow() : undefined}
-            title={isSaving ? 'Saving...' : isUnsaved ? 'Click to save' : 'All changes saved'}
+            title={isSaving ? 'Saving...' : isUnsaved ? 'Click to save (Ctrl+S)' : 'All changes saved'}
           >
-            {isSaving ? 'Saving...' : isUnsaved ? '● Unsaved' : 'Saved'}
+            {isSaving ? 'Saving...' : isUnsaved ? '↓ Save' : 'Saved'}
           </button>
         )}
       </div>
