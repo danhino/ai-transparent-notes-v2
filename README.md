@@ -33,7 +33,7 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 - Per-pane export: save as .txt, .md, or the current format's file extension
 - Auto-save with 400ms debounce; file-backed notes write back to their source file on disk
 - Scratch notes (stored in settings) and file-backed notes (opened via Import or workspace double-click)
-- Unsaved indicator: amber dot before the close button; green "Saved" flash after each write
+- Save button in each pane header: green "Saved" when clean, amber "↓ Save" (with border, clickable) when unsaved, muted "Saving..." during the write. Ctrl+S also saves the focused pane. Tab bar shows an amber dot on unsaved tabs.
 - Tab language dots: colored 6px circle per format (Python=blue, JavaScript=yellow, TypeScript=blue, Rust=orange, SQL=green, HTML/CSS=red, Markdown=purple)
 
 ### Workspace panel
