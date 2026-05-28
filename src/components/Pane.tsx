@@ -109,6 +109,7 @@ export function Pane({ paneIndex }: Props) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [paneError, setPaneError] = useState<string | null>(null);
   const [aiDialogData, setAiDialogData] = useState<AiDialogData | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // CSV-specific state
@@ -171,6 +172,20 @@ export function Pane({ paneIndex }: Props) {
     return () => window.removeEventListener('keydown', handler);
   }, [isFocused, platform]);
 
+  // Ctrl/Cmd+S triggers immediate save on the focused pane
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (!isFocused) return;
+      const mod = platform === 'macos' ? e.metaKey : e.ctrlKey;
+      if (mod && !e.shiftKey && e.key === 's') {
+        e.preventDefault();
+        if (isUnsaved && !isSaving) void handleSaveNow();
+      }
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isFocused, platform, isUnsaved, isSaving]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleEditorChange(text: string) {
     if (!note) return;
     updateNote(note.id, { content: text });
@@ -200,6 +215,24 @@ export function Pane({ paneIndex }: Props) {
     markSaved(id);
     setPaneSavedVisible(paneIndex, true);
     setTimeout(() => setPaneSavedVisible(paneIndex, false), 1500);
+  }
+
+  async function handleSaveNow() {
+    if (!note || !isUnsaved || isSaving) return;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    setIsSaving(true);
+    const currentContent =
+      selectedFormat === 'RTF'
+        ? (richEditorRef.current?.getHTML() ?? note.content)
+        : (editorRef.current?.getText() ?? note.content);
+    await Promise.all([
+      savePersist(note.id, currentContent),
+      new Promise<void>((r) => setTimeout(r, 300)),
+    ]);
+    setIsSaving(false);
   }
 
   function startRename() {
@@ -486,9 +519,17 @@ export function Pane({ paneIndex }: Props) {
         <div style={{ flex: 1 }} />
 
         {note && (
-          <span className={isUnsaved ? 'pane-unsaved' : 'pane-saved'}>
-            {isUnsaved ? '● Unsaved' : 'Saved'}
-          </span>
+          <button
+            className={
+              isSaving ? 'pane-save-btn saving'
+              : isUnsaved ? 'pane-save-btn unsaved'
+              : 'pane-save-btn saved'
+            }
+            onClick={isUnsaved && !isSaving ? () => void handleSaveNow() : undefined}
+            title={isSaving ? 'Saving...' : isUnsaved ? 'Click to save' : 'All changes saved'}
+          >
+            {isSaving ? 'Saving...' : isUnsaved ? '● Unsaved' : 'Saved'}
+          </button>
         )}
       </div>
 

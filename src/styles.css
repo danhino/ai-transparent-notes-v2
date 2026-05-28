@@ -578,20 +578,40 @@ input {
   color: var(--accent);
 }
 
-.pane-saved {
+.pane-save-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
   font-size: 10px;
-  color: var(--success);
+  font-weight: 500;
   white-space: nowrap;
-  padding-right: 2px;
-  opacity: 0.85;
+  cursor: default;
+  pointer-events: none;
+  flex-shrink: 0;
+  font-family: inherit;
+  line-height: 1;
 }
-
-.pane-unsaved {
-  font-size: 10px;
-  color: var(--warning);
-  white-space: nowrap;
+.pane-save-btn.saved {
+  color: var(--success);
+  opacity: 0.85;
   padding-right: 2px;
+}
+.pane-save-btn.unsaved {
+  color: var(--warning);
+  cursor: pointer;
+  pointer-events: auto;
+  padding: 2px 6px;
+  border-radius: 4px;
   opacity: 0.9;
+  transition: background 0.15s ease;
+}
+.pane-save-btn.unsaved:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.pane-save-btn.saving {
+  color: var(--subtle-text);
+  opacity: 0.7;
+  padding-right: 2px;
 }
 
 .export-menu {
