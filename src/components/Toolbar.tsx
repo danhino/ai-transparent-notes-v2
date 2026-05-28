@@ -136,7 +136,7 @@ export function Toolbar() {
       case 'opacity':
         return (
           <span key={`opacity-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 9, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
               {Math.round(settings.windowOpacity * 100)}%
             </span>
             <input

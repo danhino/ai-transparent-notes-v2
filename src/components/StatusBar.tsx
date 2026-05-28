@@ -11,7 +11,7 @@ export function StatusBar({ charCount, wordCount, lineNumber, detectedLanguage }
       <span>{charCount} chars</span>
       <span>{wordCount} words</span>
       <span>Ln {lineNumber}</span>
-      {detectedLanguage && <span style={{ color: 'var(--accent)' }}>Detected: {detectedLanguage}</span>}
+      {detectedLanguage && <span className="status-lang-badge">Detected: {detectedLanguage}</span>}
     </div>
   );
 }
