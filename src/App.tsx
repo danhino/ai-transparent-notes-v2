@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { platform as getPlatform } from '@tauri-apps/plugin-os';
 import { TitleBar } from './components/TitleBar';
 import { Toolbar } from './components/Toolbar';
@@ -24,10 +25,6 @@ export default function App() {
   const { notes, addNote, setActiveNoteIndex, setNotes } = useNoteStore();
   const { settings, setSettings, setPaneNoteId, update } = useSettingsStore();
   const { focusMode, setFocusMode, settingsOpen, compareOpen, setPlatform } = useUiStore();
-
-  type PanelPos = { x: number; y: number; w: number; h: number };
-  const [panelPos, setPanelPos] = useState<PanelPos | null>(null);
-  const isDragging = useRef(false);
 
   // ─── Init ────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -101,61 +98,9 @@ export default function App() {
     root.style.fontSize = `${settings.fontSize}px`;
   }, [settings.fontFamily, settings.fontSize]);
 
-  // ─── Reset panel position when focus mode exits ───────────────────────────────
-  useEffect(() => {
-    if (!focusMode) setPanelPos(null);
-  }, [focusMode]);
-
-  function handleDragStart(e: React.MouseEvent) {
+  async function handleDragStart(e: React.MouseEvent) {
     e.preventDefault();
-    const panel = document.querySelector('.main-area') as HTMLElement | null;
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-    const w = rect.width;
-    const h = rect.height;
-    isDragging.current = true;
-
-    function onMove(ev: MouseEvent) {
-      const newX = Math.max(0, Math.min(ev.clientX - offsetX, window.innerWidth - w));
-      const newY = Math.max(0, Math.min(ev.clientY - offsetY, window.innerHeight - h));
-      setPanelPos({ x: newX, y: newY, w, h });
-    }
-    function onUp() {
-      isDragging.current = false;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }
-
-  function handleTouchStart(e: React.TouchEvent) {
-    const touch = e.touches[0];
-    const panel = document.querySelector('.main-area') as HTMLElement | null;
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    const offsetX = touch.clientX - rect.left;
-    const offsetY = touch.clientY - rect.top;
-    const w = rect.width;
-    const h = rect.height;
-    isDragging.current = true;
-
-    function onMove(ev: TouchEvent) {
-      ev.preventDefault();
-      const t = ev.touches[0];
-      const newX = Math.max(0, Math.min(t.clientX - offsetX, window.innerWidth - w));
-      const newY = Math.max(0, Math.min(t.clientY - offsetY, window.innerHeight - h));
-      setPanelPos({ x: newX, y: newY, w, h });
-    }
-    function onEnd() {
-      isDragging.current = false;
-      document.removeEventListener('touchmove', onMove);
-      document.removeEventListener('touchend', onEnd);
-    }
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('touchend', onEnd);
+    await getCurrentWindow().startDragging();
   }
 
   return (
@@ -172,10 +117,9 @@ export default function App() {
           <button
             className="focus-drag-btn"
             onMouseDown={handleDragStart}
-            onTouchStart={handleTouchStart}
-            title="Drag to move"
+            title="Drag to move window"
           >
-            ⠿
+            ⠿ Move
           </button>
         </div>
       )}
@@ -184,18 +128,7 @@ export default function App() {
       <Toolbar />
       <TabBar />
 
-      <div
-        className="main-area"
-        style={focusMode && panelPos ? {
-          position: 'fixed',
-          left: panelPos.x,
-          top: panelPos.y,
-          right: 'auto',
-          bottom: 'auto',
-          width: panelPos.w,
-          height: panelPos.h,
-        } : undefined}
-      >
+      <div className="main-area">
         {settings.workspacePanelVisible && <WorkspacePanel />}
         <PaneSystem />
       </div>
