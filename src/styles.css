@@ -1363,6 +1363,24 @@ input {
   background: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
+.draggable-list.format-list {
+  max-height: 200px;
+}
+
+.drag-handle {
+  color: var(--text-secondary);
+  opacity: 0.45;
+  cursor: grab;
+  font-size: 14px;
+  padding: 0 4px;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+.drag-handle:hover {
+  opacity: 1;
+}
+
 /* ─── Compare dialog ─── */
 .compare-grid {
   display: grid;

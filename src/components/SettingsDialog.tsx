@@ -1,4 +1,5 @@
-import { useState, useEffect, CSSProperties } from 'react';
+import { useState, useEffect } from 'react';
+import { DraggableList } from './DraggableList';
 import { appDataDir } from '@tauri-apps/api/path';
 import { getVersion } from '@tauri-apps/api/app';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -82,10 +83,9 @@ function ReorderList({
   labelMap: Map<string, string>;
   onChange: (v: string[]) => void;
 }) {
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const available = allItems.filter((a) => !items.includes(a.key));
 
-  function move(i: number, dir: -1 | 1) {
+  function swap(i: number, dir: -1 | 1) {
     const list = [...items];
     const target = i + dir;
     if (target < 0 || target >= list.length) return;
@@ -93,50 +93,25 @@ function ReorderList({
     onChange(list);
   }
 
-  function remove(key: string) {
-    if (selectedKey === key) setSelectedKey(null);
-    onChange(items.filter((k) => k !== key));
-  }
-
-  function add(key: string) {
-    if (!key) return;
-    onChange([...items, key]);
-  }
-
-  const btnStyle: CSSProperties = {
-    background: 'none', border: 'none', cursor: 'pointer',
-    color: 'var(--text-secondary)', fontSize: 12, padding: '0 3px', lineHeight: 1,
-  };
-  const removeBtnStyle: CSSProperties = {
-    background: 'none', border: 'none', cursor: 'pointer',
-    color: 'var(--danger)', fontSize: 14, padding: '0 3px', lineHeight: 1,
-  };
-
   return (
     <div>
-      <div className="format-list">
-        {items.map((key, i) => (
-          <div
-            key={key}
-            className={`format-list-item${selectedKey === key ? ' selected' : ''}`}
-            style={{ justifyContent: 'space-between' }}
-            onClick={() => setSelectedKey(key === selectedKey ? null : key)}
-          >
-            <span>{labelMap.get(key) ?? key}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <button style={btnStyle} disabled={i === 0} onClick={(e) => { e.stopPropagation(); move(i, -1); }} title="Move up">▲</button>
-              <button style={btnStyle} disabled={i === items.length - 1} onClick={(e) => { e.stopPropagation(); move(i, 1); }} title="Move down">▼</button>
-              <button style={removeBtnStyle} onClick={(e) => { e.stopPropagation(); remove(key); }} title="Remove">×</button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <DraggableList
+        items={items}
+        getLabel={(k) => labelMap.get(k) ?? k}
+        onReorder={onChange}
+        onRemove={(i) => onChange(items.filter((_, idx) => idx !== i))}
+        onMoveUp={(i) => swap(i, -1)}
+        onMoveDown={(i) => swap(i, 1)}
+      />
       {available.length > 0 && (
         <div className="settings-row" style={{ marginTop: 8 }}>
           <select
             className="settings-select"
             defaultValue=""
-            onChange={(e) => { add(e.target.value); e.target.value = ''; }}
+            onChange={(e) => {
+              if (e.target.value) onChange([...items, e.target.value]);
+              e.target.value = '';
+            }}
           >
             <option value="" disabled>Add item...</option>
             {available.map((a) => (
@@ -230,10 +205,6 @@ export function SettingsDialog() {
     setNewFormat('');
   }
 
-  function removeFormat(f: string) {
-    setLocalFormats((prev) => prev.filter((x) => x !== f));
-  }
-
   function moveFormat(index: number, dir: -1 | 1) {
     const list = [...localFormats];
     const target = index + dir;
@@ -250,15 +221,6 @@ export function SettingsDialog() {
       console.error('[Settings] Failed to reveal data folder:', err);
     }
   }
-
-  const reorderBtnStyle: CSSProperties = {
-    background: 'none', border: 'none', cursor: 'pointer',
-    color: 'var(--text-secondary)', fontSize: 12, padding: '0 3px', lineHeight: 1,
-  };
-  const removeBtnStyle: CSSProperties = {
-    background: 'none', border: 'none', cursor: 'pointer',
-    color: 'var(--danger)', fontSize: 14, padding: '0 3px', lineHeight: 1,
-  };
 
   return (
     <div className="modal-overlay">
@@ -433,18 +395,13 @@ export function SettingsDialog() {
           <div className="settings-section">
             <div className="settings-section-title">Format options</div>
             <div className="settings-section-desc">Manage the list of formats shown in the AI Format dropdown. Add custom languages or text types.</div>
-            <div className="format-list">
-              {localFormats.map((f, i) => (
-                <div key={f} className="format-list-item" style={{ justifyContent: 'space-between' }}>
-                  <span>{f}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <button style={reorderBtnStyle} disabled={i === 0} onClick={() => moveFormat(i, -1)} title="Move up">▲</button>
-                    <button style={reorderBtnStyle} disabled={i === localFormats.length - 1} onClick={() => moveFormat(i, 1)} title="Move down">▼</button>
-                    <button style={removeBtnStyle} onClick={() => removeFormat(f)} title="Remove">×</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <DraggableList
+              items={localFormats}
+              onReorder={setLocalFormats}
+              onRemove={(i) => setLocalFormats((prev) => prev.filter((_, idx) => idx !== i))}
+              onMoveUp={(i) => moveFormat(i, -1)}
+              onMoveDown={(i) => moveFormat(i, 1)}
+            />
             <div className="settings-row" style={{ marginTop: 8 }}>
               <input
                 className="settings-input"
