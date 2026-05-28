@@ -49,7 +49,7 @@ export function AIToolbar({ disabled, selectedFormat, onFormatChange, onAction }
         ))}
       </select>
       <button
-        className="ai-btn"
+        className="ai-btn ai-btn-primary"
         disabled={disabled}
         onClick={() => onAction('apply')}
         title="Format / Apply"
