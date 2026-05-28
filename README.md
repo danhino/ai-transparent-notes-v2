@@ -176,11 +176,12 @@ Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green.
 
 ### Focus mode
 
-Focus mode hides all chrome: titlebar, toolbar, tab bar, workspace panel, per-pane headers, AI toolbars, and status bars. Only the CodeMirror editor fills the window. To exit:
+Focus mode hides all chrome: titlebar, toolbar, tab bar, workspace panel, per-pane headers, AI toolbars, and status bars. Only the CodeMirror editor fills the window.
 
-- Click the **Exit focus** pill button in the top-right corner (appears semi-transparent, fully visible on hover)
-- Press **Escape**
-- Double-click anywhere on the editor area
+Two floating controls appear in the top-right corner:
+
+- **Exit focus** pill — click to exit, or press **Escape**, or double-click the editor area
+- **Drag handle (⠿)** — mousedown and drag to reposition the editor panel anywhere within the viewport; the panel snaps back to full-screen when focus mode exits. Touch drag is also supported.
 
 The Focus button in the toolbar shows an active/highlighted state while focus mode is on. Focus mode state is persisted to settings so it restores on next launch.
 

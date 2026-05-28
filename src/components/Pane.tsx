@@ -17,6 +17,7 @@ import { useUiStore } from '../stores/uiStore';
 import { runAction, runApply, getAiErrorMessage } from '../services/aiService';
 import { writeSourceFile } from '../services/storageService';
 import { rtfToHtml, htmlToRtf, stripHtmlTags } from '../utils/rtfParser';
+import { stripHtml } from '../utils/textUtils';
 import { getDelimiterChar } from '../utils/csvParser';
 import type { Delimiter } from '../types';
 
@@ -479,9 +480,24 @@ export function Pane({ paneIndex }: Props) {
         disabled={paneState.isBusy || !note}
         selectedFormat={selectedFormat}
         onFormatChange={(fmt) => {
+          if (note) {
+            // Switching away from RTF (or any format that stored HTML in note.content):
+            // extract plain text before handing the content to CodeMirror.
+            const hasHtmlContent =
+              selectedFormat === 'RTF' ||
+              content.includes('&lt;') ||
+              content.includes('&amp;');
+            if (hasHtmlContent) {
+              const cleanText =
+                selectedFormat === 'RTF' && richEditorRef.current
+                  ? richEditorRef.current.getText()
+                  : stripHtml(content);
+              updateNote(note.id, { content: cleanText });
+            }
+            setNoteFormat(note.id, fmt);
+          }
           setSelectedFormat(fmt);
           setPaneDetectedLanguage(paneIndex, null);
-          if (note) setNoteFormat(note.id, fmt);
         }}
         onAction={handleAction}
       />
