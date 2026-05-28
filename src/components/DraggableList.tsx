@@ -12,6 +12,9 @@ interface DraggableListProps {
 export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, onMoveDown }: DraggableListProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  // Ref avoids stale closure in onDrop — state from dragStart render isn't visible
+  // to onDrop's function reference without this
+  const dragIndexRef = useRef<number | null>(null);
   const touchDragIndex = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -34,38 +37,12 @@ export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, 
     return () => el.removeEventListener('touchmove', onTouchMove);
   }, []);
 
-  function handleDragStart(index: number) {
-    setDragIndex(index);
-  }
-
-  function handleDragOver(e: React.DragEvent, index: number) {
-    e.preventDefault();
-    if (index !== dragIndex) setDropIndex(index);
-  }
-
-  function handleContainerDragLeave(e: React.DragEvent<HTMLDivElement>) {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setDropIndex(null);
-    }
-  }
-
   function commitDrop(src: number, target: number) {
     if (src === target) return;
     const newItems = [...items];
     const [moved] = newItems.splice(src, 1);
     newItems.splice(target, 0, moved);
     onReorder(newItems);
-  }
-
-  function handleDrop(targetIndex: number) {
-    if (dragIndex !== null) commitDrop(dragIndex, targetIndex);
-    setDragIndex(null);
-    setDropIndex(null);
-  }
-
-  function handleDragEnd() {
-    setDragIndex(null);
-    setDropIndex(null);
   }
 
   function handleTouchStart(index: number) {
@@ -91,11 +68,7 @@ export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, 
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="format-list draggable-list"
-      onDragLeave={handleContainerDragLeave}
-    >
+    <div ref={containerRef} className="format-list draggable-list">
       {items.map((item, index) => {
         const isDragged = dragIndex === index;
         const isDropTarget = dropIndex === index && dragIndex !== index;
@@ -105,10 +78,50 @@ export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, 
             data-drag-index={index}
             className="format-list-item"
             draggable
-            onDragStart={() => handleDragStart(index)}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDrop={() => handleDrop(index)}
-            onDragEnd={handleDragEnd}
+            onDragStart={(e) => {
+              // setData required for drop to fire in WebView2 — without it the
+              // browser silently treats the operation as cancelled
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', String(index));
+              dragIndexRef.current = index;
+              setDragIndex(index);
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              if (index !== dragIndexRef.current) setDropIndex(index);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (index !== dragIndexRef.current) setDropIndex(index);
+            }}
+            onDragLeave={(e) => {
+              // Only clear when the cursor truly leaves this item, not when it
+              // crosses into a child element (span, button)
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setDropIndex(null);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const src = dragIndexRef.current;
+              if (src === null || src === index) {
+                dragIndexRef.current = null;
+                setDragIndex(null);
+                setDropIndex(null);
+                return;
+              }
+              commitDrop(src, index);
+              dragIndexRef.current = null;
+              setDragIndex(null);
+              setDropIndex(null);
+            }}
+            onDragEnd={() => {
+              dragIndexRef.current = null;
+              setDragIndex(null);
+              setDropIndex(null);
+            }}
             onTouchStart={() => handleTouchStart(index)}
             onTouchEnd={handleTouchEnd}
             style={{
@@ -117,6 +130,8 @@ export function DraggableList({ items, getLabel, onReorder, onRemove, onMoveUp, 
               borderTop: isDropTarget ? '2px solid var(--accent)' : '2px solid transparent',
               userSelect: 'none',
               cursor: 'default',
+              background: isDragged ? 'rgba(255,255,255,0.03)' : 'transparent',
+              transition: 'opacity 0.1s, border-color 0.1s',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
