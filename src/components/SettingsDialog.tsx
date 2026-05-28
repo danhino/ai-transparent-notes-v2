@@ -30,6 +30,7 @@ const ALL_AI_ACTIONS: { key: string; label: string }[] = [
   { key: 'fix',        label: 'Fix' },
   { key: 'spellcheck', label: 'Spell check' },
   { key: 'rephrase',   label: 'Rephrase' },
+  { key: 'convo',      label: 'Convo' },
   { key: 'compare',    label: 'Compare' },
   { key: 'suggest',    label: 'Suggest' },
   { key: 'polish',     label: 'Polish' },

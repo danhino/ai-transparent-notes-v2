@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
 
-type AiAction = 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare';
+type AiAction = 'fix' | 'polish' | 'rephrase' | 'convo' | 'spellcheck' | 'suggest' | 'apply' | 'compare';
 
 interface Props {
   disabled: boolean;
@@ -15,6 +15,7 @@ const AI_ACTION_META: Record<string, { label: string; title: string }> = {
   polish:     { label: 'Polish',      title: 'Polish writing' },
   spellcheck: { label: 'Spell check', title: 'Fix spelling' },
   rephrase:   { label: 'Rephrase',    title: 'Rephrase' },
+  convo:      { label: 'Convo',       title: 'Rewrite in conversational tone' },
   suggest:    { label: 'Suggest',     title: 'Suggest improvements' },
   compare:    { label: 'Compare',     title: 'Compare with another note' },
 };

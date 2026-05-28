@@ -143,8 +143,8 @@ When Auto-detect (Code) Apply completes and the user accepts the result, the det
 ### AI features
 - Supported providers: Claude (Anthropic) and OpenAI
 - API calls made from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions entirely
-- AI toolbar layout: `AI: | Format: [dropdown] [Apply] | [Fix] [Spell check] [Rephrase] [Compare] [Suggest] [Polish]` — scrolls horizontally on narrow windows
-- Actions: Fix, Polish, Rephrase, Spell check, Suggest, Compare; Apply runs whatever format is selected in the dropdown
+- AI toolbar layout: `AI: | Format: [dropdown] [Apply] | [Fix] [Spell check] [Rephrase] [Convo] [Compare] [Suggest] [Polish]` — scrolls horizontally on narrow windows
+- Actions: Fix, Polish, Rephrase, Convo, Spell check, Suggest, Compare; Apply runs whatever format is selected in the dropdown; Convo rewrites in a natural, casual conversational tone
 - "Auto-detect (Code)" is a format option; selecting it and clicking Apply detects the language, formats the code, and shows "Detected: [Language]" in the status bar
 - Actions work on selected text or the full note
 - After every AI action: a modal dialog opens showing the original and AI result side by side (Compare-style view) with diff stats (+added, -deleted, changed), synchronized scrolling, and line numbers. User chooses Apply changes or Revert. An optional AI summary can be generated.
@@ -205,7 +205,7 @@ The Focus button in the toolbar shows an active/highlighted state while focus mo
 - Each section has a bold accent-colored title and a 12px description line beneath it
 - AI configuration: provider (Claude or OpenAI), model filtered by provider, API key with eye-icon show/hide toggle, helper link to API keys page
 - Appearance: theme (Dark, Light, Blue, Sepia, Green), font family (12 options), font size (14 sizes), show line numbers by default checkbox
-- AI toolbar: reorderable list of per-pane AI action buttons; click row to select, up/down/remove/add actions. Default order: Format/Apply, Fix, Spell check, Rephrase, Compare, Suggest, Polish
+- AI toolbar: reorderable list of per-pane AI action buttons; click row to select, up/down/remove/add actions. Default order: Format/Apply, Fix, Spell check, Rephrase, Convo, Compare, Suggest, Polish
 - Main toolbar: reorderable list of toolbar items with up/down/remove/add; click row to select
 - Format options: reorderable list with add, remove, and reorder; includes Auto-detect (Code) and HTML Viewer by default
 - Comparison colors: hex inputs with live color swatch preview for added, deleted, and changed lines

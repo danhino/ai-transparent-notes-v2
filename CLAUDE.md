@@ -18,7 +18,7 @@ Cross-platform (Windows + macOS) notes app with:
 - Max 4 note tabs
 - Multi-pane layouts: Single, Side-by-Side, Top/Bottom, 2x2 Grid
 - Folder as Workspace panel (left sidebar, collapsible)
-- AI features: Fix, Polish, Rephrase, Spell Check, Suggest, Apply,
+- AI features: Fix, Polish, Rephrase, Convo, Spell Check, Suggest, Apply,
   Compare — via Claude (Anthropic) and OpenAI APIs
 - AI diff highlighting: green added, red removed, Accept/Revert banner,
   auto-accept after 30s countdown

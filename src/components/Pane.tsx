@@ -47,6 +47,7 @@ const ACTION_LABELS: Record<string, string> = {
   fix: 'Fix',
   polish: 'Polish',
   rephrase: 'Rephrase',
+  convo: 'Convo',
   spellcheck: 'Spell check',
   suggest: 'Suggest',
   apply: 'Apply',
@@ -250,7 +251,7 @@ export function Pane({ paneIndex }: Props) {
   }
 
   const handleAction = useCallback(
-    async (action: 'fix' | 'polish' | 'rephrase' | 'spellcheck' | 'suggest' | 'apply' | 'compare') => {
+    async (action: 'fix' | 'polish' | 'rephrase' | 'convo' | 'spellcheck' | 'suggest' | 'apply' | 'compare') => {
       if (!note || paneState.isBusy) return;
 
       if (action === 'compare') {

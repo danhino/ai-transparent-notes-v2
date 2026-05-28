@@ -19,6 +19,9 @@ const INSTRUCTIONS = {
   rephrase:
     'Rephrase the following text to be clearer and more concise while preserving the meaning. Return only the rephrased text:',
 
+  convo:
+    'Rewrite the following text in a natural, conversational tone. Make it sound like a knowledgeable person speaking casually to a colleague — clear, direct, friendly, and easy to understand. Remove overly formal language, jargon, and stiff phrasing. Keep all the key information and meaning intact. Return only the rewritten text with no explanation or commentary:',
+
   suggest:
     'The user is writing a note. Suggest improvements or a natural continuation for the following text. Return only the suggestion:',
 
@@ -103,7 +106,7 @@ export function getAiErrorMessage(err: unknown): string {
 }
 
 export async function runAction(
-  action: 'spellcheck' | 'polish' | 'rephrase' | 'suggest' | 'fix',
+  action: 'spellcheck' | 'polish' | 'rephrase' | 'convo' | 'suggest' | 'fix',
   text: string,
   settings: AppSettings
 ): Promise<string> {
