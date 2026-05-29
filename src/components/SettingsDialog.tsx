@@ -142,6 +142,8 @@ export function SettingsDialog() {
   const [localLineNumbers, setLocalLineNumbers] = useState<boolean>(
     settings.showLineNumbersByDefault ?? true
   );
+  const [localTextBrightness, setLocalTextBrightness] = useState(settings.uiTextBrightness ?? 75);
+  const [localBorderOpacity, setLocalBorderOpacity] = useState(settings.uiBorderOpacity ?? 14);
   const [localFormats, setLocalFormats] = useState<string[]>(settings.formatOptions);
   const [localAiActions, setLocalAiActions] = useState<string[]>(
     settings.aiToolbarActions ?? DEFAULT_SETTINGS.aiToolbarActions
@@ -162,6 +164,16 @@ export function SettingsDialog() {
   const aiLabelMap = new Map(ALL_AI_ACTIONS.map((a) => [a.key, a.label]));
   const mainLabelMap = new Map(ALL_MAIN_ITEMS.map((a) => [a.key, a.label]));
 
+  function applyContrastPreview(brightness: number, borderOpacity: number) {
+    document.documentElement.style.setProperty('--ui-text-brightness', `${brightness / 100}`);
+    document.documentElement.style.setProperty('--ui-border-opacity', `${borderOpacity / 100}`);
+  }
+
+  function handleCancel() {
+    applyContrastPreview(settings.uiTextBrightness ?? 75, settings.uiBorderOpacity ?? 14);
+    setSettingsOpen(false);
+  }
+
   function save() {
     setAiProvider(localProvider);
     setAiModel(localModel);
@@ -178,6 +190,8 @@ export function SettingsDialog() {
       aiToolbarActions: localAiActions,
       mainToolbarItems: localMainItems,
       showLineNumbersByDefault: localLineNumbers,
+      uiTextBrightness: localTextBrightness,
+      uiBorderOpacity: localBorderOpacity,
     });
     setSettingsOpen(false);
   }
@@ -196,6 +210,9 @@ export function SettingsDialog() {
     setLocalAiActions([...DEFAULT_SETTINGS.aiToolbarActions]);
     setLocalMainItems([...DEFAULT_SETTINGS.mainToolbarItems]);
     setLocalLineNumbers(DEFAULT_SETTINGS.showLineNumbersByDefault);
+    setLocalTextBrightness(DEFAULT_SETTINGS.uiTextBrightness);
+    setLocalBorderOpacity(DEFAULT_SETTINGS.uiBorderOpacity);
+    applyContrastPreview(DEFAULT_SETTINGS.uiTextBrightness, DEFAULT_SETTINGS.uiBorderOpacity);
   }
 
   function addFormat() {
@@ -227,7 +244,7 @@ export function SettingsDialog() {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Settings</span>
-          <button className="modal-close" onClick={() => setSettingsOpen(false)}>×</button>
+          <button className="modal-close" onClick={handleCancel}>×</button>
         </div>
 
         <div className="modal-body">
@@ -365,6 +382,53 @@ export function SettingsDialog() {
                 Show line numbers by default
               </label>
             </div>
+
+            {/* UI contrast subsection */}
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', margin: '12px 0 8px 0', paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+              UI contrast
+            </div>
+
+            <div className="settings-row">
+              <span className="settings-label" style={{ width: 120, flexShrink: 0 }}>Text brightness</span>
+              <input
+                type="range"
+                min={30} max={90} step={5}
+                value={localTextBrightness}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setLocalTextBrightness(v);
+                  applyContrastPreview(v, localBorderOpacity);
+                }}
+                style={{ flex: 1, accentColor: 'var(--accent-color)' }}
+              />
+              <span style={{ width: 36, textAlign: 'right', color: 'var(--text-muted)', fontSize: 11, flexShrink: 0 }}>
+                {localTextBrightness}%
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-hint)', paddingLeft: 130, marginTop: -2, marginBottom: 8 }}>
+              Controls how bright labels and inactive buttons appear. Higher = more visible.
+            </div>
+
+            <div className="settings-row">
+              <span className="settings-label" style={{ width: 120, flexShrink: 0 }}>Border visibility</span>
+              <input
+                type="range"
+                min={0} max={40} step={5}
+                value={localBorderOpacity}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setLocalBorderOpacity(v);
+                  applyContrastPreview(localTextBrightness, v);
+                }}
+                style={{ flex: 1, accentColor: 'var(--accent-color)' }}
+              />
+              <span style={{ width: 36, textAlign: 'right', color: 'var(--text-muted)', fontSize: 11, flexShrink: 0 }}>
+                {localBorderOpacity}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-hint)', paddingLeft: 130, marginTop: -2, marginBottom: 4 }}>
+              Controls how visible the dividing lines are between UI sections. 0 = invisible, 40 = strong.
+            </div>
           </div>
 
           {/* AI toolbar */}
@@ -469,7 +533,7 @@ export function SettingsDialog() {
           <button className="settings-btn" onClick={resetToDefaults} style={{ marginRight: 'auto' }}>
             Reset to defaults
           </button>
-          <button className="settings-btn" onClick={() => setSettingsOpen(false)}>Cancel</button>
+          <button className="settings-btn" onClick={handleCancel}>Cancel</button>
           <button className="settings-btn primary" onClick={save}>Save</button>
         </div>
       </div>

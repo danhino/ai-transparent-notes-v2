@@ -98,6 +98,13 @@ export default function App() {
     root.style.fontSize = `${settings.fontSize}px`;
   }, [settings.fontFamily, settings.fontSize]);
 
+  // ─── Apply UI contrast CSS vars ──────────────────────────────────────────────
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--ui-text-brightness', `${settings.uiTextBrightness / 100}`);
+    root.style.setProperty('--ui-border-opacity', `${settings.uiBorderOpacity / 100}`);
+  }, [settings.uiTextBrightness, settings.uiBorderOpacity]);
+
   async function handleDragStart(e: React.MouseEvent) {
     e.preventDefault();
     await getCurrentWindow().startDragging();

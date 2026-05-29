@@ -54,6 +54,8 @@ export interface AppSettings {
   mainToolbarItems: string[];
   paneLineNumbers: boolean[];
   showLineNumbersByDefault: boolean;
+  uiTextBrightness: number;
+  uiBorderOpacity: number;
 }
 
 export interface WorkspaceEntry {
@@ -125,4 +127,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mainToolbarItems: ['pin', 'theme', 'font', 'size', 'opacity', 'layout', 'workspace', 'import', 'focus', 'settings'],
   paneLineNumbers: [true, true, true, true],
   showLineNumbersByDefault: true,
+  uiTextBrightness: 75,
+  uiBorderOpacity: 14,
 };
