@@ -15,7 +15,7 @@ interface ContextMenuState {
   x: number;
   y: number;
   entry: WorkspaceEntry;
-  isRoot: boolean;
+  rootPath: string;
 }
 
 // ─── Tree item ────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ interface TreeItemProps {
   forceCollapse: number;
   onOpen: (entry: WorkspaceEntry) => void;
   onHighlight: (path: string) => void;
-  onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry, isRoot: boolean) => void;
+  onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry, rootPath: string) => void;
   onFileHover: (e: React.MouseEvent, path: string) => void;
   onFileHoverEnd: () => void;
   rootPath: string;
@@ -55,7 +55,8 @@ interface TreeItemProps {
 function TreeItem({
   entry, depth, selectedPath, locatePath, flashPath,
   forceExpand, forceCollapse,
-  onOpen, onHighlight, onContextMenu, onFileHover, onFileHoverEnd, rootPath,
+  onOpen, onHighlight, onContextMenu, onFileHover, onFileHoverEnd,
+  rootPath,
 }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<WorkspaceEntry[]>([]);
@@ -106,7 +107,6 @@ function TreeItem({
     if (forceCollapse > 0) setExpanded(false);
   }, [forceCollapse]);
 
-  const isRoot = entry.path === rootPath;
   const isFlashing = flashPath === entry.path;
 
   function handleClick() {
@@ -136,7 +136,7 @@ function TreeItem({
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => {
           e.preventDefault();
-          onContextMenu(e, entry, isRoot);
+          onContextMenu(e, entry, rootPath);
         }}
         onMouseEnter={(e) => { if (!entry.isDirectory) onFileHover(e, entry.path); }}
         onMouseLeave={() => { if (!entry.isDirectory) onFileHoverEnd(); }}
@@ -281,8 +281,8 @@ export function WorkspacePanel() {
     }
   }
 
-  function handleContextMenu(e: React.MouseEvent, entry: WorkspaceEntry, isRoot: boolean) {
-    setContextMenu({ x: e.clientX, y: e.clientY, entry, isRoot });
+  function handleContextMenu(e: React.MouseEvent, entry: WorkspaceEntry, rootPath: string) {
+    setContextMenu({ x: e.clientX, y: e.clientY, entry, rootPath });
   }
 
   function handleFileHoverStart(e: React.MouseEvent, filePath: string) {
@@ -505,17 +505,15 @@ export function WorkspacePanel() {
               </div>
             </>
           )}
-          {contextMenu.isRoot && (
-            <div
-              className="context-menu-item danger"
-              onClick={() => {
-                removeWorkspaceFolder(contextMenu.entry.path);
-                setContextMenu(null);
-              }}
-            >
-              Remove from workspace
-            </div>
-          )}
+          <div
+            className="context-menu-item danger"
+            onClick={() => {
+              removeWorkspaceFolder(contextMenu.rootPath);
+              setContextMenu(null);
+            }}
+          >
+            Remove from workspace
+          </div>
         </div>
       )}
 

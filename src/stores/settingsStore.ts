@@ -78,12 +78,17 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     })),
 
   removeWorkspaceFolder: (path) =>
-    set((s) => ({
-      settings: {
-        ...s.settings,
-        workspaceFolders: s.settings.workspaceFolders.filter((f) => f !== path),
-      },
-    })),
+    set((s) => {
+      const norm = (p: string) => p.replace(/\\/g, '/');
+      return {
+        settings: {
+          ...s.settings,
+          workspaceFolders: s.settings.workspaceFolders.filter(
+            (f) => norm(f) !== norm(path)
+          ),
+        },
+      };
+    }),
 
   setWorkspacePanelVisible: (workspacePanelVisible) =>
     set((s) => ({ settings: { ...s.settings, workspacePanelVisible } })),
