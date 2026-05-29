@@ -289,7 +289,12 @@ export function WorkspacePanel() {
     if (pathTooltipTimerRef.current) clearTimeout(pathTooltipTimerRef.current);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     pathTooltipTimerRef.current = setTimeout(() => {
-      setFilePathTooltip({ path: filePath, x: rect.left, y: rect.bottom + 4 });
+      const tooltipWidth = 320;
+      const x = rect.right + 12 + tooltipWidth > window.innerWidth
+        ? rect.left - tooltipWidth - 12
+        : rect.right + 12;
+      const y = rect.top + rect.height / 2 - 12;
+      setFilePathTooltip({ path: filePath, x, y });
     }, 500);
   }
 
@@ -523,14 +528,14 @@ export function WorkspacePanel() {
           background: '#1a1a2e',
           border: '1px solid var(--border-default)',
           borderRadius: 'var(--radius-md)',
-          padding: '4px 8px',
+          padding: '5px 8px',
           fontSize: 10,
-          color: 'rgba(255,255,255,0.8)',
+          color: 'rgba(255,255,255,0.85)',
           fontFamily: 'monospace',
-          maxWidth: 400,
+          maxWidth: 320,
           wordBreak: 'break-all',
           zIndex: 9999,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
           pointerEvents: 'none',
         }}>
           {filePathTooltip.path}
