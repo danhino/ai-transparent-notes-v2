@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { readDir, readTextFile, watch, UnwatchFn } from '@tauri-apps/plugin-fs';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
+import { FolderPlus, ChevronsUpDown, ChevronsDownUp, Crosshair, FolderOpen } from 'lucide-react';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useNoteStore } from '../stores/noteStore';
 import { useUiStore } from '../stores/uiStore';
@@ -39,15 +42,20 @@ interface TreeItemProps {
   selectedPath: string | null;
   locatePath: string | null;
   flashPath: string | null;
+  forceExpand: number;
+  forceCollapse: number;
   onOpen: (entry: WorkspaceEntry) => void;
   onHighlight: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry, isRoot: boolean) => void;
+  onFileHover: (e: React.MouseEvent, path: string) => void;
+  onFileHoverEnd: () => void;
   rootPath: string;
 }
 
 function TreeItem({
   entry, depth, selectedPath, locatePath, flashPath,
-  onOpen, onHighlight, onContextMenu, rootPath,
+  forceExpand, forceCollapse,
+  onOpen, onHighlight, onContextMenu, onFileHover, onFileHoverEnd, rootPath,
 }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<WorkspaceEntry[]>([]);
@@ -81,9 +89,22 @@ function TreeItem({
       setExpanded(true);
       if (!loaded) void loadChildren();
     }
-  // loadChildren identity is stable within a render cycle; entry.path never changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locatePath, entry.path, entry.isDirectory]);
+
+  // Expand all — cascade: when this node expands it renders children with same forceExpand > 0
+  useEffect(() => {
+    if (forceExpand > 0 && entry.isDirectory) {
+      setExpanded(true);
+      if (!loaded) void loadChildren();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceExpand]);
+
+  // Collapse all
+  useEffect(() => {
+    if (forceCollapse > 0) setExpanded(false);
+  }, [forceCollapse]);
 
   const isRoot = entry.path === rootPath;
   const isFlashing = flashPath === entry.path;
@@ -110,12 +131,15 @@ function TreeItem({
         className={`tree-item${selectedPath === entry.path ? ' selected' : ''}${isFlashing ? ' locate-flash' : ''}`}
         style={{ paddingLeft: 8 + depth * 14 }}
         data-locate-path={entry.path}
+        data-tree-type={entry.isDirectory ? 'dir' : 'file'}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => {
           e.preventDefault();
           onContextMenu(e, entry, isRoot);
         }}
+        onMouseEnter={(e) => { if (!entry.isDirectory) onFileHover(e, entry.path); }}
+        onMouseLeave={() => { if (!entry.isDirectory) onFileHoverEnd(); }}
       >
         {entry.isDirectory ? (
           <span style={{ fontSize: 11, color: 'var(--subtle-text)', pointerEvents: 'none' }}>
@@ -139,9 +163,13 @@ function TreeItem({
             selectedPath={selectedPath}
             locatePath={locatePath}
             flashPath={flashPath}
+            forceExpand={forceExpand}
+            forceCollapse={forceCollapse}
             onOpen={onOpen}
             onHighlight={onHighlight}
             onContextMenu={onContextMenu}
+            onFileHover={onFileHover}
+            onFileHoverEnd={onFileHoverEnd}
             rootPath={rootPath}
           />
         ))}
@@ -164,24 +192,27 @@ export function WorkspacePanel() {
   const [flashPath, setFlashPath] = useState<string | null>(null);
   const [tooltipMsg, setTooltipMsg] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [forceExpand, setForceExpand] = useState(0);
+  const [forceCollapse, setForceCollapse] = useState(0);
+  const [filePathTooltip, setFilePathTooltip] = useState<{ path: string; x: number; y: number } | null>(null);
 
   const unwatchRefs = useRef<UnwatchFn[]>([]);
   const treeRef = useRef<HTMLDivElement>(null);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup all timers on unmount
   useEffect(() => {
     return () => {
       if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
       if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+      if (pathTooltipTimerRef.current) clearTimeout(pathTooltipTimerRef.current);
     };
   }, []);
 
-  // Build root entries from stored folder paths — normalize to forward slashes
-  // so child paths built with `${root}/${name}` don't get mixed separators on Windows
+  // Build root entries — normalize to forward slashes
   useEffect(() => {
     setRoots(
       settings.workspaceFolders.map((p) => {
@@ -194,17 +225,13 @@ export function WorkspacePanel() {
 
   // Watch all workspace roots
   useEffect(() => {
-    // Unwatch previous
     unwatchRefs.current.forEach((u) => void u());
     unwatchRefs.current = [];
 
     for (const folder of settings.workspaceFolders) {
       void watch(
         folder,
-        () => {
-          // Force re-render of roots to trigger tree refresh
-          setRoots((prev) => [...prev]);
-        },
+        () => { setRoots((prev) => [...prev]); },
         { recursive: true }
       ).then((unwatch) => {
         unwatchRefs.current.push(unwatch);
@@ -258,6 +285,28 @@ export function WorkspacePanel() {
     setContextMenu({ x: e.clientX, y: e.clientY, entry, isRoot });
   }
 
+  function handleFileHoverStart(e: React.MouseEvent, filePath: string) {
+    if (pathTooltipTimerRef.current) clearTimeout(pathTooltipTimerRef.current);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    pathTooltipTimerRef.current = setTimeout(() => {
+      setFilePathTooltip({ path: filePath, x: rect.left, y: rect.bottom + 4 });
+    }, 500);
+  }
+
+  function handleFileHoverEnd() {
+    if (pathTooltipTimerRef.current) clearTimeout(pathTooltipTimerRef.current);
+    setFilePathTooltip(null);
+  }
+
+  async function revealInExplorer() {
+    if (!selectedPath) return;
+    try {
+      await invoke('reveal_in_explorer', { path: selectedPath });
+    } catch (err) {
+      console.error('[WorkspacePanel] reveal_in_explorer failed:', err);
+    }
+  }
+
   // Resize
   const resizingRef = useRef(false);
   const startXRef = useRef(0);
@@ -309,7 +358,6 @@ export function WorkspacePanel() {
     setFlashPath(normalized);
     flashTimerRef.current = setTimeout(() => setFlashPath(null), 2000);
 
-    // Scroll to the element after expansion has rendered
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     scrollTimerRef.current = setTimeout(() => {
       const el = treeRef.current?.querySelector(
@@ -325,16 +373,39 @@ export function WorkspacePanel() {
     <div
       className="workspace-panel"
       style={{ width: settings.workspacePanelWidth }}
-      onClick={() => contextMenu && setContextMenu(null)}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.workspace-toolbar')) {
+          if (!target.closest('[data-tree-type="file"]')) {
+            setSelectedPath(null);
+          }
+        }
+        contextMenu && setContextMenu(null);
+        filePathTooltip && setFilePathTooltip(null);
+      }}
     >
       {/* Toolbar */}
       <div className="workspace-toolbar">
-        <button className="toolbar-btn" onClick={addFolder} title="Add folder">
-          + Folder
+        <button className="ws-icon-btn" onClick={addFolder} title="Add folder">
+          <FolderPlus size={14} strokeWidth={1.5} />
+        </button>
+        <button
+          className="ws-icon-btn"
+          onClick={() => setForceExpand((v) => v + 1)}
+          title="Expand all"
+        >
+          <ChevronsUpDown size={14} strokeWidth={1.5} />
+        </button>
+        <button
+          className="ws-icon-btn"
+          onClick={() => setForceCollapse((v) => v + 1)}
+          title="Collapse all"
+        >
+          <ChevronsDownUp size={14} strokeWidth={1.5} />
         </button>
         <div style={{ position: 'relative' }}>
-          <button className="toolbar-btn" onClick={locateCurrent} title="Locate current file in workspace">
-            Locate
+          <button className="ws-icon-btn" onClick={locateCurrent} title="Locate current file">
+            <Crosshair size={14} strokeWidth={1.5} />
           </button>
           {tooltipMsg && (
             <div style={{
@@ -356,13 +427,21 @@ export function WorkspacePanel() {
             </div>
           )}
         </div>
+        <button
+          className="ws-icon-btn"
+          onClick={revealInExplorer}
+          disabled={!selectedPath}
+          title="Open in Explorer"
+        >
+          <FolderOpen size={14} strokeWidth={1.5} />
+        </button>
       </div>
 
       {/* Tree */}
       <div className="workspace-tree" ref={treeRef}>
         {roots.length === 0 && (
           <div className="workspace-drop-zone">
-            Drop a folder here or click &ldquo;+ Folder&rdquo;
+            Drop a folder here or click + to add one
           </div>
         )}
         {roots.map((root) => (
@@ -373,9 +452,13 @@ export function WorkspacePanel() {
             selectedPath={selectedPath}
             locatePath={locatePath}
             flashPath={flashPath}
+            forceExpand={forceExpand}
+            forceCollapse={forceCollapse}
             onOpen={handleSelect}
             onHighlight={setSelectedPath}
             onContextMenu={handleContextMenu}
+            onFileHover={handleFileHoverStart}
+            onFileHoverEnd={handleFileHoverEnd}
             rootPath={root.path}
           />
         ))}
@@ -429,6 +512,30 @@ export function WorkspacePanel() {
             </div>
           )}
         </div>
+      )}
+
+      {/* File path tooltip — rendered into document.body to avoid panel overflow clipping */}
+      {filePathTooltip && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: filePathTooltip.x,
+          top: filePathTooltip.y,
+          background: '#1a1a2e',
+          border: '1px solid var(--border-default)',
+          borderRadius: 'var(--radius-md)',
+          padding: '4px 8px',
+          fontSize: 10,
+          color: 'rgba(255,255,255,0.8)',
+          fontFamily: 'monospace',
+          maxWidth: 400,
+          wordBreak: 'break-all',
+          zIndex: 9999,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          pointerEvents: 'none',
+        }}>
+          {filePathTooltip.path}
+        </div>,
+        document.body
       )}
     </div>
   );

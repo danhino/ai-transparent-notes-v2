@@ -672,17 +672,36 @@ input {
 .workspace-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 0 6px;
-  height: 32px;
+  height: 30px;
   background: var(--bg-deepest);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-default);
   flex-shrink: 0;
 }
 
-.workspace-toolbar .toolbar-btn {
-  height: 22px;
-  padding: 0 8px;
+.ws-icon-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+  padding: 0;
+}
+.ws-icon-btn:hover:not(:disabled) {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+}
+.ws-icon-btn:disabled {
+  color: var(--text-hint);
+  cursor: not-allowed;
 }
 
 .workspace-tree {
