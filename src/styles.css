@@ -722,6 +722,16 @@ input {
   margin-right: 2px;
 }
 
+/* Locate flash animation */
+@keyframes locateFlash {
+  0%   { background: rgba(90, 156, 247, 0.45); color: rgba(255, 255, 255, 0.98); }
+  60%  { background: rgba(90, 156, 247, 0.28); color: rgba(255, 255, 255, 0.95); }
+  100% { background: rgba(90, 156, 247, 0.12); color: rgba(255, 255, 255, 0.9); }
+}
+.tree-item.locate-flash {
+  animation: locateFlash 2s ease forwards;
+}
+
 /* Light theme workspace overrides */
 [data-theme="light"] .tree-item {
   color: rgba(0, 0, 0, 0.55);

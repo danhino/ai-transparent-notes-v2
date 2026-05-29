@@ -37,13 +37,18 @@ interface TreeItemProps {
   entry: WorkspaceEntry;
   depth: number;
   selectedPath: string | null;
+  locatePath: string | null;
+  flashPath: string | null;
   onOpen: (entry: WorkspaceEntry) => void;
   onHighlight: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry, isRoot: boolean) => void;
   rootPath: string;
 }
 
-function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMenu, rootPath }: TreeItemProps) {
+function TreeItem({
+  entry, depth, selectedPath, locatePath, flashPath,
+  onOpen, onHighlight, onContextMenu, rootPath,
+}: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<WorkspaceEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -69,7 +74,19 @@ function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMe
     }
   }
 
+  // Auto-expand this directory when it is an ancestor of the locate target
+  useEffect(() => {
+    if (!locatePath || !entry.isDirectory) return;
+    if (locatePath.startsWith(entry.path + '/') || locatePath === entry.path) {
+      setExpanded(true);
+      if (!loaded) void loadChildren();
+    }
+  // loadChildren identity is stable within a render cycle; entry.path never changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locatePath, entry.path, entry.isDirectory]);
+
   const isRoot = entry.path === rootPath;
+  const isFlashing = flashPath === entry.path;
 
   function handleClick() {
     if (entry.isDirectory) {
@@ -90,8 +107,9 @@ function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMe
   return (
     <>
       <div
-        className={`tree-item${selectedPath === entry.path ? ' selected' : ''}`}
+        className={`tree-item${selectedPath === entry.path ? ' selected' : ''}${isFlashing ? ' locate-flash' : ''}`}
         style={{ paddingLeft: 8 + depth * 14 }}
+        data-locate-path={entry.path}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => {
@@ -119,6 +137,8 @@ function TreeItem({ entry, depth, selectedPath, onOpen, onHighlight, onContextMe
             entry={child}
             depth={depth + 1}
             selectedPath={selectedPath}
+            locatePath={locatePath}
+            flashPath={flashPath}
             onOpen={onOpen}
             onHighlight={onHighlight}
             onContextMenu={onContextMenu}
@@ -140,8 +160,25 @@ export function WorkspacePanel() {
 
   const [roots, setRoots] = useState<WorkspaceEntry[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [locatePath, setLocatePath] = useState<string | null>(null);
+  const [flashPath, setFlashPath] = useState<string | null>(null);
+  const [tooltipMsg, setTooltipMsg] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+
   const unwatchRefs = useRef<UnwatchFn[]>([]);
+  const treeRef = useRef<HTMLDivElement>(null);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup all timers on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
 
   // Build root entries from stored folder paths — normalize to forward slashes
   // so child paths built with `${root}/${name}` don't get mixed separators on Windows
@@ -179,6 +216,12 @@ export function WorkspacePanel() {
       unwatchRefs.current = [];
     };
   }, [settings.workspaceFolders]);
+
+  function showTooltip(msg: string) {
+    setTooltipMsg(msg);
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    tooltipTimerRef.current = setTimeout(() => setTooltipMsg(null), 3000);
+  }
 
   async function addFolder() {
     const path = await openDialog({ directory: true, multiple: false });
@@ -243,10 +286,40 @@ export function WorkspacePanel() {
   const locateCurrent = useCallback(() => {
     const paneNoteId = settings.paneNoteIds[focusedPaneIndex];
     const note = notes.find((n) => n.id === paneNoteId);
-    if (note?.sourceFilePath) {
-      setSelectedPath(note.sourceFilePath);
+
+    if (!note?.sourceFilePath) {
+      showTooltip('No file to locate — this is a scratch note');
+      return;
     }
-  }, [settings.paneNoteIds, focusedPaneIndex, notes]);
+
+    const normalized = note.sourceFilePath.replace(/\\/g, '/');
+
+    const inWorkspace = roots.some(
+      (r) => normalized === r.path || normalized.startsWith(r.path + '/')
+    );
+    if (!inWorkspace) {
+      showTooltip('File is not in the current workspace');
+      return;
+    }
+
+    setSelectedPath(normalized);
+    setLocatePath(normalized);
+
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setFlashPath(normalized);
+    flashTimerRef.current = setTimeout(() => setFlashPath(null), 2000);
+
+    // Scroll to the element after expansion has rendered
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      const el = treeRef.current?.querySelector(
+        `[data-locate-path="${CSS.escape(normalized)}"]`
+      );
+      el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      setLocatePath(null);
+    }, 350);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.paneNoteIds, focusedPaneIndex, notes, roots]);
 
   return (
     <div
@@ -259,13 +332,34 @@ export function WorkspacePanel() {
         <button className="toolbar-btn" onClick={addFolder} title="Add folder">
           + Folder
         </button>
-        <button className="toolbar-btn" onClick={locateCurrent} title="Locate current file">
-          Locate
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button className="toolbar-btn" onClick={locateCurrent} title="Locate current file in workspace">
+            Locate
+          </button>
+          {tooltipMsg && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              zIndex: 300,
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 'var(--radius-md)',
+              padding: '6px 10px',
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+              pointerEvents: 'none',
+            }}>
+              {tooltipMsg}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tree */}
-      <div className="workspace-tree">
+      <div className="workspace-tree" ref={treeRef}>
         {roots.length === 0 && (
           <div className="workspace-drop-zone">
             Drop a folder here or click &ldquo;+ Folder&rdquo;
@@ -277,6 +371,8 @@ export function WorkspacePanel() {
             entry={root}
             depth={0}
             selectedPath={selectedPath}
+            locatePath={locatePath}
+            flashPath={flashPath}
             onOpen={handleSelect}
             onHighlight={setSelectedPath}
             onContextMenu={handleContextMenu}
