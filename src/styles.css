@@ -4,13 +4,13 @@
 :root,
 [data-theme="dark"] {
   /* Legacy tokens (kept for backward compat) */
-  --app-bg: #0e0e1a;
-  --panel-bg: #0a0a14;
-  --toolbar-bg: #050510;
-  --tab-bg: #070710;
-  --tab-selected-bg: rgba(90, 156, 247, 0.12);
+  --app-bg: #1a1a1f;
+  --panel-bg: #111114;
+  --toolbar-bg: #16161b;
+  --tab-bg: #131318;
+  --tab-selected-bg: rgba(90, 156, 247, 0.15);
   --tab-hover-bg: rgba(255, 255, 255, 0.04);
-  --editor-bg: #0e0e1a;
+  --editor-bg: #1a1a1f;
   --editor-fg: #CDD6F4;
   --accent: #89B4FA;
   --accent-hover: #74C7EC;
@@ -26,7 +26,7 @@
   --splitter: rgba(255, 255, 255, 0.06);
   --scrollbar-bg: transparent;
   --scrollbar-thumb: rgba(255, 255, 255, 0.12);
-  --titlebar-bg: #050510;
+  --titlebar-bg: #111114;
   --accent-fg: #FFFFFF;
   --subtle-text: rgba(255, 255, 255, 0.3);
 
@@ -34,15 +34,15 @@
   --accent-color: #5a9cf7;
   --accent-rgb: 90, 156, 247;
   --accent-glow: rgba(90, 156, 247, 0.15);
-  --accent-subtle: rgba(90, 156, 247, 0.1);
+  --accent-subtle: rgba(90, 156, 247, 0.15);
   --accent-border: rgba(90, 156, 247, 0.3);
-  --bg-deepest: #050510;
-  --bg-deep: #070710;
-  --bg-primary: #0e0e1a;
-  --bg-secondary: #0a0a14;
-  --bg-surface: rgba(14, 14, 26, 0.98);
-  --bg-glass: rgba(255, 255, 255, 0.05);
-  --bg-glass-hover: rgba(255, 255, 255, 0.08);
+  --bg-deepest: #111114;
+  --bg-deep: #131318;
+  --bg-primary: #1a1a1f;
+  --bg-secondary: #111114;
+  --bg-surface: rgba(22, 22, 27, 0.98);
+  --bg-glass: rgba(255, 255, 255, 0.06);
+  --bg-glass-hover: rgba(255, 255, 255, 0.09);
   --border-subtle: rgba(255, 255, 255, calc(var(--ui-border-opacity, 0.14) * 0.7));
   --border-default: rgba(255, 255, 255, var(--ui-border-opacity, 0.14));
   --border-strong: rgba(255, 255, 255, min(1, calc(var(--ui-border-opacity, 0.14) * 1.5)));
@@ -465,7 +465,7 @@ input {
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
@@ -480,6 +480,12 @@ input {
   border-color: var(--accent-border);
   color: var(--accent-color);
   box-shadow: 0 0 8px var(--accent-glow);
+}
+[data-theme="dark"] .toolbar-btn.active {
+  background: var(--accent-color);
+  color: #fff;
+  border-color: var(--accent-color);
+  box-shadow: none;
 }
 
 .toolbar-select {
@@ -566,9 +572,13 @@ input {
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 1.5px;
   background: var(--accent-color);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+[data-theme="dark"] .tab:not(.active) {
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .tab-title {
@@ -695,8 +705,8 @@ input {
   gap: 4px;
   padding: 2px 8px;
   cursor: pointer;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
   white-space: nowrap;
   overflow: hidden;
   border-radius: var(--radius-sm);
@@ -705,11 +715,11 @@ input {
 }
 .tree-item:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.90);
 }
 .tree-item.selected {
   background: rgba(90, 156, 247, 0.12);
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
 }
 .tree-item.selected::before {
   content: '';
