@@ -465,7 +465,7 @@ input {
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-text-size, 11px);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
@@ -548,7 +548,7 @@ input {
   min-width: 80px;
   max-width: 160px;
   height: 26px;
-  font-size: 11px;
+  font-size: var(--ui-text-size, 11px);
   font-weight: 400;
   color: var(--text-hint);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -579,6 +579,11 @@ input {
 
 [data-theme="dark"] .tab:not(.active) {
   color: rgba(255, 255, 255, 0.65);
+}
+[data-theme="dark"] .tab:not(.active):hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .tab-title {
@@ -675,10 +680,8 @@ input {
   flex-shrink: 0;
 }
 
-/* Workspace toolbar buttons are smaller than the main toolbar */
 .workspace-toolbar .toolbar-btn {
   height: 22px;
-  font-size: 10px;
   padding: 0 8px;
 }
 
@@ -705,7 +708,7 @@ input {
   gap: 4px;
   padding: 2px 8px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--ui-text-size, 11px);
   color: rgba(255, 255, 255, 0.65);
   white-space: nowrap;
   overflow: hidden;
@@ -830,7 +833,7 @@ input {
   background: var(--editor-bg);
 }
 .pane.focused {
-  border-left: 2px solid var(--accent-color);
+  border-left: 1px solid color-mix(in srgb, var(--accent-color) 50%, transparent);
 }
 
 .pane-header {
@@ -849,7 +852,7 @@ input {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-text-size, 11px);
   font-weight: 500;
   padding: 0;
   outline: none;
@@ -992,7 +995,7 @@ input {
 }
 
 .ai-toolbar-label {
-  font-size: 9px;
+  font-size: var(--ui-text-size, 11px);
   font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
@@ -1017,7 +1020,7 @@ input {
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  font-size: 10px;
+  font-size: calc(var(--ui-text-size, 11px) - 1px);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-default);
   background: var(--bg-glass);
@@ -1470,7 +1473,7 @@ input {
   padding: 0 10px;
   background: var(--bg-deepest);
   border-top: 1px solid var(--border-subtle);
-  font-size: 10px;
+  font-size: calc(var(--ui-text-size, 11px) - 1px);
   color: var(--text-hint);
   flex-shrink: 0;
   height: 22px;
@@ -1653,7 +1656,7 @@ input {
 }
 
 .settings-label {
-  font-size: 13px;
+  font-size: var(--ui-text-size, 11px);
   color: var(--text);
   min-width: 120px;
 }

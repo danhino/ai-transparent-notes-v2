@@ -103,7 +103,8 @@ export default function App() {
     const root = document.documentElement;
     root.style.setProperty('--ui-text-brightness', `${settings.uiTextBrightness / 100}`);
     root.style.setProperty('--ui-border-opacity', `${settings.uiBorderOpacity / 100}`);
-  }, [settings.uiTextBrightness, settings.uiBorderOpacity]);
+    root.style.setProperty('--ui-text-size', `${settings.uiTextSize}px`);
+  }, [settings.uiTextBrightness, settings.uiBorderOpacity, settings.uiTextSize]);
 
   async function handleDragStart(e: React.MouseEvent) {
     e.preventDefault();

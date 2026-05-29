@@ -143,6 +143,7 @@ export function SettingsDialog() {
     settings.showLineNumbersByDefault ?? true
   );
   const [localTextBrightness, setLocalTextBrightness] = useState(settings.uiTextBrightness ?? 75);
+  const [localTextSize, setLocalTextSize] = useState(settings.uiTextSize ?? 11);
   const [localBorderOpacity, setLocalBorderOpacity] = useState(settings.uiBorderOpacity ?? 14);
   const [localFormats, setLocalFormats] = useState<string[]>(settings.formatOptions);
   const [localAiActions, setLocalAiActions] = useState<string[]>(
@@ -164,13 +165,18 @@ export function SettingsDialog() {
   const aiLabelMap = new Map(ALL_AI_ACTIONS.map((a) => [a.key, a.label]));
   const mainLabelMap = new Map(ALL_MAIN_ITEMS.map((a) => [a.key, a.label]));
 
-  function applyContrastPreview(brightness: number, borderOpacity: number) {
+  function applyContrastPreview(brightness: number, borderOpacity: number, textSize: number) {
     document.documentElement.style.setProperty('--ui-text-brightness', `${brightness / 100}`);
     document.documentElement.style.setProperty('--ui-border-opacity', `${borderOpacity / 100}`);
+    document.documentElement.style.setProperty('--ui-text-size', `${textSize}px`);
   }
 
   function handleCancel() {
-    applyContrastPreview(settings.uiTextBrightness ?? 75, settings.uiBorderOpacity ?? 14);
+    applyContrastPreview(
+      settings.uiTextBrightness ?? 75,
+      settings.uiBorderOpacity ?? 14,
+      settings.uiTextSize ?? 11,
+    );
     setSettingsOpen(false);
   }
 
@@ -192,6 +198,7 @@ export function SettingsDialog() {
       showLineNumbersByDefault: localLineNumbers,
       uiTextBrightness: localTextBrightness,
       uiBorderOpacity: localBorderOpacity,
+      uiTextSize: localTextSize,
     });
     setSettingsOpen(false);
   }
@@ -211,8 +218,9 @@ export function SettingsDialog() {
     setLocalMainItems([...DEFAULT_SETTINGS.mainToolbarItems]);
     setLocalLineNumbers(DEFAULT_SETTINGS.showLineNumbersByDefault);
     setLocalTextBrightness(DEFAULT_SETTINGS.uiTextBrightness);
+    setLocalTextSize(DEFAULT_SETTINGS.uiTextSize);
     setLocalBorderOpacity(DEFAULT_SETTINGS.uiBorderOpacity);
-    applyContrastPreview(DEFAULT_SETTINGS.uiTextBrightness, DEFAULT_SETTINGS.uiBorderOpacity);
+    applyContrastPreview(DEFAULT_SETTINGS.uiTextBrightness, DEFAULT_SETTINGS.uiBorderOpacity, DEFAULT_SETTINGS.uiTextSize);
   }
 
   function addFormat() {
@@ -397,7 +405,7 @@ export function SettingsDialog() {
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   setLocalTextBrightness(v);
-                  applyContrastPreview(v, localBorderOpacity);
+                  applyContrastPreview(v, localBorderOpacity, localTextSize);
                 }}
                 style={{ flex: 1, accentColor: 'var(--accent-color)' }}
               />
@@ -410,6 +418,27 @@ export function SettingsDialog() {
             </div>
 
             <div className="settings-row">
+              <span className="settings-label" style={{ width: 120, flexShrink: 0 }}>UI text size</span>
+              <input
+                type="range"
+                min={9} max={14} step={1}
+                value={localTextSize}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setLocalTextSize(v);
+                  applyContrastPreview(localTextBrightness, localBorderOpacity, v);
+                }}
+                style={{ flex: 1, accentColor: 'var(--accent-color)' }}
+              />
+              <span style={{ width: 36, textAlign: 'right', color: 'var(--text-muted)', fontSize: 11, flexShrink: 0 }}>
+                {localTextSize}px
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-hint)', paddingLeft: 130, marginTop: -2, marginBottom: 8 }}>
+              Controls the size of labels, buttons, and toolbar text globally.
+            </div>
+
+            <div className="settings-row">
               <span className="settings-label" style={{ width: 120, flexShrink: 0 }}>Border visibility</span>
               <input
                 type="range"
@@ -418,7 +447,7 @@ export function SettingsDialog() {
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   setLocalBorderOpacity(v);
-                  applyContrastPreview(localTextBrightness, v);
+                  applyContrastPreview(localTextBrightness, v, localTextSize);
                 }}
                 style={{ flex: 1, accentColor: 'var(--accent-color)' }}
               />

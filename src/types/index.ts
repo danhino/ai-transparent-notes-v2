@@ -56,6 +56,7 @@ export interface AppSettings {
   showLineNumbersByDefault: boolean;
   uiTextBrightness: number;
   uiBorderOpacity: number;
+  uiTextSize: number;
 }
 
 export interface WorkspaceEntry {
@@ -129,4 +130,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showLineNumbersByDefault: true,
   uiTextBrightness: 75,
   uiBorderOpacity: 14,
+  uiTextSize: 11,
 };
