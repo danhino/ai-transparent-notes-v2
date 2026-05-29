@@ -8,6 +8,18 @@ import { AIToolbar } from './AIToolbar';
 import { RtfToolbar } from './RtfToolbar';
 import { CsvToolbar } from './CsvToolbar';
 import { XmlToolbar } from './XmlToolbar';
+import { JsonToolbar } from './JsonToolbar';
+import { SqlToolbar } from './SqlToolbar';
+import { MarkdownToolbar } from './MarkdownToolbar';
+import { PythonToolbar } from './PythonToolbar';
+import { JsToolbar } from './JsToolbar';
+import { CSharpToolbar } from './CSharpToolbar';
+import { ShellToolbar } from './ShellToolbar';
+import { JavaToolbar } from './JavaToolbar';
+import { CppToolbar } from './CppToolbar';
+import { PlainTextToolbar } from './PlainTextToolbar';
+import { RustToolbar } from './RustToolbar';
+import { HtmlCssToolbar } from './HtmlCssToolbar';
 import { CsvTableView } from './CsvTableView';
 const AiResultDialog = lazy(() => import('./AiResultDialog').then((m) => ({ default: m.AiResultDialog })));
 import { StatusBar } from './StatusBar';
@@ -409,9 +421,21 @@ export function Pane({ paneIndex }: Props) {
   }
 
   const content = note?.content ?? '';
-  const isRtf = selectedFormat === 'RTF';
-  const isCsv = selectedFormat === 'CSV';
-  const isXml = selectedFormat === 'XML';
+  const isRtf        = selectedFormat === 'RTF';
+  const isCsv        = selectedFormat === 'CSV';
+  const isXml        = selectedFormat === 'XML';
+  const isJson       = selectedFormat === 'JSON';
+  const isSql        = selectedFormat === 'SQL';
+  const isMarkdown   = selectedFormat === 'Markdown';
+  const isPython     = selectedFormat === 'Python';
+  const isJs         = selectedFormat === 'JavaScript' || selectedFormat === 'TypeScript';
+  const isCsharp     = selectedFormat === 'C#';
+  const isShell      = selectedFormat === 'Bash' || selectedFormat === 'PowerShell';
+  const isJava       = selectedFormat === 'Java';
+  const isCpp        = selectedFormat === 'C' || selectedFormat === 'C++';
+  const isPlainText  = selectedFormat === 'Plain Text (Structured Notes)' || selectedFormat === 'Plain text';
+  const isRust       = selectedFormat === 'Rust';
+  const isHtmlCss    = selectedFormat === 'HTML/CSS';
 
   // For RTF notes: parse raw RTF to HTML once, then pass HTML on subsequent edits.
   // useMemo re-runs only when content or isRtf changes.
@@ -592,10 +616,55 @@ export function Pane({ paneIndex }: Props) {
 
           {/* Contextual toolbar — XML */}
           {isXml && (
-            <XmlToolbar
-              editorRef={editorRef}
-              disabled={paneState.isBusy || !note}
-            />
+            <XmlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — JSON */}
+          {isJson && (
+            <JsonToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — SQL */}
+          {isSql && (
+            <SqlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — Markdown */}
+          {isMarkdown && (
+            <MarkdownToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — Python */}
+          {isPython && (
+            <PythonToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — JavaScript / TypeScript */}
+          {isJs && (
+            <JsToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} />
+          )}
+          {/* Contextual toolbar — C# */}
+          {isCsharp && (
+            <CSharpToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — Bash / PowerShell */}
+          {isShell && (
+            <ShellToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} />
+          )}
+          {/* Contextual toolbar — Java */}
+          {isJava && (
+            <JavaToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — C / C++ */}
+          {isCpp && (
+            <CppToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} />
+          )}
+          {/* Contextual toolbar — Plain Text */}
+          {isPlainText && (
+            <PlainTextToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — Rust */}
+          {isRust && (
+            <RustToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+          )}
+          {/* Contextual toolbar — HTML/CSS */}
+          {isHtmlCss && (
+            <HtmlCssToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
           )}
         </div>
       </div>

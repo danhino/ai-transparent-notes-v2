@@ -37,6 +37,7 @@
     "diff-match-patch": "^1.0.5",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.17.0",
+    "marked": "^18.0.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.3.0",

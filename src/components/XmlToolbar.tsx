@@ -161,6 +161,68 @@ export function XmlToolbar({ editorRef, disabled }: Props) {
     apply(insertAtOffset(getText(), '<![CDATA[ ]]>', offset));
   }
 
+  function handleBlockComment() {
+    const sel = getSel();
+    const full = getText();
+    if (sel) {
+      apply(full.replace(sel, `<!-- ${sel} -->`));
+    } else {
+      const offset = getCursor();
+      apply(insertAtOffset(full, '<!-- comment -->', offset));
+    }
+  }
+
+  function handleUncommentBlock() {
+    const full = getText();
+    // Remove first <!-- and --> surrounding or inside selection
+    const cleaned = full.replace(/<!--\s*([\s\S]*?)\s*-->/g, '$1');
+    apply(cleaned);
+  }
+
+  function handleCopyXPath() {
+    const full = getText();
+    const offset = getCursor();
+    try {
+      const path = getXPathAtOffset(full, offset);
+      if (path) {
+        void navigator.clipboard.writeText(path).then(() => showStatus('XPath copied', 'success', 2000));
+      } else {
+        showStatus('No element found at cursor', 'error', 2000);
+      }
+    } catch {
+      showStatus('Parse error', 'error', 2000);
+    }
+  }
+
+  function getXPathAtOffset(xml: string, offset: number): string | null {
+    const stack: string[] = [];
+    let i = 0;
+    let lastPath: string | null = null;
+    while (i < xml.length) {
+      if (i >= offset) {
+        lastPath = stack.length ? '/' + stack.join('/') : null;
+        break;
+      }
+      if (xml[i] !== '<') { i++; continue; }
+      if (xml.slice(i, i + 4) === '<!--') {
+        const end = xml.indexOf('-->', i); i = end < 0 ? xml.length : end + 3; continue;
+      }
+      if (xml[i + 1] === '?') { const end = xml.indexOf('?>', i); i = end < 0 ? xml.length : end + 2; continue; }
+      const end = xml.indexOf('>', i);
+      if (end < 0) break;
+      const tagContent = xml.slice(i + 1, end).trim();
+      if (tagContent.startsWith('/')) {
+        stack.pop();
+      } else if (!tagContent.endsWith('/')) {
+        const name = tagContent.split(/[\s/]/)[0];
+        if (name) stack.push(name);
+      }
+      i = end + 1;
+    }
+    if (lastPath === null && stack.length) lastPath = '/' + stack.join('/');
+    return lastPath;
+  }
+
   function handleXpathSearch() {
     if (!xpathQuery) return;
     const { matches, error } = xpathSearch(getText(), xpathQuery);
@@ -226,6 +288,21 @@ export function XmlToolbar({ editorRef, disabled }: Props) {
 
         <button className="ctx-btn" onClick={handleValidate} disabled={disabled} title="Validate XML">
           ✓ Validate
+        </button>
+
+        {sep}
+
+        <button className="ctx-btn" onClick={handleBlockComment} disabled={disabled} title="Wrap selection in XML comment">
+          &lt;!-- Comment
+        </button>
+        <button className="ctx-btn" onClick={handleUncommentBlock} disabled={disabled} title="Remove XML comment markers">
+          Uncomment
+        </button>
+
+        {sep}
+
+        <button className="ctx-btn" onClick={handleCopyXPath} disabled={disabled} title="Copy XPath of element at cursor">
+          Copy XPath
         </button>
       </div>
 
