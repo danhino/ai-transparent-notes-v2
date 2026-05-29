@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { readDir, readTextFile, watch, UnwatchFn } from '@tauri-apps/plugin-fs';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { open as openWithSystem } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
 import { FolderPlus, ChevronsUpDown, ChevronsDownUp, Crosshair, FolderOpen } from 'lucide-react';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -212,6 +213,16 @@ export function WorkspacePanel() {
     };
   }, []);
 
+  // Dismiss context menu on Escape
+  useEffect(() => {
+    if (!contextMenu) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setContextMenu(null);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [contextMenu]);
+
   // Build root entries — normalize to forward slashes
   useEffect(() => {
     setRoots(
@@ -271,10 +282,6 @@ export function WorkspacePanel() {
     }
   };
 
-  function openFileInPane(entry: WorkspaceEntry, _newTab: boolean) {
-    void handleFileOpen(entry.path);
-  }
-
   function handleSelect(entry: WorkspaceEntry) {
     if (!entry.isDirectory) {
       void handleFileOpen(entry.path);
@@ -282,7 +289,12 @@ export function WorkspacePanel() {
   }
 
   function handleContextMenu(e: React.MouseEvent, entry: WorkspaceEntry, rootPath: string) {
-    setContextMenu({ x: e.clientX, y: e.clientY, entry, rootPath });
+    // Estimate menu dimensions to keep within screen
+    const menuW = 190;
+    const menuH = entry.isDirectory ? 235 : 300;
+    const x = e.clientX + menuW > window.innerWidth ? e.clientX - menuW : e.clientX;
+    const y = e.clientY + menuH > window.innerHeight ? e.clientY - menuH : e.clientY;
+    setContextMenu({ x, y, entry, rootPath });
   }
 
   function handleFileHoverStart(e: React.MouseEvent, filePath: string) {
@@ -309,6 +321,39 @@ export function WorkspacePanel() {
       await invoke('reveal_in_explorer', { path: selectedPath });
     } catch (err) {
       console.error('[WorkspacePanel] reveal_in_explorer failed:', err);
+    }
+  }
+
+  async function copyToClipboard(text: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showTooltip(label);
+    } catch {
+      // clipboard unavailable
+    }
+  }
+
+  async function openFolderInExplorer(folderPath: string) {
+    try {
+      await openWithSystem(folderPath);
+    } catch (err) {
+      console.error('[WorkspacePanel] openFolderInExplorer failed:', err);
+    }
+  }
+
+  async function openTerminalAt(path: string) {
+    try {
+      await invoke('open_terminal_at', { path });
+    } catch (err) {
+      console.error('[WorkspacePanel] openTerminalAt failed:', err);
+    }
+  }
+
+  async function runBySystem(filePath: string) {
+    try {
+      await openWithSystem(filePath);
+    } catch (err) {
+      console.error('[WorkspacePanel] runBySystem failed:', err);
     }
   }
 
@@ -385,7 +430,6 @@ export function WorkspacePanel() {
             setSelectedPath(null);
           }
         }
-        contextMenu && setContextMenu(null);
         filePathTooltip && setFilePathTooltip(null);
       }}
     >
@@ -443,7 +487,11 @@ export function WorkspacePanel() {
       </div>
 
       {/* Tree */}
-      <div className="workspace-tree" ref={treeRef}>
+      <div
+        className="workspace-tree"
+        ref={treeRef}
+        onScroll={() => contextMenu && setContextMenu(null)}
+      >
         {roots.length === 0 && (
           <div className="workspace-drop-zone">
             Drop a folder here or click + to add one
@@ -482,42 +530,81 @@ export function WorkspacePanel() {
         onMouseDown={handleResizeStart}
       />
 
-      {/* Context menu */}
-      {contextMenu && (
-        <div
-          className="context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {!contextMenu.entry.isDirectory && (
-            <>
-              <div
-                className="context-menu-item"
-                onClick={() => openFileInPane(contextMenu.entry, false)}
-              >
-                Open in active pane
-              </div>
-              <div
-                className="context-menu-item"
-                onClick={() => openFileInPane(contextMenu.entry, true)}
-              >
-                Open in new tab
-              </div>
-            </>
-          )}
+      {/* Context menu — portal to body so it renders above all panels */}
+      {contextMenu && createPortal(
+        <>
+          {/* Invisible overlay catches outside clicks */}
           <div
-            className="context-menu-item danger"
-            onClick={() => {
-              removeWorkspaceFolder(contextMenu.rootPath);
-              setContextMenu(null);
-            }}
+            style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+            onMouseDown={() => setContextMenu(null)}
+          />
+          <div
+            className="context-menu"
+            style={{ top: contextMenu.y, left: contextMenu.x, zIndex: 9999 }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
-            Remove from workspace
+            {contextMenu.entry.isDirectory ? (
+              /* ── Folder menu ── */
+              <>
+                <div className="context-menu-item" onClick={() => { void copyToClipboard(contextMenu.entry.path, 'Path copied'); setContextMenu(null); }}>
+                  Copy path
+                </div>
+                <div className="context-menu-sep" />
+                <div className="context-menu-item" onClick={() => { showTooltip('Find in Files coming soon'); setContextMenu(null); }}>
+                  Find in Files...
+                </div>
+                <div className="context-menu-sep" />
+                <div className="context-menu-item" onClick={() => { void openFolderInExplorer(contextMenu.entry.path); setContextMenu(null); }}>
+                  Explorer here
+                </div>
+                <div className="context-menu-item" onClick={() => { void openTerminalAt(contextMenu.entry.path); setContextMenu(null); }}>
+                  CMD here
+                </div>
+                <div className="context-menu-sep" />
+                <div className="context-menu-item danger" onClick={() => { removeWorkspaceFolder(contextMenu.rootPath); setContextMenu(null); }}>
+                  Remove from workspace
+                </div>
+              </>
+            ) : (
+              /* ── File menu ── */
+              <>
+                <div className="context-menu-item" onClick={() => { void handleFileOpen(contextMenu.entry.path); setContextMenu(null); }}>
+                  Open
+                </div>
+                <div className="context-menu-sep" />
+                <div className="context-menu-item" onClick={() => { void copyToClipboard(contextMenu.entry.path, 'Path copied'); setContextMenu(null); }}>
+                  Copy path
+                </div>
+                <div className="context-menu-item" onClick={() => { void copyToClipboard(contextMenu.entry.name, 'File name copied'); setContextMenu(null); }}>
+                  Copy file name
+                </div>
+                <div className="context-menu-sep" />
+                <div className="context-menu-item" onClick={() => { void runBySystem(contextMenu.entry.path); setContextMenu(null); }}>
+                  Run by system
+                </div>
+                <div className="context-menu-sep" />
+                <div className="context-menu-item" onClick={() => { void invoke('reveal_in_explorer', { path: contextMenu.entry.path }); setContextMenu(null); }}>
+                  Explorer here
+                </div>
+                <div className="context-menu-item" onClick={() => {
+                  const folder = contextMenu.entry.path.split('/').slice(0, -1).join('/');
+                  void openTerminalAt(folder);
+                  setContextMenu(null);
+                }}>
+                  CMD here
+                </div>
+                <div className="context-menu-sep" />
+                <div className="context-menu-item danger" onClick={() => { removeWorkspaceFolder(contextMenu.rootPath); setContextMenu(null); }}>
+                  Remove from workspace
+                </div>
+              </>
+            )}
           </div>
-        </div>
+        </>,
+        document.body
       )}
 
-      {/* File path tooltip — rendered into document.body to avoid panel overflow clipping */}
+      {/* File path tooltip — portal to body to avoid panel overflow clipping */}
       {filePathTooltip && createPortal(
         <div style={{
           position: 'fixed',

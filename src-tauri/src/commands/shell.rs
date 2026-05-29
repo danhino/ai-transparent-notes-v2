@@ -1,4 +1,25 @@
 #[tauri::command]
+pub async fn open_terminal_at(path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let win_path = path.replace('/', "\\");
+        std::process::Command::new("cmd.exe")
+            .args(["/c", "start", "cmd.exe"])
+            .current_dir(&win_path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .args(["-a", "Terminal", &path])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn reveal_in_explorer(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {

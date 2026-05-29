@@ -34,6 +34,11 @@ Cross-platform (Windows + macOS) notes app with:
 - macOS: purple accent #7c6af7
 - Detect platform via Tauri os plugin and apply accent CSS variable
 
+## TODOs
+- Find in Files: workspace panel right-click "Find in Files..." not yet implemented.
+  Should search for text across all files in the selected folder and show results
+  inline or in a dedicated panel.
+
 ## Conventions
 - No em dashes in UI text or README — use commas or shorter sentences
 - Sentence case for all labels and headings, never Title Case

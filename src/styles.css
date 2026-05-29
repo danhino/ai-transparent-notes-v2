@@ -1916,28 +1916,39 @@ input {
 /* ─── Context menu ─── */
 .context-menu {
   position: fixed;
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: 4px 0;
-  z-index: 200;
-  min-width: 160px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  min-width: 180px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .context-menu-item {
   display: flex;
   align-items: center;
-  padding: 6px 14px;
+  padding: 6px 16px;
   font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
+  white-space: nowrap;
   transition: background 0.1s ease, color 0.1s ease;
 }
 .context-menu-item:hover {
-  background: var(--bg-glass-hover);
+  background: var(--accent-subtle);
   color: var(--text-primary);
 }
 .context-menu-item.danger {
   color: var(--danger);
+}
+.context-menu-item.danger:hover {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.context-menu-sep {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 8px;
 }
