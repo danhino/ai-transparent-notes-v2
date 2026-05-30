@@ -140,7 +140,7 @@ function TreeItem({
     <>
       <div
         className={`tree-item${selectedPath === entry.path ? ' selected' : ''}${isFlashing ? ' locate-flash' : ''}`}
-        style={{ paddingLeft: 8 + depth * 14 }}
+        style={{ paddingLeft: 8 + depth * 30 }}
         data-locate-path={entry.path}
         data-tree-type={entry.isDirectory ? 'dir' : 'file'}
         data-depth={depth}
