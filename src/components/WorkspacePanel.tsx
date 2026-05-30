@@ -45,6 +45,7 @@ interface TreeItemProps {
   flashPath: string | null;
   forceExpand: number;
   forceCollapse: number;
+  refreshVersion: number;
   onOpen: (entry: WorkspaceEntry) => void;
   onHighlight: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry, rootPath: string) => void;
@@ -55,7 +56,7 @@ interface TreeItemProps {
 
 function TreeItem({
   entry, depth, selectedPath, locatePath, flashPath,
-  forceExpand, forceCollapse,
+  forceExpand, forceCollapse, refreshVersion,
   onOpen, onHighlight, onContextMenu, onFileHover, onFileHoverEnd,
   rootPath,
 }: TreeItemProps) {
@@ -107,6 +108,13 @@ function TreeItem({
   useEffect(() => {
     if (forceCollapse > 0) setExpanded(false);
   }, [forceCollapse]);
+
+  // Reload children when files are created/deleted/renamed in this folder
+  useEffect(() => {
+    if (!entry.isDirectory || !expanded || !loaded) return;
+    void loadChildren();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshVersion]);
 
   const isFlashing = flashPath === entry.path;
 
@@ -166,6 +174,7 @@ function TreeItem({
             flashPath={flashPath}
             forceExpand={forceExpand}
             forceCollapse={forceCollapse}
+            refreshVersion={refreshVersion}
             onOpen={onOpen}
             onHighlight={onHighlight}
             onContextMenu={onContextMenu}
@@ -196,6 +205,7 @@ export function WorkspacePanel() {
   const [forceExpand, setForceExpand] = useState(0);
   const [forceCollapse, setForceCollapse] = useState(0);
   const [filePathTooltip, setFilePathTooltip] = useState<{ path: string; x: number; y: number } | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   const unwatchRefs = useRef<UnwatchFn[]>([]);
   const treeRef = useRef<HTMLDivElement>(null);
@@ -234,7 +244,7 @@ export function WorkspacePanel() {
     );
   }, [settings.workspaceFolders]);
 
-  // Watch all workspace roots
+  // Watch all workspace roots — trigger refresh on file changes
   useEffect(() => {
     unwatchRefs.current.forEach((u) => void u());
     unwatchRefs.current = [];
@@ -242,7 +252,7 @@ export function WorkspacePanel() {
     for (const folder of settings.workspaceFolders) {
       void watch(
         folder,
-        () => { setRoots((prev) => [...prev]); },
+        () => { setRefreshVersion((v) => v + 1); },
         { recursive: true }
       ).then((unwatch) => {
         unwatchRefs.current.push(unwatch);
@@ -507,6 +517,7 @@ export function WorkspacePanel() {
             flashPath={flashPath}
             forceExpand={forceExpand}
             forceCollapse={forceCollapse}
+            refreshVersion={refreshVersion}
             onOpen={handleSelect}
             onHighlight={setSelectedPath}
             onContextMenu={handleContextMenu}
