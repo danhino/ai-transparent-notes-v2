@@ -541,7 +541,7 @@ input {
   gap: 5px;
   padding: 0 12px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-subtle);
   border-bottom: none;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   cursor: pointer;
@@ -559,6 +559,7 @@ input {
 .tab:hover {
   background: var(--bg-glass);
   color: var(--text-secondary);
+  border-color: var(--border-default);
 }
 .tab.active {
   background: var(--accent-subtle);
