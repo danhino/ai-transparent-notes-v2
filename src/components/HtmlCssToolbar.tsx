@@ -3,7 +3,12 @@ import type { NoteEditorRef } from './NoteEditor';
 import { getText, apply, wrapSel, hasSel, getSel, replaceSel } from '../utils/toolbarUtils';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props {
+  editorRef: React.RefObject<NoteEditorRef | null>;
+  disabled: boolean;
+  htmlPreviewOpen: boolean;
+  onHtmlPreviewToggle: () => void;
+}
 
 // Basic emmet expansion for common patterns
 function expandEmmet(abbr: string): string {
@@ -56,7 +61,7 @@ function beautifyHtml(html: string): string {
   return lines.join('\n');
 }
 
-export function HtmlCssToolbar({ editorRef, disabled }: Props) {
+export function HtmlCssToolbar({ editorRef, disabled, htmlPreviewOpen, onHtmlPreviewToggle }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const [emmetInput, setEmmetInput] = useState('');
   const [showEmmet, setShowEmmet] = useState(false);
@@ -115,6 +120,13 @@ export function HtmlCssToolbar({ editorRef, disabled }: Props) {
         {sep}
         <button className="ctx-btn" onClick={() => apply(editorRef, beautifyHtml(getText(editorRef)))} disabled={disabled} title="Beautify HTML">Beautify</button>
         <button className="ctx-btn" onClick={() => apply(editorRef, getText(editorRef).replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim())} disabled={disabled} title="Minify HTML">Minify</button>
+        {sep}
+        <button
+          className={`ctx-btn${htmlPreviewOpen ? ' ctx-btn-active' : ''}`}
+          onClick={onHtmlPreviewToggle}
+          disabled={disabled}
+          title="Toggle inline HTML preview (split view)"
+        >Preview</button>
       </div>
       {/* Row 2 — CSS */}
       <div className="ctx-toolbar-row">

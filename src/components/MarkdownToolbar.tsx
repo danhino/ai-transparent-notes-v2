@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { marked } from 'marked';
-import { invoke } from '@tauri-apps/api/core';
 import type { NoteEditorRef } from './NoteEditor';
 import { getText, getSel, hasSel, replaceSel, wrapSel, addLinePrefix } from '../utils/toolbarUtils';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props {
+  editorRef: React.RefObject<NoteEditorRef | null>;
+  disabled: boolean;
+  previewOpen: boolean;
+  onPreviewToggle: () => void;
+}
 
 function addLinePrefix1(lines: string, prefix: string) {
   return lines.split('\n').map(l => prefix + l).join('\n');
@@ -26,7 +29,7 @@ function generateToc(content: string): string {
   return entries.join('\n');
 }
 
-export function MarkdownToolbar({ editorRef, disabled }: Props) {
+export function MarkdownToolbar({ editorRef, disabled, previewOpen, onPreviewToggle }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -44,15 +47,6 @@ export function MarkdownToolbar({ editorRef, disabled }: Props) {
     } else {
       editorRef.current?.replaceSelection(prefix);
     }
-  }
-
-  function handlePreview() {
-    const content = getText(editorRef);
-    const html = marked.parse(content) as string;
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.7;color:#cdd6f4;background:#1e1e2e}pre{background:#181825;padding:12px;border-radius:6px;overflow-x:auto}code{background:#181825;padding:2px 5px;border-radius:3px;font-size:.9em}blockquote{border-left:4px solid #5a9cf7;margin:0;padding-left:16px;color:#a6adc8}img{max-width:100%}a{color:#5a9cf7}table{border-collapse:collapse;width:100%}th,td{border:1px solid #45475a;padding:8px 12px}th{background:#181825}</style>
-</head><body>${html}</body></html>`;
-    void invoke('open_html_preview', { html: fullHtml });
   }
 
   function handleTable() {
@@ -86,7 +80,12 @@ export function MarkdownToolbar({ editorRef, disabled }: Props) {
         <button className="ctx-btn" onClick={() => wrapSel(editorRef, '[', '](url)', 'link text')} disabled={disabled} title="Insert link">Link</button>
         <button className="ctx-btn" onClick={() => editorRef.current?.replaceSelection('![alt text](url)')} disabled={disabled} title="Insert image">Image</button>
         {sep}
-        <button className="ctx-btn" onClick={handlePreview} disabled={disabled} title="Open rendered preview">Preview</button>
+        <button
+          className={`ctx-btn${previewOpen ? ' ctx-btn-active' : ''}`}
+          onClick={onPreviewToggle}
+          disabled={disabled}
+          title="Toggle Markdown preview (split view)"
+        >Preview</button>
       </div>
       <div className="ctx-toolbar-row">
         <button className="ctx-btn" onClick={() => addLinePrefix(editorRef, '- ')} disabled={disabled} title="Bullet list">• List</button>

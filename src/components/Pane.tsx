@@ -11,6 +11,8 @@ import { XmlToolbar } from './XmlToolbar';
 import { JsonToolbar } from './JsonToolbar';
 import { SqlToolbar } from './SqlToolbar';
 import { MarkdownToolbar } from './MarkdownToolbar';
+import { JsonTreeView } from './JsonTreeView';
+import { marked } from 'marked';
 import { PythonToolbar } from './PythonToolbar';
 import { JsToolbar } from './JsToolbar';
 import { CSharpToolbar } from './CSharpToolbar';
@@ -34,6 +36,13 @@ import { getDelimiterChar } from '../utils/csvParser';
 import type { Delimiter } from '../types';
 
 const SAVE_DEBOUNCE_MS = 400;
+
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '');
+}
 
 const FORMAT_EXT: Record<string, string> = {
   'Markdown': '.md',
@@ -130,6 +139,15 @@ export function Pane({ paneIndex }: Props) {
   const [csvDelimiter, setCsvDelimiter] = useState<Delimiter>('Comma');
   const [csvFilterText] = useState('');
 
+  // Inline preview state
+  const [markdownPreviewOpen, setMarkdownPreviewOpen] = useState(false);
+  const [mdPreviewHtml, setMdPreviewHtml] = useState('');
+  const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
+  const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
+  const mdPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const htmlPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const htmlIframeRef = useRef<HTMLIFrameElement | null>(null);
+
   useEffect(() => {
     const content = note?.content ?? '';
     setCharCount(content.length);
@@ -162,6 +180,8 @@ export function Pane({ paneIndex }: Props) {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      if (mdPreviewTimerRef.current) clearTimeout(mdPreviewTimerRef.current);
+      if (htmlPreviewTimerRef.current) clearTimeout(htmlPreviewTimerRef.current);
     };
   }, []);
 
@@ -169,6 +189,41 @@ export function Pane({ paneIndex }: Props) {
   useEffect(() => {
     if (selectedFormat === 'CSV') setShowCsvTableView(true);
   }, [selectedFormat]);
+
+  // Close inline previews when format changes away from their format
+  useEffect(() => {
+    if (selectedFormat !== 'Markdown') setMarkdownPreviewOpen(false);
+    if (selectedFormat !== 'HTML/CSS') setHtmlPreviewOpen(false);
+    if (selectedFormat !== 'JSON') setJsonPreviewOpen(false);
+  }, [selectedFormat]);
+
+  // Debounced Markdown → HTML rendering (400ms)
+  useEffect(() => {
+    if (!markdownPreviewOpen || selectedFormat !== 'Markdown') return;
+    const raw = note?.content ?? '';
+    if (mdPreviewTimerRef.current) clearTimeout(mdPreviewTimerRef.current);
+    mdPreviewTimerRef.current = setTimeout(() => {
+      setMdPreviewHtml(sanitizeHtml(marked.parse(raw) as string));
+    }, 400);
+    return () => { if (mdPreviewTimerRef.current) clearTimeout(mdPreviewTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note?.content, markdownPreviewOpen, selectedFormat]);
+
+  // Debounced HTML → iframe write (400ms)
+  useEffect(() => {
+    if (!htmlPreviewOpen || selectedFormat !== 'HTML/CSS') return;
+    const raw = note?.content ?? '';
+    if (htmlPreviewTimerRef.current) clearTimeout(htmlPreviewTimerRef.current);
+    htmlPreviewTimerRef.current = setTimeout(() => {
+      const iframe = htmlIframeRef.current;
+      if (!iframe) return;
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+      doc.open(); doc.write(raw); doc.close();
+    }, 400);
+    return () => { if (htmlPreviewTimerRef.current) clearTimeout(htmlPreviewTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note?.content, htmlPreviewOpen, selectedFormat]);
 
   // Ctrl/Cmd+Shift+T toggles toolbar collapse for the focused pane
   useEffect(() => {
@@ -620,7 +675,12 @@ export function Pane({ paneIndex }: Props) {
           )}
           {/* Contextual toolbar — JSON */}
           {isJson && (
-            <JsonToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <JsonToolbar
+              editorRef={editorRef}
+              disabled={paneState.isBusy || !note}
+              previewOpen={jsonPreviewOpen}
+              onPreviewToggle={() => setJsonPreviewOpen(v => !v)}
+            />
           )}
           {/* Contextual toolbar — SQL */}
           {isSql && (
@@ -628,7 +688,12 @@ export function Pane({ paneIndex }: Props) {
           )}
           {/* Contextual toolbar — Markdown */}
           {isMarkdown && (
-            <MarkdownToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <MarkdownToolbar
+              editorRef={editorRef}
+              disabled={paneState.isBusy || !note}
+              previewOpen={markdownPreviewOpen}
+              onPreviewToggle={() => setMarkdownPreviewOpen(v => !v)}
+            />
           )}
           {/* Contextual toolbar — Python */}
           {isPython && (
@@ -664,13 +729,24 @@ export function Pane({ paneIndex }: Props) {
           )}
           {/* Contextual toolbar — HTML/CSS */}
           {isHtmlCss && (
-            <HtmlCssToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <HtmlCssToolbar
+              editorRef={editorRef}
+              disabled={paneState.isBusy || !note}
+              htmlPreviewOpen={htmlPreviewOpen}
+              onHtmlPreviewToggle={() => setHtmlPreviewOpen(v => !v)}
+            />
           )}
         </div>
       </div>
 
-      {/* Editor area — split view when CSV table is active */}
-      <div className={`editor-area${isCsv && showCsvTableView ? ' editor-area-split' : ''}`}>
+      {/* Editor area — split view when CSV table or inline preview is active */}
+      <div className={[
+        'editor-area',
+        isCsv && showCsvTableView ? 'editor-area-split' : '',
+        isMarkdown && markdownPreviewOpen ? 'preview-active-60' : '',
+        isHtmlCss && htmlPreviewOpen ? 'preview-active-50' : '',
+        isJson && jsonPreviewOpen ? 'preview-active-55' : '',
+      ].filter(Boolean).join(' ')}>
         {isRtf ? (
           <RichTextEditor
             ref={richEditorRef}
@@ -700,6 +776,40 @@ export function Pane({ paneIndex }: Props) {
             hasHeader={csvHasHeader}
             filterText={csvFilterText}
           />
+        )}
+
+        {/* Markdown preview panel */}
+        {isMarkdown && markdownPreviewOpen && (
+          <div className="inline-preview-panel">
+            <div className="inline-preview-label">PREVIEW</div>
+            <div
+              className="markdown-preview-body"
+              dangerouslySetInnerHTML={{ __html: mdPreviewHtml }}
+            />
+          </div>
+        )}
+
+        {/* HTML/CSS preview panel — sandboxed iframe */}
+        {isHtmlCss && htmlPreviewOpen && (
+          <div className="inline-preview-panel">
+            <div className="inline-preview-label">PREVIEW (inline)</div>
+            <iframe
+              ref={htmlIframeRef}
+              style={{ flex: 1, border: 'none', background: '#ffffff', minHeight: 0 }}
+              sandbox="allow-same-origin allow-scripts"
+              title="HTML Preview"
+            />
+          </div>
+        )}
+
+        {/* JSON tree view panel */}
+        {isJson && jsonPreviewOpen && (
+          <div className="inline-preview-panel">
+            <div className="inline-preview-label">PREVIEW</div>
+            <div style={{ overflow: 'auto', flex: 1, minHeight: 0, padding: '4px 8px' }}>
+              <JsonTreeView content={content} />
+            </div>
+          </div>
         )}
       </div>
 

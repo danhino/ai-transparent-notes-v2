@@ -3,7 +3,12 @@ import type { NoteEditorRef } from './NoteEditor';
 import { getText, getSel, hasSel, apply, replaceSel, wrapSel, copyText } from '../utils/toolbarUtils';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props {
+  editorRef: React.RefObject<NoteEditorRef | null>;
+  disabled: boolean;
+  previewOpen: boolean;
+  onPreviewToggle: () => void;
+}
 
 function sortKeysDeep(val: unknown): unknown {
   if (Array.isArray(val)) return val.map(sortKeysDeep);
@@ -66,7 +71,7 @@ function getJsonPathAtOffset(json: string, offset: number): string {
   return path.filter(Boolean).join('.').replace(/\.\[/g, '[');
 }
 
-export function JsonToolbar({ editorRef, disabled }: Props) {
+export function JsonToolbar({ editorRef, disabled, previewOpen, onPreviewToggle }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -153,6 +158,12 @@ export function JsonToolbar({ editorRef, disabled }: Props) {
         <button className="ctx-btn" onClick={handlePrettyPrint} disabled={disabled} title="Format JSON with 2-space indent">Pretty print</button>
         <button className="ctx-btn" onClick={handleMinify} disabled={disabled} title="Remove all whitespace">Minify</button>
         <button className="ctx-btn" onClick={handleValidate} disabled={disabled} title="Validate JSON syntax">✓ Validate</button>
+        <button
+          className={`ctx-btn${previewOpen ? ' ctx-btn-active' : ''}`}
+          onClick={onPreviewToggle}
+          disabled={disabled}
+          title="Toggle JSON tree explorer view"
+        >Preview</button>
         {sep}
         <button className="ctx-btn" onClick={handleSortKeys} disabled={disabled} title="Sort all object keys alphabetically">Sort keys</button>
         <button className="ctx-btn" onClick={handleFlatten} disabled={disabled} title="Flatten nested to dot notation">Flatten</button>
