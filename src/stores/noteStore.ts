@@ -1,6 +1,43 @@
 import { create } from 'zustand';
 import { Note } from '../types';
 
+// Map file extensions to format names
+const EXT_TO_FORMAT: Record<string, string> = {
+  '.md': 'Markdown',
+  '.py': 'Python',
+  '.js': 'JavaScript',
+  '.mjs': 'JavaScript',
+  '.ts': 'TypeScript',
+  '.tsx': 'TypeScript',
+  '.java': 'Java',
+  '.cs': 'C#',
+  '.c': 'C',
+  '.h': 'C',
+  '.cpp': 'C++',
+  '.cc': 'C++',
+  '.cxx': 'C++',
+  '.sql': 'SQL',
+  '.html': 'HTML/CSS',
+  '.htm': 'HTML/CSS',
+  '.css': 'HTML/CSS',
+  '.scss': 'HTML/CSS',
+  '.ps1': 'PowerShell',
+  '.sh': 'Bash',
+  '.json': 'JSON',
+  '.rtf': 'RTF',
+  '.csv': 'CSV',
+  '.xml': 'XML',
+  '.rs': 'Rust',
+};
+
+function getFormatFromPath(path: string): string | undefined {
+  const normalized = path.replace(/\\/g, '/');
+  const lastDot = normalized.lastIndexOf('.');
+  if (lastDot < 0) return undefined;
+  const ext = normalized.slice(lastDot).toLowerCase();
+  return EXT_TO_FORMAT[ext];
+}
+
 function makeNote(partial: Partial<Note> = {}): Note {
   return {
     id: crypto.randomUUID(),
@@ -101,7 +138,8 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
     if (notes.length >= 8) return null;
     const parts = normalized.split('/');
     const title = parts[parts.length - 1];
-    const note = makeNote({ title, content, sourceFilePath: normalized });
+    const format = getFormatFromPath(normalized);
+    const note = makeNote({ title, content, sourceFilePath: normalized, format });
     set((s) => ({ notes: [...s.notes, note], activeNoteIndex: s.notes.length }));
     return note;
   },
