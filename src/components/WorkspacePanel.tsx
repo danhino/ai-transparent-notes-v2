@@ -141,6 +141,7 @@ function TreeItem({
         style={{ paddingLeft: 8 + depth * 14 }}
         data-locate-path={entry.path}
         data-tree-type={entry.isDirectory ? 'dir' : 'file'}
+        data-depth={depth}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => {
