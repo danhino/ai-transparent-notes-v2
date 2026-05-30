@@ -567,16 +567,6 @@ input {
   color: var(--text-primary);
   font-weight: 500;
 }
-.tab.active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1.5px;
-  background: var(--accent-color);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-}
 
 [data-theme="dark"] .tab:not(.active) {
   color: rgba(255, 255, 255, 0.65);
@@ -731,15 +721,13 @@ input {
   font-size: var(--ui-text-size, 11px);
   color: rgba(255, 255, 255, 0.65);
   white-space: nowrap;
+  overflow: hidden;
   border-radius: var(--radius-sm);
   margin: 0 4px;
   transition: background 0.12s ease, color 0.12s ease;
-}
-
-.tree-item-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
+  background-size: 2px 100%;
+  background-repeat: repeat-y;
+  background-position: 0 0;
 }
 
 /* Tree branch lines for nested items */
@@ -748,8 +736,9 @@ input {
 .tree-item[data-depth="3"],
 .tree-item[data-depth="4"],
 .tree-item[data-depth="5"] {
-  border-left: 2px solid rgba(255, 255, 255, 0.4);
-  padding-left: 6px !important;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.4) 2px, transparent 2px);
+  background-position: 0 0;
+  padding-left: 6px;
 }
 .tree-item:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -797,7 +786,7 @@ input {
 [data-theme="light"] .tree-item[data-depth="3"],
 [data-theme="light"] .tree-item[data-depth="4"],
 [data-theme="light"] .tree-item[data-depth="5"] {
-  border-left-color: rgba(0, 0, 0, 0.35);
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.35) 2px, transparent 2px);
 }
 
 /* Sepia theme workspace overrides */
@@ -816,7 +805,7 @@ input {
 [data-theme="sepia"] .tree-item[data-depth="3"],
 [data-theme="sepia"] .tree-item[data-depth="4"],
 [data-theme="sepia"] .tree-item[data-depth="5"] {
-  border-left-color: rgba(74, 55, 40, 0.4);
+  background-image: linear-gradient(to right, rgba(74, 55, 40, 0.4) 0%, rgba(74, 55, 40, 0.4) 2px, transparent 2px);
 }
 
 /* Green theme workspace overrides */
@@ -834,7 +823,7 @@ input {
 [data-theme="green"] .tree-item[data-depth="3"],
 [data-theme="green"] .tree-item[data-depth="4"],
 [data-theme="green"] .tree-item[data-depth="5"] {
-  border-left-color: rgba(152, 232, 152, 0.4);
+  background-image: linear-gradient(to right, rgba(152, 232, 152, 0.4) 0%, rgba(152, 232, 152, 0.4) 2px, transparent 2px);
 }
 
 /* Blue theme workspace overrides */
@@ -852,7 +841,7 @@ input {
 [data-theme="blue"] .tree-item[data-depth="3"],
 [data-theme="blue"] .tree-item[data-depth="4"],
 [data-theme="blue"] .tree-item[data-depth="5"] {
-  border-left-color: rgba(191, 215, 255, 0.4);
+  background-image: linear-gradient(to right, rgba(191, 215, 255, 0.4) 0%, rgba(191, 215, 255, 0.4) 2px, transparent 2px);
 }
 
 .tree-item-name {
