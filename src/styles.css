@@ -563,7 +563,7 @@ input {
 }
 .tab.active {
   background: var(--accent-subtle);
-  border-color: var(--accent-border);
+  border: 1px solid var(--accent-border);
   color: var(--text-primary);
   font-weight: 500;
 }
@@ -731,10 +731,15 @@ input {
   font-size: var(--ui-text-size, 11px);
   color: rgba(255, 255, 255, 0.65);
   white-space: nowrap;
-  overflow: hidden;
   border-radius: var(--radius-sm);
   margin: 0 4px;
   transition: background 0.12s ease, color 0.12s ease;
+}
+
+.tree-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }
 
 /* Tree branch lines for nested items */
@@ -743,23 +748,8 @@ input {
 .tree-item[data-depth="3"],
 .tree-item[data-depth="4"],
 .tree-item[data-depth="5"] {
-  position: relative;
-  padding-left: 6px;
-}
-
-.tree-item[data-depth="1"]::after,
-.tree-item[data-depth="2"]::after,
-.tree-item[data-depth="3"]::after,
-.tree-item[data-depth="4"]::after,
-.tree-item[data-depth="5"]::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.4);
-  pointer-events: none;
+  border-left: 2px solid rgba(255, 255, 255, 0.4);
+  padding-left: 6px !important;
 }
 .tree-item:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -802,12 +792,12 @@ input {
   background: rgba(90, 156, 247, 0.12);
   color: rgba(0, 0, 0, 0.9);
 }
-[data-theme="light"] .tree-item[data-depth="1"]::after,
-[data-theme="light"] .tree-item[data-depth="2"]::after,
-[data-theme="light"] .tree-item[data-depth="3"]::after,
-[data-theme="light"] .tree-item[data-depth="4"]::after,
-[data-theme="light"] .tree-item[data-depth="5"]::after {
-  background: rgba(0, 0, 0, 0.35);
+[data-theme="light"] .tree-item[data-depth="1"],
+[data-theme="light"] .tree-item[data-depth="2"],
+[data-theme="light"] .tree-item[data-depth="3"],
+[data-theme="light"] .tree-item[data-depth="4"],
+[data-theme="light"] .tree-item[data-depth="5"] {
+  border-left-color: rgba(0, 0, 0, 0.35);
 }
 
 /* Sepia theme workspace overrides */
@@ -821,12 +811,12 @@ input {
 [data-theme="sepia"] .tree-item.selected {
   color: rgba(74, 55, 40, 0.95);
 }
-[data-theme="sepia"] .tree-item[data-depth="1"]::after,
-[data-theme="sepia"] .tree-item[data-depth="2"]::after,
-[data-theme="sepia"] .tree-item[data-depth="3"]::after,
-[data-theme="sepia"] .tree-item[data-depth="4"]::after,
-[data-theme="sepia"] .tree-item[data-depth="5"]::after {
-  background: rgba(74, 55, 40, 0.4);
+[data-theme="sepia"] .tree-item[data-depth="1"],
+[data-theme="sepia"] .tree-item[data-depth="2"],
+[data-theme="sepia"] .tree-item[data-depth="3"],
+[data-theme="sepia"] .tree-item[data-depth="4"],
+[data-theme="sepia"] .tree-item[data-depth="5"] {
+  border-left-color: rgba(74, 55, 40, 0.4);
 }
 
 /* Green theme workspace overrides */
@@ -839,12 +829,12 @@ input {
 [data-theme="green"] .tree-item.selected {
   color: rgba(152, 232, 152, 0.95);
 }
-[data-theme="green"] .tree-item[data-depth="1"]::after,
-[data-theme="green"] .tree-item[data-depth="2"]::after,
-[data-theme="green"] .tree-item[data-depth="3"]::after,
-[data-theme="green"] .tree-item[data-depth="4"]::after,
-[data-theme="green"] .tree-item[data-depth="5"]::after {
-  background: rgba(152, 232, 152, 0.4);
+[data-theme="green"] .tree-item[data-depth="1"],
+[data-theme="green"] .tree-item[data-depth="2"],
+[data-theme="green"] .tree-item[data-depth="3"],
+[data-theme="green"] .tree-item[data-depth="4"],
+[data-theme="green"] .tree-item[data-depth="5"] {
+  border-left-color: rgba(152, 232, 152, 0.4);
 }
 
 /* Blue theme workspace overrides */
@@ -857,12 +847,12 @@ input {
 [data-theme="blue"] .tree-item.selected {
   color: rgba(191, 215, 255, 0.95);
 }
-[data-theme="blue"] .tree-item[data-depth="1"]::after,
-[data-theme="blue"] .tree-item[data-depth="2"]::after,
-[data-theme="blue"] .tree-item[data-depth="3"]::after,
-[data-theme="blue"] .tree-item[data-depth="4"]::after,
-[data-theme="blue"] .tree-item[data-depth="5"]::after {
-  background: rgba(191, 215, 255, 0.4);
+[data-theme="blue"] .tree-item[data-depth="1"],
+[data-theme="blue"] .tree-item[data-depth="2"],
+[data-theme="blue"] .tree-item[data-depth="3"],
+[data-theme="blue"] .tree-item[data-depth="4"],
+[data-theme="blue"] .tree-item[data-depth="5"] {
+  border-left-color: rgba(191, 215, 255, 0.4);
 }
 
 .tree-item-name {
