@@ -52,6 +52,7 @@ interface TreeItemProps {
   onFileHover: (e: React.MouseEvent, path: string) => void;
   onFileHoverEnd: () => void;
   rootPath: string;
+  isLastChild?: boolean;
 }
 
 function TreeItem({
@@ -59,6 +60,7 @@ function TreeItem({
   forceExpand, forceCollapse, refreshVersion,
   onOpen, onHighlight, onContextMenu, onFileHover, onFileHoverEnd,
   rootPath,
+  isLastChild = false,
 }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<WorkspaceEntry[]>([]);
@@ -142,6 +144,7 @@ function TreeItem({
         data-locate-path={entry.path}
         data-tree-type={entry.isDirectory ? 'dir' : 'file'}
         data-depth={depth}
+        data-is-last-child={isLastChild}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => {
@@ -165,7 +168,7 @@ function TreeItem({
       </div>
 
       {entry.isDirectory && expanded && loaded &&
-        children.map((child) => (
+        children.map((child, idx) => (
           <TreeItem
             key={child.path}
             entry={child}
@@ -182,6 +185,7 @@ function TreeItem({
             onFileHover={onFileHover}
             onFileHoverEnd={onFileHoverEnd}
             rootPath={rootPath}
+            isLastChild={idx === children.length - 1}
           />
         ))}
     </>
