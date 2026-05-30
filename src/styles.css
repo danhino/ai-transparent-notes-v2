@@ -698,7 +698,7 @@ input {
 .workspace-tree {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   padding: 4px 0;
 }
 
@@ -721,7 +721,6 @@ input {
   font-size: var(--ui-text-size, 11px);
   color: rgba(255, 255, 255, 0.65);
   white-space: nowrap;
-  overflow: hidden;
   border-radius: var(--radius-sm);
   margin: 0 4px;
   transition: background 0.12s ease, color 0.12s ease;
