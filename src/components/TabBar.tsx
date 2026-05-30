@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNoteStore } from '../stores/noteStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useUiStore } from '../stores/uiStore';
 
 const MAX_TABS = 8;
 
@@ -20,6 +21,7 @@ export function TabBar() {
     useNoteStore();
   const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
   const paneNoteIds = useSettingsStore((s) => s.settings.paneNoteIds);
+  const focusedPaneIndex = useUiStore((s) => s.focusedPaneIndex);
 
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -64,7 +66,10 @@ export function TabBar() {
           <div
             key={note.id}
             className={`tab${isActive ? ' active' : ''}`}
-            onClick={() => setActiveNoteIndex(idx)}
+            onClick={() => {
+              setActiveNoteIndex(idx);
+              setPaneNoteId(focusedPaneIndex, note.id);
+            }}
             onDoubleClick={(e) => handleDoubleClick(e, note.id, note.title)}
           >
             {langDotColor && (

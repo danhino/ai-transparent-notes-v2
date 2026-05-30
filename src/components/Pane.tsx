@@ -154,11 +154,12 @@ export function Pane({ paneIndex }: Props) {
     setWordCount(content.trim() ? content.trim().split(/\s+/).length : 0);
   }, [note?.content]);
 
-  // Sync format selector when the note displayed in this pane changes
+  // Sync format, close previews when the note displayed in this pane changes
   useEffect(() => {
-    if (note?.format) {
-      setSelectedFormat(note.format);
-    }
+    setSelectedFormat(note?.format ?? settings.formatOptions[0] ?? 'Auto-detect (Code)');
+    setMarkdownPreviewOpen(false);
+    setHtmlPreviewOpen(false);
+    setJsonPreviewOpen(false);
   }, [note?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
