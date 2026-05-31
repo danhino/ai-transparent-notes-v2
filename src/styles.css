@@ -731,7 +731,7 @@ input {
 .tree-item[data-depth="1"] {
   background-image: linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35));
   background-size: 1px 100%;
-  background-position: 8px 0;
+  background-position: 20px 0;
   background-repeat: no-repeat;
 }
 .tree-item[data-depth="1"][data-is-last-child="true"] {
@@ -743,7 +743,7 @@ input {
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35)),
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35));
   background-size: 1px 100%, 1px 100%;
-  background-position: 8px 0, 38px 0;
+  background-position: 20px 0, 50px 0;
   background-repeat: no-repeat;
 }
 .tree-item[data-depth="2"][data-is-last-child="true"] {
@@ -756,7 +756,7 @@ input {
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35)),
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35));
   background-size: 1px 100%, 1px 100%, 1px 100%;
-  background-position: 8px 0, 38px 0, 68px 0;
+  background-position: 20px 0, 50px 0, 80px 0;
   background-repeat: no-repeat;
 }
 .tree-item[data-depth="3"][data-is-last-child="true"] {
@@ -770,7 +770,7 @@ input {
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35)),
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35));
   background-size: 1px 100%, 1px 100%, 1px 100%, 1px 100%;
-  background-position: 8px 0, 38px 0, 68px 0, 98px 0;
+  background-position: 20px 0, 50px 0, 80px 0, 110px 0;
   background-repeat: no-repeat;
 }
 .tree-item[data-depth="4"][data-is-last-child="true"] {
@@ -785,7 +785,7 @@ input {
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35)),
     linear-gradient(rgba(255,255,255,0.35), rgba(255,255,255,0.35));
   background-size: 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%;
-  background-position: 8px 0, 38px 0, 68px 0, 98px 0, 128px 0;
+  background-position: 20px 0, 50px 0, 80px 0, 110px 0, 140px 0;
   background-repeat: no-repeat;
 }
 .tree-item[data-depth="5"][data-is-last-child="true"] {
@@ -803,16 +803,16 @@ input {
   position: absolute;
   top: 50%;
   height: 1px;
-  width: 29px;
+  width: 10px;
   background-color: rgba(255, 255, 255, 0.35);
   transform: translateY(-50%);
   pointer-events: none;
 }
-.tree-item[data-depth="1"]::after { left: 8px; }
-.tree-item[data-depth="2"]::after { left: 38px; }
-.tree-item[data-depth="3"]::after { left: 68px; }
-.tree-item[data-depth="4"]::after { left: 98px; }
-.tree-item[data-depth="5"]::after { left: 128px; }
+.tree-item[data-depth="1"]::after { left: 20px; }
+.tree-item[data-depth="2"]::after { left: 50px; }
+.tree-item[data-depth="3"]::after { left: 80px; }
+.tree-item[data-depth="4"]::after { left: 110px; }
+.tree-item[data-depth="5"]::after { left: 140px; }
 
 /* ── Interactive (background-COLOR preserves background-image lines) ── */
 
@@ -848,6 +848,7 @@ input {
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  line-height: 1;
 }
 
 /* ── Light theme ── */

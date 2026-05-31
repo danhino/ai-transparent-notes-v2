@@ -23,18 +23,58 @@ interface ContextMenuState {
 
 function fileIcon(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  // Protected — do not change
   if (ext === 'py') return '🐍';
   if (ext === 'js' || ext === 'mjs') return '📜';
   if (ext === 'ts' || ext === 'tsx') return '📘';
-  if (ext === 'rs') return '🦀';
-  if (ext === 'md') return '📄';
-  if (ext === 'json') return '🗂';
   if (ext === 'html' || ext === 'htm') return '🌐';
-  if (ext === 'css' || ext === 'scss') return '🎨';
-  if (ext === 'sql') return '🗃';
   if (ext === 'java') return '☕';
-  if (ext === 'cpp' || ext === 'c' || ext === 'h') return '⚙';
-  return '📃';
+  // Documents
+  if (ext === 'md' || ext === 'mdx') return '📝';
+  if (ext === 'txt' || ext === 'rtf') return '📄';
+  if (ext === 'pdf') return '📕';
+  if (ext === 'log') return '🪵';
+  // Data / config
+  if (ext === 'csv') return '📊';
+  if (ext === 'json') return '🔧';
+  if (ext === 'xml') return '📋';
+  if (ext === 'yaml' || ext === 'yml') return '⚙️';
+  if (ext === 'toml') return '🔩';
+  if (ext === 'ini' || ext === 'cfg' || ext === 'conf') return '🔩';
+  if (ext === 'env') return '🔐';
+  // Styling
+  if (ext === 'css') return '🎨';
+  if (ext === 'scss' || ext === 'sass') return '🎨';
+  // Database
+  if (ext === 'sql') return '🗄️';
+  if (ext === 'db' || ext === 'sqlite' || ext === 'sqlite3') return '🗄️';
+  // Shell / scripting
+  if (ext === 'sh' || ext === 'bash') return '🖥️';
+  if (ext === 'ps1') return '💠';
+  if (ext === 'bat' || ext === 'cmd') return '⬛';
+  // Systems languages
+  if (ext === 'c' || ext === 'h') return '🔵';
+  if (ext === 'cpp' || ext === 'cc' || ext === 'cxx' || ext === 'hpp') return '🔷';
+  if (ext === 'cs') return '🟣';
+  if (ext === 'rs') return '🦀';
+  if (ext === 'go') return '🐹';
+  // Other languages
+  if (ext === 'rb') return '💎';
+  if (ext === 'php') return '🐘';
+  if (ext === 'swift') return '🍎';
+  if (ext === 'kt' || ext === 'kts') return '🟠';
+  if (ext === 'r') return '📈';
+  if (ext === 'lua') return '🌙';
+  // Binary / executable
+  if (ext === 'exe' || ext === 'msi') return '🔨';
+  if (ext === 'dll') return '🔌';
+  // Media
+  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp'].includes(ext)) return '🖼️';
+  if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) return '🎬';
+  if (['mp3', 'wav', 'flac', 'ogg', 'm4a'].includes(ext)) return '🎵';
+  // Archives
+  if (['zip', 'tar', 'gz', 'rar', '7z', 'bz2'].includes(ext)) return '📦';
+  return '📄';
 }
 
 interface TreeItemProps {
@@ -140,7 +180,7 @@ function TreeItem({
     <>
       <div
         className={`tree-item${selectedPath === entry.path ? ' selected' : ''}${isFlashing ? ' locate-flash' : ''}`}
-        style={{ paddingLeft: 8 + depth * 30 }}
+        style={{ paddingLeft: 2 + depth * 30 }}
         data-locate-path={entry.path}
         data-tree-type={entry.isDirectory ? 'dir' : 'file'}
         data-depth={depth}
@@ -155,11 +195,11 @@ function TreeItem({
         onMouseLeave={() => { if (!entry.isDirectory) onFileHoverEnd(); }}
       >
         {entry.isDirectory ? (
-          <span style={{ fontSize: 11, color: 'var(--subtle-text)', pointerEvents: 'none' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', pointerEvents: 'none' }}>
             {expanded ? '▾' : '▸'}
           </span>
         ) : null}
-        <span style={{ pointerEvents: 'none' }}>
+        <span style={{ pointerEvents: 'none', verticalAlign: 'middle' }}>
           {entry.isDirectory ? '📁' : fileIcon(entry.name)}
         </span>
         <span className="tree-item-name" style={{ pointerEvents: 'none' }}>
