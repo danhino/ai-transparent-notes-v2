@@ -86,7 +86,7 @@ Dark and Blue themes use the CodeMirror oneDark color scheme. Light, Sepia, and 
 
 ### Format toolbars
 
-Selecting RTF, CSV, or XML reveals a format-specific toolbar row immediately below the AI toolbar. It hides automatically when any other format is chosen.
+Selecting most formats reveals a contextual toolbar immediately below the AI toolbar. It hides automatically when switching to a different format.
 
 **RTF toolbar (two rows)**
 
@@ -105,6 +105,84 @@ Row 2: Insert column, Header row toggle (marks first row as header, excluded fro
 Row 1: Wrap selection in tag (inline tag name input), Unwrap surrounding tag, Collapse all/Expand all, Format (pretty-print, 2-space indent), Minify (single line), Validate (inline success/error banner).
 
 Row 2: Add attribute (inline name/value inputs), Insert child element, Insert sibling element, Insert comment, Insert CDATA, Navigate Prev/Next/Parent, XPath search with match count.
+
+**Markdown toolbar (two rows)**
+
+Row 1: Bold, italic, strikethrough, inline code, headings H1–H3, link, image, preview toggle.
+
+Row 2: Bullet list, numbered list, task list, blockquote, code block, table template, TOC generator (builds a linked table of contents from all headings in the note).
+
+**JSON toolbar (two rows)**
+
+Row 1: Pretty print (2-space indent), minify, validate with inline banner, tree explorer toggle, sort all object keys alphabetically, flatten to dot notation, unflatten from dot notation, copy JSON path at cursor.
+
+Row 2: Wrap/unwrap block comment, wrap content in array or object.
+
+**HTML/CSS toolbar (two rows)**
+
+Row 1: HTML comment/uncomment, insert div/span/p/a, Emmet abbreviation expander (inline input, press Enter to expand, e.g. `div.class>ul>li*3`), beautify HTML, minify HTML, preview toggle.
+
+Row 2: CSS comment/uncomment, Flexbox template, Grid template, media query template, vendor prefix helper, CSS variable and :root templates.
+
+**SQL toolbar (two rows)**
+
+Row 1: Pretty print (keyword newlines), minify to single line, uppercase SQL keywords, lowercase SQL keywords, block comment, line comment (--), uncomment, statement and line count.
+
+Row 2: Quick-insert templates: SELECT *, INSERT INTO, UPDATE, DELETE FROM, CREATE TABLE, full join/group/order query.
+
+**Python toolbar (two rows)**
+
+Row 1: Comment/uncomment (#), triple-quote docstring wrapper, def and class templates.
+
+Row 2: if/elif/else, for, while, import, from/import, list comprehension, dict comprehension, try/except wrapper, with block, lambda, print(f"").
+
+**JavaScript / TypeScript toolbar (two rows)**
+
+Row 1: Line comment/uncomment (//), block comment, arrow function (or convert selection from function keyword), async/await wrapper, console.log, debugger, try/catch.
+
+Row 2: import, export default function, JSON.parse/stringify wrappers. TypeScript adds interface, type alias, and enum templates; JavaScript adds JSDoc comment and object literal.
+
+**C# toolbar (two rows)**
+
+Row 1: Line/block comment, namespace, class, interface templates, auto property, constructor.
+
+Row 2: try/catch/finally, using block, async Task method, await, LINQ chain, #region wrapper.
+
+**C / C++ toolbar (two rows)**
+
+Row 1: Line/block comment, #include, #define, #ifdef guard, struct. C++ adds class template.
+
+Row 2: printf (C) or cout (C++), for and while loops, memory allocation (malloc/new and free/delete), NULL/nullptr, main function template.
+
+**Java toolbar (two rows)**
+
+Row 1: Line/block comment, Javadoc, class, interface, enum templates, main method.
+
+Row 2: try/catch/finally, for, for-each, while loops, System.out.println, @Override annotation, getter/setter pair.
+
+**Rust toolbar (two rows)**
+
+Row 1: Line/block comment, doc comment (///), fn, struct, impl, enum templates, pub keyword.
+
+Row 2: match expression, if let, Vec::new, HashMap, println!, .unwrap(), ? operator, #[derive] attribute.
+
+**Bash / PowerShell toolbar (two rows)**
+
+Row 1: Comment/uncomment (#), if/then/fi (Bash) or if block (PowerShell), for loop, while loop, function template, echo/Write-Host.
+
+Row 2: Pipe (|), redirect (>), append (>>), variable declaration, environment variable (export/$env:). Bash adds shebang line inserter and `set -euo pipefail`; PowerShell adds param() block inserter.
+
+**Plain text toolbar (one row)**
+
+UPPER, lower, Title case; sort lines A-Z or Z-A; reverse line order; remove duplicate lines; word/char/line count with estimated read time; trim whitespace per line; add or remove 2-space indent.
+
+### Inline split previews
+
+Three formats open a live panel below the editor when their "Preview" button is clicked in the contextual toolbar:
+
+- **Markdown** — rendered HTML (via `marked`), updates with 400ms debounce
+- **HTML/CSS** — live iframe rendering the note content
+- **JSON** — collapsible tree explorer
 
 ### AI toolbar
 
@@ -157,7 +235,7 @@ The Focus button in the main toolbar shows an active state while focus mode is o
 The settings dialog is scrollable and divided into these sections:
 
 - **AI configuration** — provider (Claude/OpenAI), model filtered by provider, API key with show/hide toggle
-- **Appearance** — theme, font family (12 options), font size (14 sizes), show line numbers by default
+- **Appearance** — theme, font family (12 options), font size (12 sizes), show line numbers by default; a UI contrast subsection has live-preview sliders for text brightness, UI text size (px), and border opacity
 - **AI toolbar** — drag-and-drop reorderable list of AI action buttons; use ▲/▼ or drag handles to reorder, × to remove, dropdown to add
 - **Main toolbar** — drag-and-drop reorderable list of main toolbar items
 - **Format options** — drag-and-drop reorderable list; add custom language/format names, remove built-ins
