@@ -154,6 +154,14 @@ export function Pane({ paneIndex }: Props) {
   const htmlPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const htmlIframeRef = useRef<HTMLIFrameElement | null>(null);
 
+  // Preview resize state
+  const [previewHeight, setPreviewHeight] = useState(200);
+  const [isDraggingPreview, setIsDraggingPreview] = useState(false);
+  const isDraggingPreviewRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const dragStartHeightRef = useRef(0);
+  const editorAreaRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const content = note?.content ?? '';
     setCharCount(content.length);
@@ -231,6 +239,40 @@ export function Pane({ paneIndex }: Props) {
     return () => { if (htmlPreviewTimerRef.current) clearTimeout(htmlPreviewTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note?.content, htmlPreviewOpen, selectedFormat]);
+
+  // Reset preview height when the note changes
+  useEffect(() => { setPreviewHeight(200); }, [noteId]);
+
+  // Preview drag-to-resize mouse events
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!isDraggingPreviewRef.current) return;
+      const delta = dragStartYRef.current - e.clientY;
+      const containerH = editorAreaRef.current?.clientHeight ?? 400;
+      const next = Math.max(80, Math.min(containerH - 80, dragStartHeightRef.current + delta));
+      setPreviewHeight(next);
+    }
+    function onMouseUp() {
+      if (isDraggingPreviewRef.current) {
+        isDraggingPreviewRef.current = false;
+        setIsDraggingPreview(false);
+      }
+    }
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
+
+  function handlePreviewDividerMouseDown(e: React.MouseEvent) {
+    isDraggingPreviewRef.current = true;
+    setIsDraggingPreview(true);
+    dragStartYRef.current = e.clientY;
+    dragStartHeightRef.current = previewHeight;
+    e.preventDefault();
+  }
 
   // Ctrl/Cmd+Shift+T toggles toolbar collapse for the focused pane
   useEffect(() => {
@@ -749,13 +791,13 @@ export function Pane({ paneIndex }: Props) {
       </div>
 
       {/* Editor area — split view when CSV table or inline preview is active */}
-      <div className={[
-        'editor-area',
-        isCsv && showCsvTableView ? 'editor-area-split' : '',
-        isMarkdown && markdownPreviewOpen ? 'preview-active-60' : '',
-        isHtmlCss && htmlPreviewOpen ? 'preview-active-50' : '',
-        isJson && jsonPreviewOpen ? 'preview-active-55' : '',
-      ].filter(Boolean).join(' ')}>
+      <div
+        ref={editorAreaRef}
+        className={[
+          'editor-area',
+          isCsv && showCsvTableView ? 'editor-area-split' : '',
+        ].filter(Boolean).join(' ')}
+      >
         {isRtf ? (
           <RichTextEditor
             ref={richEditorRef}
@@ -789,36 +831,60 @@ export function Pane({ paneIndex }: Props) {
 
         {/* Markdown preview panel */}
         {isMarkdown && markdownPreviewOpen && (
-          <div className="inline-preview-panel">
-            <div className="inline-preview-label">PREVIEW</div>
+          <>
             <div
-              className="markdown-preview-body"
-              dangerouslySetInnerHTML={{ __html: mdPreviewHtml }}
-            />
-          </div>
+              className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
+              onMouseDown={handlePreviewDividerMouseDown}
+            >
+              <span className="preview-divider-dots">· · ·</span>
+            </div>
+            <div className="inline-preview-panel" style={{ height: previewHeight, flex: 'none', minHeight: 80 }}>
+              <div className="inline-preview-label">PREVIEW</div>
+              <div
+                className="markdown-preview-body"
+                dangerouslySetInnerHTML={{ __html: mdPreviewHtml }}
+              />
+            </div>
+          </>
         )}
 
         {/* HTML/CSS preview panel — sandboxed iframe */}
         {isHtmlCss && htmlPreviewOpen && (
-          <div className="inline-preview-panel">
-            <div className="inline-preview-label">PREVIEW (inline)</div>
-            <iframe
-              ref={htmlIframeRef}
-              style={{ flex: 1, border: 'none', background: '#ffffff', minHeight: 0 }}
-              sandbox="allow-same-origin allow-scripts"
-              title="HTML Preview"
-            />
-          </div>
+          <>
+            <div
+              className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
+              onMouseDown={handlePreviewDividerMouseDown}
+            >
+              <span className="preview-divider-dots">· · ·</span>
+            </div>
+            <div className="inline-preview-panel" style={{ height: previewHeight, flex: 'none', minHeight: 80 }}>
+              <div className="inline-preview-label">PREVIEW (inline)</div>
+              <iframe
+                ref={htmlIframeRef}
+                style={{ flex: 1, border: 'none', background: '#ffffff', minHeight: 0 }}
+                sandbox="allow-same-origin allow-scripts"
+                title="HTML Preview"
+              />
+            </div>
+          </>
         )}
 
         {/* JSON tree view panel */}
         {isJson && jsonPreviewOpen && (
-          <div className="inline-preview-panel">
-            <div className="inline-preview-label">PREVIEW</div>
-            <div style={{ overflow: 'auto', flex: 1, minHeight: 0, padding: '4px 8px' }}>
-              <JsonTreeView content={content} />
+          <>
+            <div
+              className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
+              onMouseDown={handlePreviewDividerMouseDown}
+            >
+              <span className="preview-divider-dots">· · ·</span>
             </div>
-          </div>
+            <div className="inline-preview-panel" style={{ height: previewHeight, flex: 'none', minHeight: 80 }}>
+              <div className="inline-preview-label">PREVIEW</div>
+              <div style={{ overflow: 'auto', flex: 1, minHeight: 0, padding: '4px 8px' }}>
+                <JsonTreeView content={content} />
+              </div>
+            </div>
+          </>
         )}
       </div>
 

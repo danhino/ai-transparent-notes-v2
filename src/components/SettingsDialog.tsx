@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DraggableList } from './DraggableList';
 import { appDataDir } from '@tauri-apps/api/path';
 import { getVersion } from '@tauri-apps/api/app';
@@ -146,6 +146,10 @@ export function SettingsDialog() {
   const [localTextSize, setLocalTextSize] = useState(settings.uiTextSize ?? 11);
   const [localBorderOpacity, setLocalBorderOpacity] = useState(settings.uiBorderOpacity ?? 14);
   const [localFormats, setLocalFormats] = useState<string[]>(settings.formatOptions);
+  const [localFormatSort, setLocalFormatSort] = useState<'custom' | 'asc' | 'desc'>(
+    settings.formatSort ?? 'custom'
+  );
+  const customOrderRef = useRef<string[]>(settings.formatOptions);
   const [localAiActions, setLocalAiActions] = useState<string[]>(
     settings.aiToolbarActions ?? DEFAULT_SETTINGS.aiToolbarActions
   );
@@ -193,6 +197,7 @@ export function SettingsDialog() {
       diffDeletedColor: isValidHex(deletedColor) ? deletedColor : settings.diffDeletedColor,
       diffChangedColor: isValidHex(changedColor) ? changedColor : settings.diffChangedColor,
       formatOptions: localFormats,
+      formatSort: localFormatSort,
       aiToolbarActions: localAiActions,
       mainToolbarItems: localMainItems,
       showLineNumbersByDefault: localLineNumbers,
@@ -214,6 +219,8 @@ export function SettingsDialog() {
     setDeletedColor(DEFAULT_SETTINGS.diffDeletedColor);
     setChangedColor(DEFAULT_SETTINGS.diffChangedColor);
     setLocalFormats([...DEFAULT_FORMAT_OPTIONS]);
+    setLocalFormatSort('custom');
+    customOrderRef.current = [...DEFAULT_FORMAT_OPTIONS];
     setLocalAiActions([...DEFAULT_SETTINGS.aiToolbarActions]);
     setLocalMainItems([...DEFAULT_SETTINGS.mainToolbarItems]);
     setLocalLineNumbers(DEFAULT_SETTINGS.showLineNumbersByDefault);
@@ -226,8 +233,19 @@ export function SettingsDialog() {
   function addFormat() {
     const f = newFormat.trim();
     if (!f || localFormats.includes(f)) return;
-    setLocalFormats((prev) => [...prev, f]);
+    const next = [...localFormats, f];
+    customOrderRef.current = next;
+    setLocalFormats(next);
+    setLocalFormatSort('custom');
     setNewFormat('');
+  }
+
+  function restoreFormat(f: string) {
+    if (localFormats.includes(f)) return;
+    const next = [...localFormats, f];
+    customOrderRef.current = next;
+    setLocalFormats(next);
+    setLocalFormatSort('custom');
   }
 
   function moveFormat(index: number, dir: -1 | 1) {
@@ -235,7 +253,28 @@ export function SettingsDialog() {
     const target = index + dir;
     if (target < 0 || target >= list.length) return;
     [list[index], list[target]] = [list[target], list[index]];
+    customOrderRef.current = list;
     setLocalFormats(list);
+    setLocalFormatSort('custom');
+  }
+
+  function handleFormatReorder(newOrder: string[]) {
+    customOrderRef.current = newOrder;
+    setLocalFormats(newOrder);
+    setLocalFormatSort('custom');
+  }
+
+  function handleSortChange(sort: 'custom' | 'asc' | 'desc') {
+    if (sort === 'asc') {
+      customOrderRef.current = [...localFormats];
+      setLocalFormats([...localFormats].sort((a, b) => a.localeCompare(b)));
+    } else if (sort === 'desc') {
+      customOrderRef.current = [...localFormats];
+      setLocalFormats([...localFormats].sort((a, b) => b.localeCompare(a)));
+    } else {
+      setLocalFormats([...customOrderRef.current]);
+    }
+    setLocalFormatSort(sort);
   }
 
   async function openDataFolder() {
@@ -486,21 +525,74 @@ export function SettingsDialog() {
 
           {/* Format options */}
           <div className="settings-section">
-            <div className="settings-section-title">Format options</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+              <div className="settings-section-title" style={{ marginBottom: 0 }}>Format options</div>
+              <div style={{ display: 'flex', gap: 3 }}>
+                {(['asc', 'desc', 'custom'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    className="settings-btn"
+                    style={{
+                      padding: '2px 8px',
+                      fontSize: 11,
+                      background: localFormatSort === opt ? 'var(--accent-color)' : undefined,
+                      color: localFormatSort === opt ? '#fff' : undefined,
+                      borderColor: localFormatSort === opt ? 'var(--accent-color)' : undefined,
+                      opacity: localFormatSort === opt ? 1 : 0.65,
+                    }}
+                    onClick={() => handleSortChange(opt)}
+                  >
+                    {opt === 'asc' ? 'A→Z' : opt === 'desc' ? 'Z→A' : 'Custom'}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="settings-section-desc">Manage the list of formats shown in the AI Format dropdown. Add custom languages or text types.</div>
             <DraggableList
               items={localFormats}
-              onReorder={setLocalFormats}
-              onRemove={(i) => setLocalFormats((prev) => prev.filter((_, idx) => idx !== i))}
+              onReorder={handleFormatReorder}
+              onRemove={(i) => {
+                const next = localFormats.filter((_, idx) => idx !== i);
+                customOrderRef.current = next;
+                setLocalFormats(next);
+                setLocalFormatSort('custom');
+              }}
               onMoveUp={(i) => moveFormat(i, -1)}
               onMoveDown={(i) => moveFormat(i, 1)}
             />
-            <div className="settings-row" style={{ marginTop: 8 }}>
+            {DEFAULT_FORMAT_OPTIONS.filter((f) => !localFormats.includes(f)).length > 0 && (
+              <div className="settings-row" style={{ marginTop: 8, gap: 6 }}>
+                <select
+                  className="settings-select"
+                  style={{ flex: 1 }}
+                  value=""
+                  onChange={(e) => { if (e.target.value) restoreFormat(e.target.value); }}
+                >
+                  <option value="" disabled>Restore removed format...</option>
+                  {DEFAULT_FORMAT_OPTIONS.filter((f) => !localFormats.includes(f)).map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+                <button
+                  className="settings-btn"
+                  onClick={() => {
+                    const missing = DEFAULT_FORMAT_OPTIONS.filter((f) => !localFormats.includes(f));
+                    const next = [...localFormats, ...missing];
+                    customOrderRef.current = next;
+                    setLocalFormats(next);
+                    setLocalFormatSort('custom');
+                  }}
+                >
+                  Restore all
+                </button>
+              </div>
+            )}
+            <div className="settings-row" style={{ marginTop: 6 }}>
               <input
                 className="settings-input"
                 value={newFormat}
                 onChange={(e) => setNewFormat(e.target.value)}
-                placeholder="Add format..."
+                placeholder="Add custom format..."
                 onKeyDown={(e) => e.key === 'Enter' && addFormat()}
               />
               <button className="settings-btn" onClick={addFormat}>Add</button>

@@ -1664,6 +1664,37 @@ input {
 .preview-active-50 .editor-wrap { flex: 0 0 50%; min-height: 0; }
 .preview-active-55 .editor-wrap { flex: 0 0 55%; min-height: 0; }
 
+/* ─── Preview resize divider ─── */
+.preview-divider {
+  height: 6px;
+  cursor: ns-resize;
+  background: var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+  transition: background 0.12s;
+}
+
+.preview-divider:hover,
+.preview-divider.dragging {
+  background: var(--accent-color);
+}
+
+.preview-divider-dots {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--text-hint);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.preview-divider:hover .preview-divider-dots,
+.preview-divider.dragging .preview-divider-dots {
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* ─── Inline preview panels ─── */
 .inline-preview-panel {
   flex: 1;

@@ -57,6 +57,7 @@ export interface AppSettings {
   uiTextBrightness: number;
   uiBorderOpacity: number;
   uiTextSize: number;
+  formatSort?: 'custom' | 'asc' | 'desc';
 }
 
 export interface WorkspaceEntry {
@@ -138,4 +139,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiTextBrightness: 75,
   uiBorderOpacity: 14,
   uiTextSize: 11,
+  formatSort: 'custom',
 };
