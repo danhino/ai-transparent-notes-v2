@@ -62,6 +62,12 @@ const FORMAT_EXT: Record<string, string> = {
   'RTF': '.rtf',
   'CSV': '.csv',
   'XML': '.xml',
+  'Rust': '.rs',
+  'CSS': '.css',
+  'Go': '.go',
+  'INI / Config': '.ini',
+  'Log': '.log',
+  'YAML / ENV': '.yaml',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -489,7 +495,9 @@ export function Pane({ paneIndex }: Props) {
   const isShell      = selectedFormat === 'Bash' || selectedFormat === 'PowerShell';
   const isJava       = selectedFormat === 'Java';
   const isCpp        = selectedFormat === 'C' || selectedFormat === 'C++';
-  const isPlainText  = selectedFormat === 'Plain Text (Structured Notes)' || selectedFormat === 'Plain text';
+  const isPlainText  = selectedFormat === 'Plain Text (Structured Notes)' || selectedFormat === 'Plain text'
+    || selectedFormat === 'CSS' || selectedFormat === 'Go'
+    || selectedFormat === 'INI / Config' || selectedFormat === 'Log' || selectedFormat === 'YAML / ENV';
   const isRust       = selectedFormat === 'Rust';
   const isHtmlCss    = selectedFormat === 'HTML/CSS';
 

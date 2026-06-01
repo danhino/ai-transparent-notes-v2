@@ -1,6 +1,6 @@
-# AI Transparent Notes v2
+# AI Transparent Notes
 
-A cross-platform desktop notes app with multi-pane layouts, AI writing tools, and real-time diff highlighting. Built with Tauri 2.0, React 19, TypeScript, and CodeMirror 6.
+A cross-platform desktop notes app with multi-pane layouts, syntax-highlighted editing, AI writing tools, and transparent window support. Built with Tauri 2.0, React 19, and CodeMirror 6.
 
 ## Screenshots
 
@@ -25,227 +25,357 @@ A cross-platform desktop notes app with multi-pane layouts, AI writing tools, an
 
 ## Features
 
-### Core
+### Notes and tabs
 
-- Up to 8 note tabs, renameable by double-click on the tab label or via the pencil button in each pane
-- Layouts: single pane, side by side, top/bottom, and 2x2 grid
+- Up to 8 note tabs, renameable by double-clicking the tab label or clicking the pencil button in each pane
+- Four layouts: single pane, side by side, top/bottom, and 2x2 grid
 - Draggable dividers between panes; each pane has an independent note and format selector
-- Per-pane export: save as .txt, .md, or the current format's file extension
-- Auto-save with 400ms debounce; file-backed notes write back to their source file on disk
-- Scratch notes (stored in settings) and file-backed notes (opened via Import or workspace double-click)
-- Save button in each pane header: green "Saved" when clean, amber "↓ Save" (with border, clickable) when unsaved, muted "Saving..." during the write. Ctrl+S also saves the focused pane. Tab bar shows an amber dot on unsaved tabs.
-- Tab language dots: colored 6px circle per format (Python=blue, JavaScript=yellow, TypeScript=blue, Rust=orange, SQL=green, HTML/CSS=red, Markdown=purple)
+- Per-pane export: save as `.txt`, `.md`, or the current format's native extension
+- Auto-save with 400 ms debounce; file-backed notes write back to their source file on disk
+- Scratch notes persist in settings; file-backed notes are opened via Import or workspace double-click
+- Save indicator per pane: green "Saved" when clean, amber "↓ Save" when unsaved, muted "Saving..." during write — Ctrl+S also saves the focused pane
+- Tab bar shows an amber dot on unsaved tabs and a colored language dot per format
 
 ### Workspace panel
 
 - Collapsible left sidebar toggled from the main toolbar
 - Add folders via button or drag a folder from Windows Explorer onto the window
-- Lazy-loaded file tree with language icons (.py=🐍, .js=📜, .ts=📘, .rs=🦀, .md=📄, .json=🗂, .html=🌐, .css=🎨, .sql=🗃, .java=☕, .c/.cpp/.h=⚙)
-- Single-click to highlight, double-click to open file in the active pane
+- Lazy-loaded file tree with per-type icons — source files, documents, config, media, and archives each have a distinct emoji icon
+- Single-click to highlight a file; double-click to open it in the active pane
 - Right-click context menu: open in active pane, open in new tab, remove from workspace
-- Duplicate tab detection: switches to the existing tab instead of reopening the same file
+- Duplicate tab detection: if a file is already open, focus switches to the existing tab
 - Real-time file system sync via the Tauri watch plugin
 - Resizable panel via drag handle
 
 ### AI features
 
-API calls run from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions.
+AI calls run from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions. Supported providers: Claude (Anthropic) and OpenAI — provider, model, and API key are configured in Settings.
 
-| Action | What it does |
+| Action | Description |
 |---|---|
-| Fix | Finds and fixes syntax errors, logic errors, and bugs in code |
-| Polish | Improves grammar, clarity, and flow while keeping the original meaning |
+| Fix | Finds and fixes syntax errors, logic errors, and bugs |
+| Polish | Improves grammar, clarity, and flow without changing meaning |
 | Rephrase | Rewrites text to be clearer and more concise |
-| Convo | Rewrites in a natural, conversational tone, removing formal or stiff phrasing |
-| Spell check | Fixes spelling errors only, no other changes |
-| Suggest | Suggests improvements or a natural continuation of the note |
+| Convo | Rewrites in a natural, conversational tone |
+| Spell check | Corrects spelling only, no other changes |
+| Suggest | Suggests improvements or a natural continuation |
 | Apply | Formats and cleans content using the selected format's rules |
 | Auto-detect (Code) | Detects the programming language, formats the code, and shows the detected language in the status bar |
-| Compare | Opens a side-by-side diff of two notes with AI summary, copy A to B / B to A, and export diff |
-| HTML Viewer | Renders the current note as a live webpage in a separate preview window |
+| Compare | Opens a side-by-side diff of two notes with AI summary, copy A↔B, and export |
+| HTML Viewer | Renders the current note as a live webpage in a separate window |
 
-After every AI action (Fix, Polish, Rephrase, Convo, Spell check, Suggest, Apply) a result dialog opens showing the original and AI result side by side with diff highlighting. Choose "Apply changes" to keep the result or "Revert" to discard it. An optional AI summary can be generated. Changes can be exported as a .diff file.
+After every AI action, a result dialog shows the original and result side by side with diff highlighting. Choose "Apply changes" to keep or "Revert" to discard. An optional AI summary can be generated, and changes can be exported as a `.diff` file.
 
-Supported providers: Claude (Anthropic) and OpenAI. Provider, model, and API key are set in Settings.
+AI errors appear as a red banner above the status bar, auto-dismissed after 8 seconds. Error messages distinguish: missing key, invalid key (401), rate limit (429), timeout, and network failure.
 
-AI errors appear as a red banner above the status bar in the affected pane, auto-dismissed after 8 seconds or on click. Error messages distinguish: no API key, invalid key (401), rate limit (429), timeout, and network failure.
+### Auto-detect
+
+Opening a file from the workspace panel automatically selects the format using content-first detection: shebang lines, structural markers (XML declaration, JSON structure, HTML doctype), and language-specific code patterns are inspected first. File extension is used as a fallback when content is ambiguous.
 
 ### Editor
 
-**Syntax highlighting** via CodeMirror 6, applied instantly when a format is selected:
+**Syntax highlighting** via CodeMirror 6:
 
 Python, JavaScript, TypeScript, Java, C, C++, C#, Rust, SQL, HTML/CSS, CSS, Markdown, JSON, XML, Bash/Shell, PowerShell
 
-Dark and Blue themes use the CodeMirror oneDark color scheme. Light, Sepia, and Green themes use the default light syntax colors. Changing themes reconfigures syntax colors instantly, no editor rebuild.
+Dark and Blue themes use the CodeMirror One Dark color scheme. Light, Sepia, and Green themes use the default light syntax colors. Switching themes reconfigures syntax highlighting instantly with no editor rebuild.
 
 **Other editor features:**
 
-- Line numbers: per-pane toggle (#) in the pane header, default controlled in Settings. Persisted per pane.
-- CSV table view: a "Table" toggle in the pane header renders the CSV as a styled HTML table (updates with 400ms debounce). Auto-enabled when a .csv file is imported.
-- Format switching: switching away from RTF or HTML-bearing formats automatically strips markup so the next editor sees clean plain text.
+- Line numbers: per-pane toggle in the pane header; default controlled in Settings and persisted per pane
+- CSV table view: a "Table" toggle renders the current CSV as a styled HTML table, updated with 400 ms debounce; auto-enabled when a `.csv` file is opened
+- Switching away from RTF or HTML-bearing formats automatically strips markup so the next editor receives clean plain text
 
 ### Format toolbars
 
-Selecting most formats reveals a contextual toolbar immediately below the AI toolbar. It hides automatically when switching to a different format.
+Selecting most formats reveals a contextual toolbar immediately below the AI toolbar. It hides automatically when switching formats.
 
-**RTF toolbar (two rows)**
+**RTF (two rows)** — Style (Normal, Heading 1–3, Title, Subtitle, Quote, Code), Bold, Italic, Underline, Strikethrough, Font family, Font size, Font color, Highlight color, Alignment; Margin, Indent, Page size, Bullet/numbered lists, Insert table, Insert image placeholder, Horizontal rule, Formatting marks, Quick style, Clear formatting.
 
-Row 1: Style dropdown (Normal, Heading 1-3, Title, Subtitle, Quote, Code), Bold, Italic, Underline, Strikethrough, Font family, Font size, Font color (20-color swatch picker), Highlight color (swatch picker), Alignment (Left/Center/Right/Justify).
+**CSV (two rows)** — Merge cells, Number format, Decimal places, Sort A-Z/Z-A, Filter row, Insert/delete row; Insert column, Header row toggle, Transpose, Delimiter selector (Comma/Tab/Semicolon/Pipe).
 
-Row 2: Margin dropdown (Normal/Narrow/Wide/Mirrored), Indent increase/decrease, Page size dropdown (A4/Letter/Legal/A3), Bullet list, Numbered list, Insert table (8x8 grid picker), Insert image placeholder, Insert horizontal rule, Show/hide formatting marks, Quick style dropdown, Clear formatting.
+**XML (two rows)** — Wrap/unwrap tag, Collapse/expand all, Format, Minify, Validate; Add attribute, Insert child/sibling element, Insert comment/CDATA, Navigate Prev/Next/Parent, XPath search.
 
-**CSV toolbar (two rows)**
+**Markdown (two rows)** — Bold, Italic, Strikethrough, Inline code, H1–H3, Link, Image, Preview toggle; Bullet list, Numbered list, Task list, Blockquote, Code block, Table template, TOC generator.
 
-Row 1: Merge cells, Number format dropdown (General/Number/Currency/Percentage/Date/Time/Scientific/Text), Increase/decrease decimal places, Sort A-Z/Z-A, Toggle filter row, Insert row, Delete row.
+**JSON (two rows)** — Pretty print, Minify, Validate, Tree explorer toggle, Sort keys, Flatten to dot notation, Unflatten, Copy JSON path; Wrap/unwrap block comment, Wrap in array or object.
 
-Row 2: Insert column, Header row toggle (marks first row as header, excluded from sort), Transpose (swaps rows and columns), Delimiter selector (Comma/Tab/Semicolon/Pipe).
+**HTML/CSS (two rows)** — HTML comment, Insert div/span/p/a, Emmet expander, Beautify, Minify, Preview toggle; CSS comment, Flexbox template, Grid template, Media query, Vendor prefix, CSS variable and `:root` templates.
 
-**XML toolbar (two rows)**
+**SQL (two rows)** — Pretty print, Minify, Uppercase/lowercase keywords, Block comment, Line comment, Uncomment, Statement/line count; SELECT *, INSERT INTO, UPDATE, DELETE FROM, CREATE TABLE, full join/group/order query templates.
 
-Row 1: Wrap selection in tag (inline tag name input), Unwrap surrounding tag, Collapse all/Expand all, Format (pretty-print, 2-space indent), Minify (single line), Validate (inline success/error banner).
+**Python (two rows)** — Comment/uncomment, Docstring wrapper, `def`/`class` templates; `if/elif/else`, `for`, `while`, `import`, `from/import`, list/dict comprehension, `try/except`, `with`, `lambda`, `print(f"")`.
 
-Row 2: Add attribute (inline name/value inputs), Insert child element, Insert sibling element, Insert comment, Insert CDATA, Navigate Prev/Next/Parent, XPath search with match count.
+**JavaScript / TypeScript (two rows)** — Line/block comment, Arrow function, async/await wrapper, `console.log`, `debugger`, `try/catch`; `import`, `export default function`, JSON.parse/stringify. TypeScript adds interface, type alias, and enum; JavaScript adds JSDoc and object literal.
 
-**Markdown toolbar (two rows)**
+**C# (two rows)** — Line/block comment, Namespace, Class, Interface, Auto property, Constructor; `try/catch/finally`, `using` block, async Task method, `await`, LINQ chain, `#region`.
 
-Row 1: Bold, italic, strikethrough, inline code, headings H1–H3, link, image, preview toggle.
+**C / C++ (two rows)** — Line/block comment, `#include`, `#define`, `#ifdef` guard, `struct` (C++ adds `class`); `printf`/`cout`, `for`/`while` loops, memory allocation (`malloc`/`new` and `free`/`delete`), `NULL`/`nullptr`, `main` template.
 
-Row 2: Bullet list, numbered list, task list, blockquote, code block, table template, TOC generator (builds a linked table of contents from all headings in the note).
+**Java (two rows)** — Line/block comment, Javadoc, Class/Interface/Enum templates, `main` method; `try/catch/finally`, `for`, `for-each`, `while`, `System.out.println`, `@Override`, getter/setter pair.
 
-**JSON toolbar (two rows)**
+**Rust (two rows)** — Line/block/doc comment, `fn`, `struct`, `impl`, `enum`, `pub`; `match`, `if let`, `Vec::new`, `HashMap`, `println!`, `.unwrap()`, `?` operator, `#[derive]`.
 
-Row 1: Pretty print (2-space indent), minify, validate with inline banner, tree explorer toggle, sort all object keys alphabetically, flatten to dot notation, unflatten from dot notation, copy JSON path at cursor.
+**Bash / PowerShell (two rows)** — Comment, `if` block, `for` loop, `while` loop, function template, `echo`/`Write-Host`; Pipe, redirect, append, variable declaration, `export`/`$env:`. Bash adds shebang inserter and `set -euo pipefail`; PowerShell adds `param()` block.
 
-Row 2: Wrap/unwrap block comment, wrap content in array or object.
+**Plain Text (one row)** — UPPER/lower/Title case, Sort A-Z/Z-A, Reverse lines, Deduplicate lines, Word/char/line count with read-time estimate, Trim whitespace, Add/remove 2-space indent.
 
-**HTML/CSS toolbar (two rows)**
-
-Row 1: HTML comment/uncomment, insert div/span/p/a, Emmet abbreviation expander (inline input, press Enter to expand, e.g. `div.class>ul>li*3`), beautify HTML, minify HTML, preview toggle.
-
-Row 2: CSS comment/uncomment, Flexbox template, Grid template, media query template, vendor prefix helper, CSS variable and :root templates.
-
-**SQL toolbar (two rows)**
-
-Row 1: Pretty print (keyword newlines), minify to single line, uppercase SQL keywords, lowercase SQL keywords, block comment, line comment (--), uncomment, statement and line count.
-
-Row 2: Quick-insert templates: SELECT *, INSERT INTO, UPDATE, DELETE FROM, CREATE TABLE, full join/group/order query.
-
-**Python toolbar (two rows)**
-
-Row 1: Comment/uncomment (#), triple-quote docstring wrapper, def and class templates.
-
-Row 2: if/elif/else, for, while, import, from/import, list comprehension, dict comprehension, try/except wrapper, with block, lambda, print(f"").
-
-**JavaScript / TypeScript toolbar (two rows)**
-
-Row 1: Line comment/uncomment (//), block comment, arrow function (or convert selection from function keyword), async/await wrapper, console.log, debugger, try/catch.
-
-Row 2: import, export default function, JSON.parse/stringify wrappers. TypeScript adds interface, type alias, and enum templates; JavaScript adds JSDoc comment and object literal.
-
-**C# toolbar (two rows)**
-
-Row 1: Line/block comment, namespace, class, interface templates, auto property, constructor.
-
-Row 2: try/catch/finally, using block, async Task method, await, LINQ chain, #region wrapper.
-
-**C / C++ toolbar (two rows)**
-
-Row 1: Line/block comment, #include, #define, #ifdef guard, struct. C++ adds class template.
-
-Row 2: printf (C) or cout (C++), for and while loops, memory allocation (malloc/new and free/delete), NULL/nullptr, main function template.
-
-**Java toolbar (two rows)**
-
-Row 1: Line/block comment, Javadoc, class, interface, enum templates, main method.
-
-Row 2: try/catch/finally, for, for-each, while loops, System.out.println, @Override annotation, getter/setter pair.
-
-**Rust toolbar (two rows)**
-
-Row 1: Line/block comment, doc comment (///), fn, struct, impl, enum templates, pub keyword.
-
-Row 2: match expression, if let, Vec::new, HashMap, println!, .unwrap(), ? operator, #[derive] attribute.
-
-**Bash / PowerShell toolbar (two rows)**
-
-Row 1: Comment/uncomment (#), if/then/fi (Bash) or if block (PowerShell), for loop, while loop, function template, echo/Write-Host.
-
-Row 2: Pipe (|), redirect (>), append (>>), variable declaration, environment variable (export/$env:). Bash adds shebang line inserter and `set -euo pipefail`; PowerShell adds param() block inserter.
-
-**Plain text toolbar (one row)**
-
-UPPER, lower, Title case; sort lines A-Z or Z-A; reverse line order; remove duplicate lines; word/char/line count with estimated read time; trim whitespace per line; add or remove 2-space indent.
+The Plain Text toolbar also activates for CSS, Go, INI / Config, Log, and YAML / ENV formats.
 
 ### Inline split previews
 
-Three formats open a live panel below the editor when their "Preview" button is clicked in the contextual toolbar:
+Three formats open a live panel inside the editor area when their Preview button is clicked:
 
-- **Markdown** — rendered HTML (via `marked`), updates with 400ms debounce
+- **Markdown** — rendered HTML via `marked`, updated with 400 ms debounce
 - **HTML/CSS** — live iframe rendering the note content
 - **JSON** — collapsible tree explorer
 
-### AI toolbar
-
-The toolbar layout per pane:
-
-`[‹] AI: | Format: [dropdown] [Apply] | [Fix] [Spell check] [Rephrase] [Convo] [Compare] [Suggest] [Polish]`
-
-The `‹` button at the far left collapses all toolbar rows (AI toolbar + any active contextual toolbar) to free up editor space. A slim `›` strip remains so you can expand again.
-
-- **Keyboard shortcut:** Ctrl+Shift+T (Cmd+Shift+T on Mac) toggles the collapse for the focused pane
-- Each pane collapses independently
-- On mobile (under 768px) toolbars start collapsed by default
-- All action buttons are uniform height (28px) with a minimum width for visual consistency
-
 ### HTML Viewer
 
-Select "HTML Viewer" from the format dropdown and click Apply to open the current note as a live webpage.
+Select HTML Viewer from the format dropdown and click Apply to open the current note as a live webpage:
 
-- Opens a separate 1000x700 resizable window titled "HTML Preview"
-- Rendered in an iframe via Tauri's internal asset server
-- A temp file is also written so "Open in browser" opens the exact content in the default browser
-- Window opacity matches the main window in real time as the slider changes
+- Opens a separate 1000×700 resizable window
+- Rendered via Tauri's internal asset server
+- A temp file is written so "Open in browser" opens the exact content in the default browser
+- Window opacity tracks the main window's opacity slider in real time
 - Toolbar: Refresh, Open in browser, Close
-- Non-blocking: main window stays usable while the preview is open
-
-### Themes
-
-Five built-in themes via CSS custom properties: Dark, Light, Blue, Sepia, Green. Platform accent: blue (#5a9cf7) on Windows, purple (#7c6af7) on macOS.
 
 ### Window controls
 
-- Frameless window with custom titlebar (Windows/Linux: custom min/max/close; macOS: native traffic lights space)
-- Resizable, minimum size 600x400
+- Frameless window with a custom titlebar (Windows/Linux: custom min/max/close; macOS: native traffic-lights space)
+- Resizable, minimum 600×400
 - Always on top toggle
-- Opacity slider (20% to 100%), native window transparency via Tauri's transparent window mode. The main toolbar uses a frosted glass effect so it remains readable at low opacity.
-- Focus mode: hides all chrome (titlebar, toolbar, tab bar, workspace panel, pane headers, AI toolbars, status bars) so only the editor content shows
+- Opacity slider (20%–100%) with native window transparency; the main toolbar uses a frosted-glass effect to remain readable at low opacity
+- Focus mode: hides all chrome (titlebar, toolbar, tab bar, workspace panel, pane headers, AI toolbars, status bars) so only the editor content is visible
 - System tray: Show/Hide, New note, Exit
 
 ### Focus mode
 
-Two floating controls appear in the top-right corner of the window when focus mode is active:
+Two floating controls appear in the top-right corner while focus mode is active:
 
 - **Exit focus** — click to exit, or press Escape, or double-click the editor area
-- **Move (⠿)** — mousedown and drag to reposition the entire app window using native OS window dragging
+- **Move (⠿)** — drag to reposition the window using native OS dragging
 
-The Focus button in the main toolbar shows an active state while focus mode is on. Focus mode state is persisted to settings and restores on next launch.
+Focus mode state persists across launches.
 
 ### Settings
 
-The settings dialog is scrollable and divided into these sections:
+The settings dialog is divided into these sections:
 
 - **AI configuration** — provider (Claude/OpenAI), model filtered by provider, API key with show/hide toggle
-- **Appearance** — theme, font family (12 options), font size (12 sizes), show line numbers by default; a UI contrast subsection has live-preview sliders for text brightness, UI text size (px), and border opacity
-- **AI toolbar** — drag-and-drop reorderable list of AI action buttons; use ▲/▼ or drag handles to reorder, × to remove, dropdown to add
+- **Appearance** — theme, font family (12 options), font size (12 sizes), line numbers default; UI contrast subsection with sliders for text brightness, UI text size, and border opacity
+- **AI toolbar** — drag-and-drop reorderable list of AI action buttons with ▲/▼ arrows and × remove
 - **Main toolbar** — drag-and-drop reorderable list of main toolbar items
-- **Format options** — drag-and-drop reorderable list; add custom language/format names, remove built-ins
+- **Format options** — drag-and-drop reorderable list; add custom formats, remove built-ins
 - **Comparison colors** — hex color inputs with live swatches for added, deleted, and changed diff lines
 - **Storage** — data folder path with Open button to reveal in file manager
 - **About** — app icon, description, version
 
-All three reorderable lists support HTML5 drag-and-drop with a visual drop-target indicator, plus Up/Down arrow buttons as an alternative.
+A "Reset to defaults" button restores all settings.
 
-A "Reset to defaults" button restores all settings to their original values.
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Desktop runtime | Tauri 2.0 (Rust) |
+| Frontend | React 19, TypeScript 5.8 |
+| Build tool | Vite 7 |
+| Editor | CodeMirror 6 |
+| State | Zustand 5 |
+| Animations | Framer Motion 12 |
+| Diff | Custom LCS algorithm |
+| Markdown rendering | marked |
+| Styling | Tailwind CSS 4, CSS custom properties |
+
+---
+
+## Project structure
+
+```
+src/
+  types/index.ts           # All TypeScript types, defaults, and format option list
+  styles.css               # Theme variables and all component styles
+  stores/
+    noteStore.ts           # Notes, active tab, unsaved tracking, format auto-detect
+    settingsStore.ts       # All persisted settings
+    uiStore.ts             # Layout, panels, focus mode, per-pane UI state
+  services/
+    aiService.ts           # Claude and OpenAI API calls, all AI prompts
+    diffService.ts         # Custom LCS-based line diff computation
+    storageService.ts      # Tauri fs plugin read/write
+  utils/
+    languageMap.ts         # CodeMirror language extension per format string
+    csvParser.ts           # CSV row/column operations
+    xmlUtils.ts            # XML format/minify/validate/XPath utilities
+    rtfParser.ts           # RTF to HTML and HTML to RTF conversion
+    textUtils.ts           # HTML stripping for format switching
+    toolbarUtils.ts        # Shared helpers for contextual toolbar actions
+  components/
+    TitleBar.tsx           # Custom frameless titlebar with drag region
+    Toolbar.tsx            # Main toolbar (pin, theme, font, opacity, layout, workspace, import, focus, settings)
+    TabBar.tsx             # Tab bar with language dots, rename, unsaved indicator
+    NoteEditor.tsx         # CodeMirror 6 wrapper with optional line numbers
+    RichTextEditor.tsx     # contenteditable RTF editor
+    AIToolbar.tsx          # Per-pane AI action buttons and format dropdown
+    DiffView.tsx           # Shared side-by-side diff component
+    AiResultDialog.tsx     # Modal shown after every AI action (diff, apply/revert, export)
+    DraggableList.tsx      # Reusable drag-and-drop reorderable list
+    StatusBar.tsx          # Chars, words, line number, detected language
+    Pane.tsx               # Individual pane: editor, toolbars, status bar, AI orchestration
+    PaneSystem.tsx         # Layout manager with draggable splitters
+    WorkspacePanel.tsx     # Collapsible file tree sidebar with watch plugin
+    SettingsDialog.tsx     # Settings modal
+    CompareDialog.tsx      # Side-by-side diff with AI summary and copy/export
+    JsonTreeView.tsx       # Collapsible JSON tree explorer
+    CsvTableView.tsx       # Renders CSV content as a styled HTML table
+    RtfToolbar.tsx         # RTF contextual toolbar (2 rows)
+    CsvToolbar.tsx         # CSV contextual toolbar (2 rows)
+    XmlToolbar.tsx         # XML contextual toolbar (2 rows)
+    MarkdownToolbar.tsx    # Markdown contextual toolbar (2 rows)
+    JsonToolbar.tsx        # JSON contextual toolbar (2 rows)
+    HtmlCssToolbar.tsx     # HTML/CSS contextual toolbar (2 rows)
+    SqlToolbar.tsx         # SQL contextual toolbar (2 rows)
+    PythonToolbar.tsx      # Python contextual toolbar (2 rows)
+    JsToolbar.tsx          # JavaScript/TypeScript contextual toolbar (2 rows)
+    CSharpToolbar.tsx      # C# contextual toolbar (2 rows)
+    CppToolbar.tsx         # C/C++ contextual toolbar (2 rows)
+    JavaToolbar.tsx        # Java contextual toolbar (2 rows)
+    RustToolbar.tsx        # Rust contextual toolbar (2 rows)
+    ShellToolbar.tsx       # Bash/PowerShell contextual toolbar (2 rows)
+    PlainTextToolbar.tsx   # Plain Text contextual toolbar (1 row)
+  App.tsx                  # Root: init, persistence, theme, focus mode, tray events
+  main.tsx                 # React entry point
+src-tauri/
+  src/
+    lib.rs                 # Tauri plugins, tray icon, window events
+    main.rs                # Entry point
+    commands/
+      ai.rs                # call_ai Tauri command (reqwest HTTP to Claude/OpenAI)
+      preview.rs           # HTML preview: open, close, sync opacity, open in browser
+  capabilities/default.json  # Tauri permission grants
+  tauri.conf.json          # App config: frameless window, tray, version
+  icons/                   # App icons: icon.png, icon.ico, icon.icns, Windows Store assets
+public/
+  icon.png                 # Favicon for dev server
+```
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 20 or later
+- [Rust](https://www.rust-lang.org/tools/install) stable toolchain
+- [Tauri CLI prerequisites](https://v2.tauri.app/start/prerequisites/) for your platform (WebView2 on Windows, Xcode on macOS)
+
+### Installation
+
+```bash
+git clone https://github.com/danhino/ai-transparent-notes-v2
+cd ai-transparent-notes-v2
+npm install
+```
+
+### Run in development
+
+```bash
+npm run tauri dev
+```
+
+### Build for production
+
+```bash
+npm run tauri build
+```
+
+The installer is written to `src-tauri/target/release/bundle/`.
+
+### Settings storage
+
+Notes and settings are saved at:
+
+- **Windows:** `%APPDATA%\com.danhi.ai-transparent-notes\settings.json`
+- **macOS:** `~/Library/Application Support/com.danhi.ai-transparent-notes/settings.json`
+
+---
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| Ctrl/Cmd+S | Save the focused pane immediately |
+| Ctrl/Cmd+Shift+T | Toggle toolbar collapse for the focused pane |
+| Escape | Exit focus mode |
+
+---
+
+## Themes
+
+Five built-in themes via CSS custom properties:
+
+| Theme | Description |
+|---|---|
+| Dark | Near-black background, white text |
+| Light | White background, dark text |
+| Blue | Deep navy background, blue-tinted text |
+| Sepia | Warm parchment background, brown text |
+| Green | Dark green background, green-tinted text |
+
+Platform accent color: blue (`#5a9cf7`) on Windows, purple (`#7c6af7`) on macOS.
+
+---
+
+## File support
+
+Files opened from the workspace panel are automatically detected and assigned a format. Extension-to-format mapping:
+
+| Icon | Extension(s) | Format |
+|:---:|---|---|
+| 🐍 | `.py` | Python |
+| 📜 | `.js`, `.mjs` | JavaScript |
+| 📘 | `.ts`, `.tsx` | TypeScript |
+| ☕ | `.java` | Java |
+| 🔵 | `.c`, `.h` | C |
+| 🔷 | `.cpp`, `.cc`, `.cxx` | C++ |
+| 🟣 | `.cs` | C# |
+| 🦀 | `.rs` | Rust |
+| 🐹 | `.go` | Go |
+| 🗄️ | `.sql` | SQL |
+| 🌐 | `.html`, `.htm` | HTML/CSS |
+| 🎨 | `.css`, `.scss` | HTML/CSS |
+| 📝 | `.md` | Markdown |
+| 🔧 | `.json` | JSON |
+| 📋 | `.xml` | XML |
+| 📄 | `.rtf` | RTF |
+| 📊 | `.csv` | CSV |
+| 🖥️ | `.sh`, `.bash` | Bash |
+| 💠 | `.ps1` | PowerShell |
+| ⚙️ | `.yaml`, `.yml` | YAML / ENV |
+| 🔐 | `.env` | INI / Config |
+| 🔩 | `.ini`, `.cfg`, `.conf` | INI / Config |
+| 🪵 | `.log` | Log |
+| 📄 | `.txt` | Plain Text |
+
+Any file type can be opened — unrecognised extensions fall back to Plain Text with no syntax highlighting.
+
+The workspace panel also recognises images (🖼️), video (🎬), audio (🎵), archives (📦), executables (🔨), and many other file types with their own icons — these are displayed in the tree but do not open in the editor.
+
+---
+
+## AI setup
+
+To use AI features you need an API key from one of these providers:
+
+**Claude (Anthropic)** — [console.anthropic.com](https://console.anthropic.com) → API Keys → Create key
+
+**OpenAI** — [platform.openai.com](https://platform.openai.com) → API Keys → Create key
+
+Open Settings in the app, select your provider, paste your key, and choose a model.
+
+---
 
 ## Download and install
 
@@ -258,126 +388,8 @@ A "Reset to defaults" button restores all settings to their original values.
 
 No additional software required. WebView2 installs automatically if not already present. Compatible with Windows 10 and Windows 11 (64-bit).
 
-### macOS
+---
 
-macOS support is coming soon.
+## License
 
-### Settings storage
-
-Your notes and settings are saved here:
-- Windows: `%APPDATA%\com.danhi.ai-transparent-notes\settings.json`
-- macOS: `~/Library/Application Support/com.danhi.ai-transparent-notes/settings.json`
-
-## First launch — AI setup
-
-To use AI features you need an API key from one of these providers:
-
-**Claude (Anthropic) — recommended**
-1. Go to https://console.anthropic.com
-2. Sign in and click API Keys in the sidebar
-3. Create a key and copy it
-
-**OpenAI**
-1. Go to https://platform.openai.com
-2. Click API Keys in the sidebar
-3. Create a new secret key and copy it
-
-**Enter your key**
-1. Open the app and click Settings in the toolbar
-2. Under AI configuration select your provider
-3. Paste your API key and click Save
-4. Select your preferred model
-
-## Troubleshooting
-
-**App will not open on Windows 10**
-Download WebView2 manually from:
-https://developer.microsoft.com/microsoft-edge/webview2/
-
-**AI features not working**
-- Check your API key is entered correctly in Settings
-- Verify you have API credits at console.anthropic.com or platform.openai.com
-- Check your internet connection
-- The app connects only to api.anthropic.com or api.openai.com. Allow these in your firewall if blocked.
-
-**Workspace panel shows no files**
-Click the folder button and select a folder, or drag a folder from Windows Explorer onto the app window.
-
-**Windows firewall prompt on first launch**
-Click Allow. The app needs internet access only for AI features. No other connections are made.
-
-## Tech stack
-
-| Layer | Technology |
-|---|---|
-| Desktop runtime | Tauri 2.0 (Rust) |
-| Frontend | React 19, TypeScript |
-| Build tool | Vite 7 |
-| Editor | CodeMirror 6 |
-| State | Zustand 5 |
-| Animations | Framer Motion 12 |
-| Diff | Custom LCS algorithm |
-| Styling | Tailwind CSS 4, CSS custom properties |
-
-## Project structure
-
-```
-src/
-  types/index.ts          # All TypeScript types and defaults
-  styles.css              # Theme variables and component styles
-  stores/
-    noteStore.ts          # Notes, active tab, unsaved tracking
-    settingsStore.ts      # All persisted settings
-    uiStore.ts            # Layout, panels, focus, per-pane UI state
-  services/
-    aiService.ts          # Claude and OpenAI API calls, all AI prompts
-    diffService.ts        # Custom LCS-based line diff computation
-    storageService.ts     # Tauri fs plugin read/write
-  utils/
-    languageMap.ts        # CodeMirror language extension per format
-    csvParser.ts          # CSV row/column operations
-    xmlUtils.ts           # XML format/minify/validate/XPath utilities
-    rtfParser.ts          # RTF to HTML and HTML to RTF conversion
-    textUtils.ts          # HTML stripping for format switching
-  components/
-    TitleBar.tsx          # Custom frameless titlebar with drag region
-    Toolbar.tsx           # Main toolbar (pin, theme, font, opacity, layout, workspace, import, focus, settings)
-    TabBar.tsx            # Tab bar with language dots, rename, unsaved indicator
-    NoteEditor.tsx        # CodeMirror 6 wrapper with optional line numbers
-    RichTextEditor.tsx    # contenteditable RTF editor
-    AIToolbar.tsx         # Per-pane AI action buttons with collapse toggle
-    DiffView.tsx          # Shared side-by-side diff component
-    AiResultDialog.tsx    # Modal shown after every AI action (diff, apply/revert, export)
-    DraggableList.tsx     # Reusable drag-and-drop reorderable list
-    StatusBar.tsx         # Chars, words, line number, detected language
-    Pane.tsx              # Individual pane: editor, toolbar, status bar, AI orchestration
-    PaneSystem.tsx        # Layout manager with draggable splitters
-    RtfToolbar.tsx        # RTF contextual toolbar (2 rows)
-    CsvToolbar.tsx        # CSV contextual toolbar (2 rows)
-    CsvTableView.tsx      # Renders CSV content as an HTML table
-    XmlToolbar.tsx        # XML contextual toolbar (2 rows)
-    WorkspacePanel.tsx    # Collapsible file tree sidebar with watch plugin
-    SettingsDialog.tsx    # Settings modal
-    CompareDialog.tsx     # Side-by-side diff with AI summary and copy/export
-  App.tsx                 # Root: init, persistence, theme, focus mode, tray events
-  main.tsx                # React entry point
-src-tauri/
-  src/
-    lib.rs                # Tauri plugins, tray icon, window events
-    main.rs               # Entry point
-    commands/
-      ai.rs               # call_ai Tauri command (reqwest HTTP to Claude/OpenAI)
-      preview.rs          # HTML preview: open, close, sync opacity, open in browser
-  capabilities/default.json  # Tauri permission grants
-  tauri.conf.json         # App config: frameless window, tray, version
-  icons/
-    app-icon.svg          # Source icon (generated via `npx tauri icon`)
-    icon.png              # 512x512 base PNG
-    icon.ico              # Windows multi-size ICO
-    icon.icns             # macOS ICNS
-    32x32.png, 128x128.png, 128x128@2x.png
-    Square*.png, StoreLogo.png  # Windows Store assets
-public/
-  icon.png               # 512x512 icon for browser tab favicon
-  icon.ico               # ICO for browser tab favicon
-```
+MIT

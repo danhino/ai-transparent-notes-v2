@@ -96,6 +96,13 @@ export const DEFAULT_FORMAT_OPTIONS = [
   'HTML/CSS',
   'C',
   'C++',
+  'CSS',
+  'Go',
+  'INI / Config',
+  'JSON',
+  'Log',
+  'Rust',
+  'YAML / ENV',
   'Plain Text (Structured Notes)',
 ];
 

@@ -28,6 +28,14 @@ const EXT_TO_FORMAT: Record<string, string> = {
   '.csv': 'CSV',
   '.xml': 'XML',
   '.rs': 'Rust',
+  '.go': 'Go',
+  '.yaml': 'YAML / ENV',
+  '.yml': 'YAML / ENV',
+  '.ini': 'INI / Config',
+  '.cfg': 'INI / Config',
+  '.conf': 'INI / Config',
+  '.env': 'INI / Config',
+  '.log': 'Log',
 };
 
 function detectFormat(filename: string, content: string): string {
