@@ -1797,6 +1797,44 @@ input {
   text-align: center;
 }
 
+/* ─── RTF preview panel ─── */
+.rtf-preview-panel {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--editor-bg);
+}
+
+.rtf-preview-label {
+  padding: 3px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.rtf-preview-body {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 14px;
+  line-height: 1.6;
+  color: var(--editor-fg);
+}
+
+.rtf-preview-body h1 { font-size: 1.6em; font-weight: bold; margin: 0.4em 0; }
+.rtf-preview-body h2 { font-size: 1.3em; font-weight: bold; margin: 0.4em 0; }
+.rtf-preview-body h3 { font-size: 1.1em; font-weight: bold; margin: 0.4em 0; }
+.rtf-preview-body strong { font-weight: bold; }
+.rtf-preview-body em { font-style: italic; }
+.rtf-preview-body u  { text-decoration: underline; }
+.rtf-preview-body s  { text-decoration: line-through; }
+.rtf-preview-body li { list-style: disc inside; margin-left: 1em; }
+
 /* ─── Editor ─── */
 .editor-wrap {
   flex: 1;
