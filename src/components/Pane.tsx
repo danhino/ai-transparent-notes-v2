@@ -149,6 +149,7 @@ export function Pane({ paneIndex }: Props) {
   const [mdPreviewHtml, setMdPreviewHtml] = useState('');
   const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
   const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
+  const [rtfPreviewOpen, setRtfPreviewOpen] = useState(true);
   const mdPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const htmlPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const htmlIframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -173,6 +174,7 @@ export function Pane({ paneIndex }: Props) {
     setMarkdownPreviewOpen(false);
     setHtmlPreviewOpen(false);
     setJsonPreviewOpen(false);
+    setRtfPreviewOpen(true);
   }, [note?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -695,6 +697,8 @@ export function Pane({ paneIndex }: Props) {
             <RtfToolbar
               editorRef={editorRef}
               disabled={paneState.isBusy || !note}
+              previewOpen={rtfPreviewOpen}
+              onPreviewToggle={() => setRtfPreviewOpen((v) => !v)}
             />
           )}
 
@@ -801,15 +805,23 @@ export function Pane({ paneIndex }: Props) {
         />
 
         {/* RTF rendered preview panel */}
-        {isRtf && (
-          <div className="rtf-preview-panel">
-            <div className="rtf-preview-label">PREVIEW</div>
+        {isRtf && rtfPreviewOpen && (
+          <>
             <div
-              className="rtf-preview-body"
-              style={{ fontFamily: settings.fontFamily, fontSize: settings.fontSize }}
-              dangerouslySetInnerHTML={{ __html: rtfHtmlContent }}
-            />
-          </div>
+              className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
+              onMouseDown={handlePreviewDividerMouseDown}
+            >
+              <span className="preview-divider-dots">· · ·</span>
+            </div>
+            <div className="inline-preview-panel" style={{ height: previewHeight, flex: 'none', minHeight: 80 }}>
+              <div className="inline-preview-label">PREVIEW</div>
+              <div
+                className="rtf-preview-body"
+                style={{ fontFamily: settings.fontFamily, fontSize: settings.fontSize }}
+                dangerouslySetInnerHTML={{ __html: rtfHtmlContent }}
+              />
+            </div>
+          </>
         )}
 
         {isCsv && showCsvTableView && (

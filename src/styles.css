@@ -1797,27 +1797,7 @@ input {
   text-align: center;
 }
 
-/* ─── RTF preview panel ─── */
-.rtf-preview-panel {
-  flex: 0 0 40%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--editor-bg);
-}
-
-.rtf-preview-label {
-  padding: 3px 12px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  background: var(--toolbar-bg);
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-}
-
+/* ─── RTF preview body (inside .inline-preview-panel) ─── */
 .rtf-preview-body {
   flex: 1;
   overflow: auto;
