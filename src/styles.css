@@ -1797,23 +1797,42 @@ input {
   text-align: center;
 }
 
-/* ─── RTF preview body (inside .inline-preview-panel) ─── */
-.rtf-preview-body {
+/* ─── RTF WYSIWYG editor (contenteditable) ─── */
+.rtf-editor {
   flex: 1;
-  overflow: auto;
-  padding: 10px 14px;
-  line-height: 1.6;
+  overflow-y: auto;
+  padding: 32px 40px;
+  outline: none;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
   color: var(--editor-fg);
+  background: var(--editor-bg);
+  word-break: break-word;
+  caret-color: var(--accent);
 }
 
-.rtf-preview-body h1 { font-size: 1.6em; font-weight: bold; margin: 0.4em 0; }
-.rtf-preview-body h2 { font-size: 1.3em; font-weight: bold; margin: 0.4em 0; }
-.rtf-preview-body h3 { font-size: 1.1em; font-weight: bold; margin: 0.4em 0; }
-.rtf-preview-body strong { font-weight: bold; }
-.rtf-preview-body em { font-style: italic; }
-.rtf-preview-body u  { text-decoration: underline; }
-.rtf-preview-body s  { text-decoration: line-through; }
-.rtf-preview-body li { list-style: disc inside; margin-left: 1em; }
+.rtf-editor:focus { outline: none; }
+
+.rtf-editor h1 { font-size: 2em;   font-weight: bold; margin: 0.5em 0; }
+.rtf-editor h2 { font-size: 1.5em; font-weight: bold; margin: 0.5em 0; }
+.rtf-editor h3 { font-size: 1.17em;font-weight: bold; margin: 0.4em 0; }
+.rtf-editor p  { margin: 0.3em 0; }
+.rtf-editor ul,
+.rtf-editor ol { padding-left: 1.5em; margin: 0.3em 0; }
+.rtf-editor li { margin: 0.15em 0; }
+.rtf-editor blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 0.5em 0;
+  padding-left: 1em;
+  color: var(--text-secondary);
+}
+.rtf-editor table          { border-collapse: collapse; margin: 0.5em 0; }
+.rtf-editor td,
+.rtf-editor th             { border: 1px solid var(--border-subtle); padding: 5px 10px; min-width: 60px; }
+.rtf-editor code           { font-family: 'Courier New', monospace; background: var(--toolbar-bg); padding: 1px 5px; border-radius: 3px; }
+.rtf-editor a              { color: var(--accent); }
+.rtf-editor hr             { border: none; border-top: 1px solid var(--border-subtle); margin: 0.8em 0; }
 
 /* ─── Editor ─── */
 .editor-wrap {

@@ -25,7 +25,10 @@ export function encodeRtfText(text: string): string {
   return out;
 }
 
-/** Convert a plain-text / Markdown string into a complete RTF document. */
+/* plainTextToRtf and its helpers are archived below — no longer the primary
+   RTF path. The WYSIWYG editor stores content as HTML; htmlToRtf() converts
+   to RTF for disk I/O. Kept for reference only.
+
 export function plainTextToRtf(text: string): string {
   const body = convertMarkdownLinesToRtf(text);
   return [
@@ -37,176 +40,10 @@ export function plainTextToRtf(text: string): string {
     '}',
   ].join('\n');
 }
+*/
 
-/** Escape RTF special chars and encode non-ASCII as \\uN? */
-function escapeRtfLiteral(text: string): string {
-  let out = '';
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const code = text.codePointAt(i)!;
-    if (code > 0xffff) i++;
-    if (ch === '\\')     out += '\\\\';
-    else if (ch === '{') out += '\\{';
-    else if (ch === '}') out += '\\}';
-    else if (code > 127) out += `\\u${code}?`;
-    else                 out += ch;
-  }
-  return out;
-}
-
-/** Convert inline Markdown spans within a line to RTF control words. */
-function convertInline(line: string): string {
-  // Bold + italic (process first to avoid partial matches)
-  line = line.replace(/\*{3}(.+?)\*{3}/g, (_, t) => `{\\b\\i ${escapeRtfLiteral(t)}}`);
-  // Inline code
-  line = line.replace(/`([^`]+)`/g, (_, t) => `{\\f1 ${escapeRtfLiteral(t)}}`);
-  // Bold (**text** or __text__)
-  line = line.replace(/\*{2}(.+?)\*{2}/g, (_, t) => `{\\b ${escapeRtfLiteral(t)}}`);
-  line = line.replace(/_{2}(.+?)_{2}/g,   (_, t) => `{\\b ${escapeRtfLiteral(t)}}`);
-  // Italic (*text* or _text_ — single, not double)
-  line = line.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, (_, t) => `{\\i ${escapeRtfLiteral(t)}}`);
-  line = line.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g,      (_, t) => `{\\i ${escapeRtfLiteral(t)}}`);
-  return line;
-}
-
-/** Convert a full plain-text/Markdown body to RTF paragraph runs. */
-function convertMarkdownLinesToRtf(text: string): string {
-  const lines = text.split('\n');
-  const out: string[] = [];
-  let inBulletBlock = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const next = i + 1 < lines.length ? lines[i + 1] : '';
-
-    // ── Setext-style headings (underline on next line, consume both) ──────────
-    if (raw.trim() !== '' && /^={3,}\s*$/.test(next)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw));
-      out.push(`{\\fs40\\b ${t}}\\par`);
-      i++; // skip the underline
-      continue;
-    }
-    if (raw.trim() !== '' && /^-{3,}\s*$/.test(next) && !/^[-*] /.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw));
-      out.push(`{\\fs32\\b ${t}}\\par`);
-      i++; // skip the underline
-      continue;
-    }
-
-    // ── ALL CAPS short lines as section headings ──────────────────────────────
-    const trimmed = raw.trim();
-    if (
-      trimmed.length >= 3 &&
-      trimmed.length <= 60 &&
-      /[A-Z]/.test(trimmed) &&                         // at least one uppercase
-      /^[A-Z0-9\s,.:;!?()\-/]+$/.test(trimmed) &&     // only uppercase chars / punct
-      !/^[-=]{3,}$/.test(trimmed) &&                   // not a separator line
-      !trimmed.startsWith('|') &&                      // not a table row
-      !/^#{1,6} /.test(raw) &&                         // not a Markdown heading
-      !/^\d+\./.test(raw)                              // not a numbered heading (handled next)
-    ) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      out.push(`\\par{\\fs26\\b ${escapeRtfLiteral(trimmed)}}\\par`);
-      continue;
-    }
-
-    // ── Numbered section headings ─────────────────────────────────────────────
-    if (/^\d+\.\d+\s/.test(raw)) {
-      // 1.1 style → smaller heading
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw));
-      out.push(`{\\fs24\\b ${t}}\\par`);
-      continue;
-    }
-    if (/^\d+\.\s+[A-Z]/.test(raw)) {
-      // 1. Introduction style (starts with capital letter) → section heading
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw));
-      out.push(`{\\fs28\\b ${t}}\\par`);
-      continue;
-    }
-
-    // Heading 1
-    if (/^# /.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw.replace(/^# /, '')));
-      out.push(`{\\fs40\\b ${t}}\\par`);
-      continue;
-    }
-    // Heading 2
-    if (/^## /.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw.replace(/^## /, '')));
-      out.push(`{\\fs32\\b ${t}}\\par`);
-      continue;
-    }
-    // Heading 3
-    if (/^### /.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw.replace(/^### /, '')));
-      out.push(`{\\fs28\\b ${t}}\\par`);
-      continue;
-    }
-
-    // Horizontal rules
-    if (/^(-{3,}|={3,})\s*$/.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      out.push('\\brdrb\\brdrs\\brdrw10\\par');
-      continue;
-    }
-
-    // Table separator rows — skip
-    if (/^\|[\s\-|:]+\|$/.test(raw)) continue;
-
-    // Table rows
-    if (/^\|.*\|$/.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const cells = raw.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-      const rtfCells = cells.map((c) => convertInline(escapeRtfLiteral(c))).join('\\tab ');
-      out.push(`${rtfCells}\\par`);
-      continue;
-    }
-
-    // Bullet list items (- or *)
-    if (/^[-*] /.test(raw)) {
-      inBulletBlock = true;
-      const t = convertInline(escapeRtfLiteral(raw.replace(/^[-*] /, '')));
-      out.push(`\\pard\\fi-240\\li480\\bullet\\tx480 ${t}\\par`);
-      continue;
-    }
-
-    // Empty blockquote continuation — bare > with no text (e.g. between > lines)
-    if (/^>\s*$/.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      out.push('\\par');
-      continue;
-    }
-
-    // Blockquotes
-    if (/^> /.test(raw)) {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      const t = convertInline(escapeRtfLiteral(raw.replace(/^> /, '')));
-      out.push(`\\pard\\li720\\i ${t}\\par\\pard`);
-      continue;
-    }
-
-    // Empty line
-    if (raw.trim() === '') {
-      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-      out.push('\\par');
-      continue;
-    }
-
-    // Plain line
-    if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
-    out.push(`${convertInline(escapeRtfLiteral(raw))}\\par`);
-  }
-
-  if (inBulletBlock) out.push('\\pard');
-  return out.join('\n');
-}
+// escapeRtfLiteral, convertInline, convertMarkdownLinesToRtf
+// (helpers for the archived plainTextToRtf) are in git history.
 
 // ─── Strip RTF for AI input ───────────────────────────────────────────────────
 
@@ -321,60 +158,50 @@ export function rtfToHtml(rtf: string): string {
   return t.trim();
 }
 
-// ─── HTML → RTF (for AI result conversion) ───────────────────────────────────
+// ─── HTML → RTF (for saving the WYSIWYG editor content to disk) ──────────────
 
 export function htmlToRtf(html: string): string {
   if (!html.trim()) return DEFAULT_RTF;
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const body = html
+    // Block-level elements — process headings before inline so nested spans work
+    .replace(/<h1[^>]*>(.*?)<\/h1>/gis,         '{\\fs40\\b $1}\\par\\par')
+    .replace(/<h2[^>]*>(.*?)<\/h2>/gis,         '{\\fs32\\b $1}\\par\\par')
+    .replace(/<h3[^>]*>(.*?)<\/h3>/gis,         '{\\fs28\\b $1}\\par\\par')
+    // Inline formatting
+    .replace(/<strong[^>]*>(.*?)<\/strong>/gis, '{\\b $1}')
+    .replace(/<b[^>]*>(.*?)<\/b>/gis,           '{\\b $1}')
+    .replace(/<em[^>]*>(.*?)<\/em>/gis,         '{\\i $1}')
+    .replace(/<i[^>]*>(.*?)<\/i>/gis,           '{\\i $1}')
+    .replace(/<u[^>]*>(.*?)<\/u>/gis,           '{\\ul $1}')
+    .replace(/<s[^>]*>(.*?)<\/s>/gis,           '{\\strike $1}')
+    .replace(/<del[^>]*>(.*?)<\/del>/gis,       '{\\strike $1}')
+    .replace(/<code[^>]*>(.*?)<\/code>/gis,     '{\\f1 $1}')
+    // Lists and quotes
+    .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gis, '\\pard\\li720 $1\\par\\pard')
+    .replace(/<li[^>]*>(.*?)<\/li>/gis,         '\\pard\\fi-240\\li480\\bullet\\tx480 $1\\par')
+    // Paragraphs and breaks
+    .replace(/<br\s*\/?>/gi,                     '\\par ')
+    .replace(/<p[^>]*>(.*?)<\/p>/gis,           '$1\\par ')
+    .replace(/<div[^>]*>(.*?)<\/div>/gis,       '$1\\par ')
+    // Strip any remaining tags
+    .replace(/<[^>]+>/g,  '')
+    // Decode HTML entities
+    .replace(/&amp;/g,   '&')
+    .replace(/&lt;/g,    '<')
+    .replace(/&gt;/g,    '>')
+    .replace(/&nbsp;/g,  ' ')
+    .replace(/&quot;/g,  '"')
+    .replace(/&#39;/g,   "'")
+    // Encode non-ASCII as RTF Unicode escapes
+    .replace(/[^\x00-\x7F]/g, (c) => `\\u${c.codePointAt(0)}? `);
 
-  function escapeRtf(text: string): string {
-    let out = '';
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i];
-      const code = text.codePointAt(i)!;
-      if (code > 0xffff) i++;
-      if (ch === '\\')      out += '\\\\';
-      else if (ch === '{')  out += '\\{';
-      else if (ch === '}')  out += '\\}';
-      else if (code > 127)  out += `\\u${code}?`;
-      else out += ch;
-    }
-    return out;
-  }
-
-  function nodeToRtf(node: Node): string {
-    if (node.nodeType === Node.TEXT_NODE) return escapeRtf(node.textContent ?? '');
-    if (node.nodeType !== Node.ELEMENT_NODE) return '';
-    const el = node as Element;
-    const tag = el.tagName.toLowerCase();
-    const children = Array.from(el.childNodes).map(nodeToRtf).join('');
-    switch (tag) {
-      case 'strong': case 'b':  return `{\\b ${children}}`;
-      case 'em':     case 'i':  return `{\\i ${children}}`;
-      case 'u':                 return `{\\ul ${children}}`;
-      case 's': case 'del':     return `{\\strike ${children}}`;
-      case 'br':                return '\\par\n';
-      case 'p':                 return children + '\\par\n';
-      case 'div':               return children + '\\par\n';
-      case 'h1':                return `{\\fs36\\b ${children}}\\par\n`;
-      case 'h2':                return `{\\fs28\\b ${children}}\\par\n`;
-      case 'h3':                return `{\\fs24\\b ${children}}\\par\n`;
-      case 'li':                return `\\bullet ${children}\\par\n`;
-      case 'ul': case 'ol':     return children;
-      case 'hr':                return '\\par ________________\\par\n';
-      case 'body':              return children;
-      default:                  return children;
-    }
-  }
-
-  const body = nodeToRtf(doc.body).trim();
   return [
     '{\\rtf1\\ansi\\deff0',
-    '{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}}',
+    '{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}{\\f1\\fnil\\fcharset0 Courier New;}}',
+    '{\\colortbl;\\red0\\green0\\blue0;\\red90\\green156\\blue247;}',
     '\\f0\\fs24',
-    body,
+    body.trim(),
     '}',
   ].join('\n');
 }

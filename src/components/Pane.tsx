@@ -30,7 +30,7 @@ import { useUiStore } from '../stores/uiStore';
 import { runAction, runApply, getAiErrorMessage } from '../services/aiService';
 import { writeSourceFile } from '../services/storageService';
 import {
-  rtfToHtml, stripRtfTags, encodeRtfText, plainTextToRtf,
+  rtfToHtml, htmlToRtf, stripHtmlTags,
 } from '../utils/rtfParser';
 import { getDelimiterChar } from '../utils/csvParser';
 import type { Delimiter } from '../types';
@@ -96,8 +96,44 @@ interface Props {
   paneIndex: number;
 }
 
+// ─── WYSIWYG RTF editor (contenteditable) ────────────────────────────────────
+
+interface RtfEditorProps {
+  htmlContent: string;
+  fontFamily: string;
+  fontSize: number;
+  onChange: (html: string) => void;
+  editorRef: React.MutableRefObject<HTMLDivElement | null>;
+}
+
+function RtfEditor({ htmlContent, fontFamily, fontSize, onChange, editorRef }: RtfEditorProps) {
+  useEffect(() => {
+    const div = editorRef.current;
+    if (!div) return;
+    if (document.activeElement === div) return; // don't reset while the user is typing
+    if (div.innerHTML !== htmlContent) {
+      div.innerHTML = htmlContent;
+    }
+  }, [htmlContent, editorRef]);
+
+  return (
+    <div
+      ref={editorRef}
+      contentEditable
+      suppressContentEditableWarning
+      onInput={() => { if (editorRef.current) onChange(editorRef.current.innerHTML); }}
+      className="rtf-editor editor-wrap"
+      style={{ fontFamily, fontSize: `${fontSize}px` }}
+      spellCheck
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function Pane({ paneIndex }: Props) {
   const editorRef    = useRef<NoteEditorRef>(null);
+  const rtfEditorRef = useRef<HTMLDivElement | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
@@ -149,7 +185,6 @@ export function Pane({ paneIndex }: Props) {
   const [mdPreviewHtml, setMdPreviewHtml] = useState('');
   const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
   const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
-  const [rtfPreviewOpen, setRtfPreviewOpen] = useState(true);
   const mdPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const htmlPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const htmlIframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -174,7 +209,6 @@ export function Pane({ paneIndex }: Props) {
     setMarkdownPreviewOpen(false);
     setHtmlPreviewOpen(false);
     setJsonPreviewOpen(false);
-    setRtfPreviewOpen(true);
   }, [note?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -306,8 +340,10 @@ export function Pane({ paneIndex }: Props) {
   function handleEditorChange(text: string) {
     if (!note) return;
     updateNote(note.id, { content: text });
-    setCharCount(text.length);
-    setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
+    // For RTF, measure the plain-text content rather than the HTML string length
+    const countText = isRtf ? (rtfEditorRef.current?.innerText ?? text) : text;
+    setCharCount(countText.length);
+    setWordCount(countText.trim() ? countText.trim().split(/\s+/).length : 0);
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
@@ -319,11 +355,13 @@ export function Pane({ paneIndex }: Props) {
     const n = useNoteStore.getState().notes.find((x) => x.id === id);
     if (n?.sourceFilePath) {
       try {
-        // content is raw RTF in RTF mode — write it directly for .rtf files.
-        // For non-.rtf files viewed in RTF mode, strip markup to plain text.
+        // content is HTML in RTF mode; convert to RTF for .rtf files on disk,
+        // or to plain text for any other file type viewed in RTF mode.
         let writeContent = content;
-        if (selectedFormat === 'RTF' && !n.sourceFilePath.toLowerCase().endsWith('.rtf')) {
-          writeContent = stripRtfTags(content);
+        if (selectedFormat === 'RTF') {
+          writeContent = n.sourceFilePath.toLowerCase().endsWith('.rtf')
+            ? htmlToRtf(content)
+            : stripHtmlTags(content);
         }
         await writeSourceFile(n.sourceFilePath, writeContent);
       } catch {
@@ -342,7 +380,9 @@ export function Pane({ paneIndex }: Props) {
       saveTimerRef.current = null;
     }
     setIsSaving(true);
-    const currentContent = editorRef.current?.getText() ?? note.content;
+    const currentContent = isRtf
+      ? (rtfEditorRef.current?.innerHTML ?? note.content)
+      : (editorRef.current?.getText() ?? note.content);
     await Promise.all([
       savePersist(note.id, currentContent),
       new Promise<void>((r) => setTimeout(r, 300)),
@@ -369,8 +409,8 @@ export function Pane({ paneIndex }: Props) {
 
     let text: string;
     if (isRtf) {
-      const raw = editorRef.current?.getText() ?? note.content;
-      text = ext === '.rtf' ? raw : stripRtfTags(raw);
+      const html = rtfEditorRef.current?.innerHTML ?? note.content;
+      text = ext === '.rtf' ? htmlToRtf(html) : stripHtmlTags(html);
     } else {
       text = editorRef.current?.getText() ?? note.content;
     }
@@ -395,13 +435,12 @@ export function Pane({ paneIndex }: Props) {
   }
 
   function getWorkingText(): string {
-    const view = editorRef.current;
-    if (!view) return stripRtfTags(note?.content ?? '');
     if (isRtf) {
-      // For AI, strip RTF markup from selection or full content
-      if (view.hasSelection()) return stripRtfTags(view.getSelection());
-      return stripRtfTags(view.getText());
+      // Use the plain-text rendering of the WYSIWYG div for AI prompts
+      return rtfEditorRef.current?.innerText ?? stripHtmlTags(note?.content ?? '');
     }
+    const view = editorRef.current;
+    if (!view) return note?.content ?? '';
     if (view.hasSelection()) return view.getSelection();
     return view.getText();
   }
@@ -468,27 +507,20 @@ export function Pane({ paneIndex }: Props) {
     const { original, result, wasSelection, detectedLanguage } = aiDialogData;
 
     if (isRtf) {
-      // AI result is plain text; encode it as RTF and insert into the document
-      const rtfResult = encodeRtfText(result).replace(/\n/g, '\\par\n');
-      let post: string;
-      if (wasSelection) {
-        // Replace the selected RTF text with the encoded result
-        const view = editorRef.current;
-        if (view) {
-          view.replaceSelection(rtfResult);
-          post = view.getText();
-        } else {
-          post = note.content;
-        }
-      } else {
-        // Replace entire content with a fresh RTF document containing the result
-        post = plainTextToRtf(result);
-        editorRef.current?.applyText(post);
-      }
-      updateNote(note.id, { content: post });
+      // AI result is plain text — wrap in paragraphs and inject as HTML
+      const htmlResult = result
+        .split('\n')
+        .map((line) => {
+          const safe = line
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return `<p>${safe || '<br>'}</p>`;
+        })
+        .join('');
+      if (rtfEditorRef.current) rtfEditorRef.current.innerHTML = htmlResult;
+      updateNote(note.id, { content: htmlResult });
       if (detectedLanguage) setPaneDetectedLanguage(paneIndex, detectedLanguage);
       setAiDialogData(null);
-      void savePersist(note.id, post);
+      void savePersist(note.id, htmlResult);
       return;
     }
 
@@ -536,13 +568,21 @@ export function Pane({ paneIndex }: Props) {
   const isRust       = selectedFormat === 'Rust';
   const isHtmlCss    = selectedFormat === 'HTML/CSS';
 
-  // Convert raw RTF content to HTML for the preview panel.
-  // Content is now stored as raw RTF strings, so rtfToHtml is safe to call
-  // on every change without the double-escaping cycle that plagued the old
-  // HTML-in-contenteditable approach.
-  const rtfHtmlContent = useMemo(() => {
+  // Derive the HTML to display in the WYSIWYG editor.
+  // When a .rtf file is loaded, note.content is raw RTF; convert it once here.
+  // After the user edits, note.content is HTML and passes through unchanged.
+  const rtfDisplayHtml = useMemo(() => {
     if (!isRtf) return '';
-    return rtfToHtml(content);
+    if (content.trim().startsWith('{\\rtf')) return rtfToHtml(content);
+    if (content.trim().startsWith('<') || content.trim() === '') return content;
+    // Plain text switched to RTF — wrap each line in a paragraph
+    return content
+      .split('\n')
+      .map((line) => {
+        const safe = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<p>${safe || '<br>'}</p>`;
+      })
+      .join('');
   }, [isRtf, content]);
 
   return (
@@ -670,16 +710,35 @@ export function Pane({ paneIndex }: Props) {
             onFormatChange={(fmt) => {
               if (note) {
                 if (fmt === 'RTF' && selectedFormat !== 'RTF') {
-                  // Switching TO RTF: encode current content as a proper RTF document
+                  // Switching TO RTF: convert current content to HTML for WYSIWYG
                   const current = editorRef.current?.getText() ?? note.content;
-                  const asRtf = current.trim().startsWith('{\\rtf')
-                    ? current
-                    : plainTextToRtf(current);
-                  updateNote(note.id, { content: asRtf });
+                  let asHtml: string;
+                  if (current.trim().startsWith('{\\rtf')) {
+                    asHtml = rtfToHtml(current);
+                  } else if (current.trim().startsWith('<')) {
+                    asHtml = current; // already HTML
+                  } else {
+                    asHtml = current
+                      .split('\n')
+                      .map((line) => {
+                        const safe = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        return `<p>${safe || '<br>'}</p>`;
+                      })
+                      .join('');
+                  }
+                  updateNote(note.id, { content: asHtml });
                 } else if (selectedFormat === 'RTF' && fmt !== 'RTF') {
-                  // Switching FROM RTF: strip markup, leave plain text
-                  const raw = editorRef.current?.getText() ?? note.content;
-                  const plain = stripRtfTags(raw);
+                  // Switching FROM RTF: extract plain text from the WYSIWYG div
+                  const html = rtfEditorRef.current?.innerHTML ?? note.content;
+                  const plain = html
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<\/p>/gi,  '\n')
+                    .replace(/<\/li>/gi, '\n')
+                    .replace(/<[^>]+>/g, '')
+                    .replace(/&amp;/g,  '&').replace(/&lt;/g, '<')
+                    .replace(/&gt;/g,   '>').replace(/&nbsp;/g, ' ')
+                    .replace(/\n{3,}/g, '\n\n')
+                    .trim();
                   if (plain !== note.content) {
                     updateNote(note.id, { content: plain });
                   }
@@ -695,10 +754,7 @@ export function Pane({ paneIndex }: Props) {
           {/* Contextual toolbar — RTF */}
           {isRtf && (
             <RtfToolbar
-              editorRef={editorRef}
               disabled={paneState.isBusy || !note}
-              previewOpen={rtfPreviewOpen}
-              onPreviewToggle={() => setRtfPreviewOpen((v) => !v)}
             />
           )}
 
@@ -792,36 +848,26 @@ export function Pane({ paneIndex }: Props) {
           isCsv && showCsvTableView ? 'editor-area-split' : '',
         ].filter(Boolean).join(' ')}
       >
-        <NoteEditor
-          ref={editorRef}
-          content={content}
-          fontFamily={settings.fontFamily}
-          fontSize={settings.fontSize}
-          language={isRtf ? 'Plain Text (Structured Notes)' : (paneState.detectedLanguage ?? selectedFormat)}
-          activeTheme={settings.theme}
-          showLineNumbers={showLineNumbers}
-          onChange={handleEditorChange}
-          onLineChange={setLineNumber}
-        />
-
-        {/* RTF rendered preview panel */}
-        {isRtf && rtfPreviewOpen && (
-          <>
-            <div
-              className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
-              onMouseDown={handlePreviewDividerMouseDown}
-            >
-              <span className="preview-divider-dots">· · ·</span>
-            </div>
-            <div className="inline-preview-panel" style={{ height: previewHeight, flex: 'none', minHeight: 80 }}>
-              <div className="inline-preview-label">PREVIEW</div>
-              <div
-                className="rtf-preview-body"
-                style={{ fontFamily: settings.fontFamily, fontSize: settings.fontSize }}
-                dangerouslySetInnerHTML={{ __html: rtfHtmlContent }}
-              />
-            </div>
-          </>
+        {isRtf ? (
+          <RtfEditor
+            htmlContent={rtfDisplayHtml}
+            fontFamily={settings.fontFamily}
+            fontSize={settings.fontSize}
+            onChange={handleEditorChange}
+            editorRef={rtfEditorRef}
+          />
+        ) : (
+          <NoteEditor
+            ref={editorRef}
+            content={content}
+            fontFamily={settings.fontFamily}
+            fontSize={settings.fontSize}
+            language={paneState.detectedLanguage ?? selectedFormat}
+            activeTheme={settings.theme}
+            showLineNumbers={showLineNumbers}
+            onChange={handleEditorChange}
+            onLineChange={setLineNumber}
+          />
         )}
 
         {isCsv && showCsvTableView && (
