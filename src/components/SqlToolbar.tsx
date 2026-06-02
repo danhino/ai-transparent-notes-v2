@@ -3,9 +3,11 @@ import { format } from 'sql-formatter';
 import type { SqlLanguage } from 'sql-formatter';
 import type { NoteEditorRef } from './NoteEditor';
 import { getText, apply, replaceSel, wrapSel, hasSel, getSel, addLinePrefix } from '../utils/toolbarUtils';
+import { detectSqlDialect } from '../utils/sqlDetect';
+import { useUiStore } from '../stores/uiStore';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; paneIndex: number; }
 
 type Dialect = Extract<SqlLanguage, 'sql' | 'mysql' | 'postgresql' | 'sqlite' | 'tsql' | 'plsql'>;
 
@@ -42,7 +44,7 @@ function lowerKeywords(sql: string): string {
   return result;
 }
 
-export function SqlToolbar({ editorRef, disabled }: Props) {
+export function SqlToolbar({ editorRef, disabled, paneIndex }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dialect, setDialect] = useState<Dialect>('sql');
@@ -52,6 +54,8 @@ export function SqlToolbar({ editorRef, disabled }: Props) {
   const [content, setContent] = useState('');
   const contentRef = useRef('');
   const handleFormatRef = useRef<() => void>(() => {});
+  const lastDetectedLengthRef = useRef(0);
+  const setPaneDialect = useUiStore((s) => s.setPaneDialect);
 
   function showStatus(text: string, type: 'success' | 'error', duration = 3000) {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -74,6 +78,23 @@ export function SqlToolbar({ editorRef, disabled }: Props) {
     const id = setInterval(tick, 300);
     return () => clearInterval(id);
   }, [editorRef]);
+
+  // Auto-detect SQL dialect on file open (large content change only)
+  useEffect(() => {
+    if (!content.trim()) return;
+    const delta = Math.abs(content.length - lastDetectedLengthRef.current);
+    if (delta < 50) return;
+    lastDetectedLengthRef.current = content.length;
+    const result = detectSqlDialect(content);
+    if (result.confidence === 'high') {
+      setDialect(result.dialect);
+    }
+  }, [content]);
+
+  // Sync dialect to uiStore so StatusBar can read it per-pane
+  useEffect(() => {
+    setPaneDialect(paneIndex, dialect);
+  }, [dialect, paneIndex, setPaneDialect]);
 
   // Passive inline validation
   useEffect(() => {

@@ -785,7 +785,7 @@ export function Pane({ paneIndex }: Props) {
           )}
           {/* Contextual toolbar — SQL */}
           {isSql && (
-            <SqlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <SqlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} paneIndex={paneIndex} />
           )}
           {/* Contextual toolbar — Markdown */}
           {isMarkdown && (
@@ -965,6 +965,8 @@ export function Pane({ paneIndex }: Props) {
         wordCount={wordCount}
         lineNumber={lineNumber}
         detectedLanguage={paneState.detectedLanguage}
+        format={selectedFormat}
+        dialect={paneState.paneDialect}
       />
 
       {/* AI result dialog */}

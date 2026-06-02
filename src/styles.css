@@ -2046,6 +2046,20 @@ input {
   font-weight: 500;
 }
 
+.status-bar__language {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 8px;
+  border-left: 1px solid var(--border-subtle, var(--border-default));
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.status-bar__language:hover {
+  color: var(--text-secondary);
+}
+
 /* ─── Splitters ─── */
 .splitter-h {
   width: 4px;

@@ -5,12 +5,14 @@ export interface PaneUiState {
   isBusy: boolean;
   detectedLanguage: string | null;
   savedVisible: boolean;
+  paneDialect: string;
 }
 
 const makePaneState = (): PaneUiState => ({
   isBusy: false,
   detectedLanguage: null,
   savedVisible: false,
+  paneDialect: 'sql',
 });
 
 interface UiStore {
@@ -26,6 +28,7 @@ interface UiStore {
   setPaneBusy: (i: number, v: boolean) => void;
   setPaneDetectedLanguage: (i: number, lang: string | null) => void;
   setPaneSavedVisible: (i: number, v: boolean) => void;
+  setPaneDialect: (i: number, dialect: string) => void;
   setSettingsOpen: (v: boolean) => void;
   setCompareOpen: (v: boolean) => void;
   setPlatform: (v: Platform) => void;
@@ -55,6 +58,9 @@ export const useUiStore = create<UiStore>((set) => ({
 
   setPaneSavedVisible: (i, savedVisible) =>
     set((s) => ({ paneStates: patchPane(s.paneStates, i, { savedVisible }) })),
+
+  setPaneDialect: (i, paneDialect) =>
+    set((s) => ({ paneStates: patchPane(s.paneStates, i, { paneDialect }) })),
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setCompareOpen: (compareOpen) => set({ compareOpen }),
