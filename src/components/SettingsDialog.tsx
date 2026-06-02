@@ -54,22 +54,34 @@ function isValidHex(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color);
 }
 
-function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  const valid = isValidHex(value);
+function ColorSwatch({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   return (
-    <div className="settings-row">
-      <span className="settings-label">{label}</span>
-      <input
-        className="settings-input"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        maxLength={7}
-        placeholder="#rrggbb"
-        style={{ width: 90 }}
+    <div className="comparison-color-row">
+      <span className="comparison-color-label">{label}</span>
+      <div
+        className="comparison-color-swatch"
+        style={{ background: value }}
+        onClick={() => inputRef.current?.click()}
+        title={`Click to change ${label} color`}
       />
-      <div className="color-preview" style={{ background: valid ? value : 'transparent' }} />
+      <span className="comparison-color-hex">{value}</span>
+      <input
+        ref={inputRef}
+        type="color"
+        value={isValidHex(value) ? value : '#000000'}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+      />
     </div>
   );
+}
+
+function applyComparisonColors(added: string, deleted: string, changed: string) {
+  const root = document.documentElement;
+  root.style.setProperty('--comparison-added', added);
+  root.style.setProperty('--comparison-deleted', deleted);
+  root.style.setProperty('--comparison-changed', changed);
 }
 
 function ReorderList({
@@ -164,6 +176,10 @@ export function SettingsDialog() {
     void getVersion().then((v) => setAppVersion(v)).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    applyComparisonColors(settings.diffAddedColor, settings.diffDeletedColor, settings.diffChangedColor);
+  }, []);
+
   const models = localProvider === 'claude' ? CLAUDE_MODELS : OPENAI_MODELS;
 
   const aiLabelMap = new Map(ALL_AI_ACTIONS.map((a) => [a.key, a.label]));
@@ -181,6 +197,7 @@ export function SettingsDialog() {
       settings.uiBorderOpacity ?? 14,
       settings.uiTextSize ?? 11,
     );
+    applyComparisonColors(settings.diffAddedColor, settings.diffDeletedColor, settings.diffChangedColor);
     setSettingsOpen(false);
   }
 
@@ -602,10 +619,34 @@ export function SettingsDialog() {
           {/* Comparison colors */}
           <div className="settings-section">
             <div className="settings-section-title">Comparison colors</div>
-            <div className="settings-section-desc">Background colors used in the Compare diff view (hex, e.g. #1A4D1A).</div>
-            <ColorRow label="Added lines" value={addedColor} onChange={setAddedColor} />
-            <ColorRow label="Deleted lines" value={deletedColor} onChange={setDeletedColor} />
-            <ColorRow label="Changed lines" value={changedColor} onChange={setChangedColor} />
+            <div className="settings-section-desc">Colors used in the Compare diff view. Click a swatch to pick a color.</div>
+            <ColorSwatch
+              label="Added"
+              value={addedColor}
+              onChange={(c) => { setAddedColor(c); applyComparisonColors(c, deletedColor, changedColor); }}
+            />
+            <ColorSwatch
+              label="Deleted"
+              value={deletedColor}
+              onChange={(c) => { setDeletedColor(c); applyComparisonColors(addedColor, c, changedColor); }}
+            />
+            <ColorSwatch
+              label="Changed"
+              value={changedColor}
+              onChange={(c) => { setChangedColor(c); applyComparisonColors(addedColor, deletedColor, c); }}
+            />
+            <button
+              className="comparison-colors-reset"
+              onClick={() => {
+                const d = { added: '#4caf50', deleted: '#f44336', changed: '#ff9800' };
+                setAddedColor(d.added);
+                setDeletedColor(d.deleted);
+                setChangedColor(d.changed);
+                applyComparisonColors(d.added, d.deleted, d.changed);
+              }}
+            >
+              Reset to defaults
+            </button>
           </div>
 
           {/* Storage */}

@@ -1639,6 +1639,61 @@ input {
   border-bottom: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
+/* Comparison label colors — CSS variable defaults, overridden at runtime by Settings */
+:root {
+  --comparison-added:   #4caf50;
+  --comparison-deleted: #f44336;
+  --comparison-changed: #ff9800;
+}
+.comparison-label--added   { color: var(--comparison-added,   #4caf50); }
+.comparison-label--deleted { color: var(--comparison-deleted, #f44336); }
+.comparison-label--changed { color: var(--comparison-changed, #ff9800); }
+
+/* Comparison color picker rows in Settings */
+.comparison-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.comparison-color-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 60px;
+}
+.comparison-color-swatch {
+  width: 28px;
+  height: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--border-default);
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+}
+.comparison-color-swatch:hover {
+  transform: scale(1.1);
+  border-color: var(--border-strong);
+}
+.comparison-color-hex {
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: var(--text-muted);
+}
+.comparison-colors-reset {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  margin-top: 4px;
+  display: block;
+}
+.comparison-colors-reset:hover {
+  color: var(--text-secondary);
+}
+
 /* SQL toolbar — status indicator and validation panel */
 .sql-status {
   font-size: 11px;

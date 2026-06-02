@@ -48,9 +48,9 @@ export function DiffView({ labelA, labelB, blocks, addedColor, deletedColor, lef
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
       {/* Stats */}
       <div style={{ display: 'flex', gap: 16, fontSize: 12, marginBottom: 8, flexShrink: 0 }}>
-        <span style={{ color: 'var(--success)' }}>+{stats.added} added</span>
-        <span style={{ color: 'var(--danger)' }}>-{stats.deleted} deleted</span>
-        <span style={{ color: 'var(--warning)' }}>{stats.changed} changed</span>
+        <span className="comparison-label--added">+{stats.added} added</span>
+        <span className="comparison-label--deleted">-{stats.deleted} deleted</span>
+        <span className="comparison-label--changed">{stats.changed} changed</span>
         {stats.added === 0 && stats.deleted === 0 && stats.changed === 0 && (
           <span style={{ color: 'var(--text-secondary)' }}>No differences</span>
         )}
