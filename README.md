@@ -46,6 +46,9 @@ A cross-platform desktop notes app with multi-pane layouts, syntax-highlighted e
 - Duplicate tab detection: if a file is already open, focus switches to the existing tab
 - Real-time file system sync via the Tauri watch plugin
 - Resizable panel via drag handle
+- Panel toolbar: Add folder, Expand all, Collapse all, Locate current file (expands ancestors, scrolls to, and briefly flashes the file open in the focused pane), Open in Explorer (reveals the selected file)
+- Tree branch connector lines drawn at each depth level provide visual nesting guides up to five levels deep
+- File path tooltip appears when hovering over a file for a short delay
 
 ### AI features
 
@@ -84,6 +87,8 @@ Dark and Blue themes use the CodeMirror One Dark color scheme. Light, Sepia, and
 
 - Line numbers: per-pane toggle in the pane header; default controlled in Settings and persisted per pane
 - CSV table view: a "Table" toggle renders the current CSV as a styled HTML table, updated with 400 ms debounce; auto-enabled when a `.csv` file is opened
+- RTF format uses a `contenteditable` WYSIWYG editor — rich-text formatting is visible directly; no raw RTF syntax is exposed in the editing area
+- Status bar (bottom of each pane): character count, word count, current line number, AI-detected language badge (appears after Apply), and a right-aligned language/dialect label that reflects the active format; for SQL files the label shows the specific dialect (MySQL, PostgreSQL, SQLite, T-SQL, PL/SQL, or generic SQL)
 - Switching away from RTF or HTML-bearing formats automatically strips markup so the next editor receives clean plain text
 
 ### Format toolbars
@@ -102,7 +107,7 @@ Selecting most formats reveals a contextual toolbar immediately below the AI too
 
 **HTML/CSS (two rows)** — HTML comment, Insert div/span/p/a, Emmet expander, Beautify, Minify, Preview toggle; CSS comment, Flexbox template, Grid template, Media query, Vendor prefix, CSS variable and `:root` templates.
 
-**SQL (two rows)** — Pretty print, Minify, Uppercase/lowercase keywords, Block comment, Line comment, Uncomment, Statement/line count; SELECT *, INSERT INTO, UPDATE, DELETE FROM, CREATE TABLE, full join/group/order query templates.
+**SQL (two rows)** — Format SQL via sql-formatter (Ctrl+Shift+F), dialect selector (Auto / MySQL / PostgreSQL / SQLite / T-SQL / PL/SQL; dialect is auto-detected from file content on open and updates the selector automatically), Minify, Uppercase/lowercase keywords, Block comment, Line comment, Uncomment, Statement/line count, Validate (toggles an inline error panel between the toolbar and the editor); passive ✓ Valid / ✗ Syntax error indicator at the far right of row 1 with 500 ms debounce; SELECT *, INSERT INTO, UPDATE, DELETE FROM, CREATE TABLE, full join/group/order query templates.
 
 **Python (two rows)** — Comment/uncomment, Docstring wrapper, `def`/`class` templates; `if/elif/else`, `for`, `while`, `import`, `from/import`, list/dict comprehension, `try/except`, `with`, `lambda`, `print(f"")`.
 
@@ -167,7 +172,7 @@ The settings dialog is divided into these sections:
 - **AI toolbar** — drag-and-drop reorderable list of AI action buttons with ▲/▼ arrows and × remove
 - **Main toolbar** — drag-and-drop reorderable list of main toolbar items
 - **Format options** — drag-and-drop reorderable list; add custom formats, remove built-ins
-- **Comparison colors** — hex color inputs with live swatches for added, deleted, and changed diff lines
+- **Comparison colors** — clickable color swatches that open a native OS color picker; changes apply live to both the diff row backgrounds and the stat labels (added / deleted / changed); includes a Reset to defaults button
 - **Storage** — data folder path with Open button to reveal in file manager
 - **About** — app icon, description, version
 
@@ -186,6 +191,7 @@ A "Reset to defaults" button restores all settings.
 | State | Zustand 5 |
 | Animations | Framer Motion 12 |
 | Diff | Custom LCS algorithm |
+| SQL formatting | sql-formatter 15 |
 | Markdown rendering | marked |
 | Styling | Tailwind CSS 4, CSS custom properties |
 
@@ -212,6 +218,7 @@ src/
     rtfParser.ts           # RTF to HTML and HTML to RTF conversion
     textUtils.ts           # HTML stripping for format switching
     toolbarUtils.ts        # Shared helpers for contextual toolbar actions
+    sqlDetect.ts           # SQL dialect detection heuristics (T-SQL, PL/SQL, PostgreSQL, MySQL, SQLite)
   components/
     TitleBar.tsx           # Custom frameless titlebar with drag region
     Toolbar.tsx            # Main toolbar (pin, theme, font, opacity, layout, workspace, import, focus, settings)
@@ -222,7 +229,7 @@ src/
     DiffView.tsx           # Shared side-by-side diff component
     AiResultDialog.tsx     # Modal shown after every AI action (diff, apply/revert, export)
     DraggableList.tsx      # Reusable drag-and-drop reorderable list
-    StatusBar.tsx          # Chars, words, line number, detected language
+    StatusBar.tsx          # Chars, words, line number, detected-language badge, right-aligned format/dialect label
     Pane.tsx               # Individual pane: editor, toolbars, status bar, AI orchestration
     PaneSystem.tsx         # Layout manager with draggable splitters
     WorkspacePanel.tsx     # Collapsible file tree sidebar with watch plugin
@@ -308,6 +315,7 @@ Notes and settings are saved at:
 |---|---|
 | Ctrl/Cmd+S | Save the focused pane immediately |
 | Ctrl/Cmd+Shift+T | Toggle toolbar collapse for the focused pane |
+| Ctrl+Shift+F | Format SQL (when a SQL note is active) |
 | Escape | Exit focus mode |
 
 ---
