@@ -55,24 +55,22 @@ function isValidHex(color: string): boolean {
 }
 
 function ColorSwatch({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="comparison-color-row">
       <span className="comparison-color-label">{label}</span>
-      <div
-        className="comparison-color-swatch"
-        style={{ background: value }}
-        onClick={() => inputRef.current?.click()}
-        title={`Click to change ${label} color`}
-      />
+      <div className="comparison-color-swatch-wrapper" title={`Click to change ${label} color`}>
+        <div className="comparison-color-swatch" style={{ background: value }} />
+        <input
+          type="color"
+          value={isValidHex(value) ? value : '#000000'}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            opacity: 0, cursor: 'pointer', border: 'none', padding: 0,
+          }}
+        />
+      </div>
       <span className="comparison-color-hex">{value}</span>
-      <input
-        ref={inputRef}
-        type="color"
-        value={isValidHex(value) ? value : '#000000'}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
-      />
     </div>
   );
 }

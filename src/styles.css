@@ -1661,18 +1661,23 @@ input {
   color: var(--text-secondary);
   min-width: 60px;
 }
-.comparison-color-swatch {
+.comparison-color-swatch-wrapper {
+  position: relative;
   width: 28px;
   height: 18px;
-  border-radius: 4px;
-  cursor: pointer;
-  border: 1px solid var(--border-default);
   flex-shrink: 0;
-  transition: transform 0.1s ease;
+  border-radius: 4px;
+  border: 1px solid var(--border-default);
+  transition: transform 0.1s ease, border-color 0.1s ease;
+  overflow: hidden;
 }
-.comparison-color-swatch:hover {
+.comparison-color-swatch-wrapper:hover {
   transform: scale(1.1);
   border-color: var(--border-strong);
+}
+.comparison-color-swatch {
+  width: 100%;
+  height: 100%;
 }
 .comparison-color-hex {
   font-size: 11px;
