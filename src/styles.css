@@ -1639,6 +1639,36 @@ input {
   border-bottom: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
+/* SQL toolbar — status indicator and validation panel */
+.sql-status {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sql-status--valid   { color: #4caf50; background: rgba(76,175,80,0.12); }
+.sql-status--invalid { color: #f44336; background: rgba(244,67,54,0.12); cursor: pointer; }
+
+.sql-validation-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-glass);
+  border-bottom: 1px solid var(--border-default);
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+}
+.sql-validation-ok  { color: #4caf50; }
+.sql-validation-err { color: #f44336; flex: 1; white-space: pre-wrap; }
+.sql-validation-panel button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
 /* Focus mode — hide contextual toolbars */
 .app.focus-mode .contextual-toolbar {
   display: none;
