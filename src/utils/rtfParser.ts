@@ -300,8 +300,13 @@ export function rtfToHtml(rtf: string): string {
   // Unicode escape sequences
   t = t.replace(/\\u(\d+)\??/g, (_, n) => String.fromCodePoint(parseInt(n, 10)));
 
-  // Drop RTF wrapper and remaining control words
-  t = t.replace(/^\s*\{\\rtf\d+[^{}]*/, '');
+  // Drop RTF wrapper and remaining control words.
+  // Only remove the header line ({\rtf1\ansi\deff0), NOT the entire body.
+  // [^{}]* was too greedy: after multi-pass converts {…} groups to HTML
+  // (which has no braces), it would consume the whole document, leaving
+  // only the closing } → empty preview. [^\n{]*\n? stops at the first
+  // newline or { so only the single header line is removed.
+  t = t.replace(/^\s*\{\\rtf\d+[^\n{]*\n?/, '');
   t = t.replace(/\{\\[^{}]*\}/g, '');
   t = t.replace(/\{[^{}]*\}/g, '');
   t = t.replace(/\\[a-zA-Z]+[-\d]* ?/g, '');
