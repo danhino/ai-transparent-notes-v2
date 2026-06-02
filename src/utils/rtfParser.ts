@@ -177,6 +177,13 @@ function convertMarkdownLinesToRtf(text: string): string {
       continue;
     }
 
+    // Empty blockquote continuation — bare > with no text (e.g. between > lines)
+    if (/^>\s*$/.test(raw)) {
+      if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
+      out.push('\\par');
+      continue;
+    }
+
     // Blockquotes
     if (/^> /.test(raw)) {
       if (inBulletBlock) { out.push('\\pard'); inBulletBlock = false; }
