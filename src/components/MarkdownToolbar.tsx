@@ -8,6 +8,8 @@ interface Props {
   disabled: boolean;
   previewOpen: boolean;
   onPreviewToggle: () => void;
+  showInvisibles: boolean;
+  onToggleInvisibles: () => void;
 }
 
 function addLinePrefix1(lines: string, prefix: string) {
@@ -29,7 +31,7 @@ function generateToc(content: string): string {
   return entries.join('\n');
 }
 
-export function MarkdownToolbar({ editorRef, disabled, previewOpen, onPreviewToggle }: Props) {
+export function MarkdownToolbar({ editorRef, disabled, previewOpen, onPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -102,6 +104,8 @@ export function MarkdownToolbar({ editorRef, disabled, previewOpen, onPreviewTog
         {sep}
         <button className="ctx-btn" onClick={handleTable} disabled={disabled} title="Insert table template">Table</button>
         <button className="ctx-btn" onClick={handleToc} disabled={disabled} title="Generate table of contents from headings">TOC</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

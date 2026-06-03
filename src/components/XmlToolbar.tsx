@@ -44,9 +44,11 @@ function InlineInput({ placeholder, value, onChange, onCommit, onCancel }: Inlin
 interface Props {
   editorRef: React.RefObject<NoteEditorRef | null>;
   disabled: boolean;
+  showInvisibles: boolean;
+  onToggleInvisibles: () => void;
 }
 
-export function XmlToolbar({ editorRef, disabled }: Props) {
+export function XmlToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const [showWrapInput, setShowWrapInput] = useState(false);
   const [wrapTagName, setWrapTagName] = useState('');
   const [xpathQuery, setXpathQuery] = useState('');
@@ -419,6 +421,8 @@ export function XmlToolbar({ editorRef, disabled }: Props) {
             {xpathCount} match{xpathCount !== 1 ? 'es' : ''}
           </span>
         )}
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

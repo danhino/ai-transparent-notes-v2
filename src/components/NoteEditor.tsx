@@ -11,6 +11,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirro
 import { oneDark } from '@codemirror/theme-one-dark';
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
 import { getLanguageExtension } from '../utils/languageMap';
+import { showInvisiblesPlugin } from '../utils/showInvisiblesPlugin';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 
@@ -63,26 +64,31 @@ interface Props {
   language: string;
   activeTheme: string;
   showLineNumbers?: boolean;
+  showInvisibles?: boolean;
   onChange: (text: string) => void;
   onLineChange?: (line: number) => void;
+  onSelectionChange?: (label: string | null) => void;
 }
 
 export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
-  { content, fontFamily, fontSize, language, activeTheme, showLineNumbers = true, onChange, onLineChange },
+  { content, fontFamily, fontSize, language, activeTheme, showLineNumbers = true, showInvisibles = false, onChange, onLineChange, onSelectionChange },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onLineChangeRef = useRef(onLineChange);
+  const onSelectionChangeRef = useRef(onSelectionChange);
   onChangeRef.current = onChange;
   onLineChangeRef.current = onLineChange;
+  onSelectionChangeRef.current = onSelectionChange;
 
   // Stable compartment refs — created once, reused for the lifetime of the editor
   const langComp = useRef(new Compartment());
   const syntaxComp = useRef(new Compartment());
   const fontComp = useRef(new Compartment());
   const lineNumComp = useRef(new Compartment());
+  const invisiblesComp = useRef(new Compartment());
 
   const initEditor = useCallback(() => {
     if (!containerRef.current) return;
@@ -94,6 +100,16 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
       if (update.selectionSet || update.docChanged) {
         const line = update.state.doc.lineAt(update.state.selection.main.head).number;
         onLineChangeRef.current?.(line);
+
+        const sel = update.state.selection.main;
+        const selectedChars = sel.to - sel.from;
+        if (selectedChars > 0) {
+          const fromLine = update.state.doc.lineAt(sel.from).number;
+          const toLine = update.state.doc.lineAt(sel.to).number;
+          onSelectionChangeRef.current?.(`Sel: ${selectedChars} | ${toLine - fromLine + 1}`);
+        } else {
+          onSelectionChangeRef.current?.(null);
+        }
       }
     });
 
@@ -104,6 +120,7 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
         syntaxComp.current.of(isSyntaxDarkTheme(activeTheme) ? oneDark : syntaxHighlighting(defaultHighlightStyle)),
         fontComp.current.of(buildBaseTheme(fontFamily, fontSize)),
         lineNumComp.current.of(showLineNumbers ? lineNumbers() : []),
+        invisiblesComp.current.of(showInvisibles ? showInvisiblesPlugin() : []),
         history(),
         highlightActiveLine(),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
@@ -174,6 +191,15 @@ export const NoteEditor = forwardRef<NoteEditorRef, Props>(function NoteEditor(
       effects: lineNumComp.current.reconfigure(showLineNumbers ? lineNumbers() : []),
     });
   }, [showLineNumbers]);
+
+  // Reconfigure invisibles compartment
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: invisiblesComp.current.reconfigure(showInvisibles ? showInvisiblesPlugin() : []),
+    });
+  }, [showInvisibles]);
 
   // Expose imperative API
   useImperativeHandle(ref, () => ({

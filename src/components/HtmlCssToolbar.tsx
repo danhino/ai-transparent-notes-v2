@@ -8,6 +8,8 @@ interface Props {
   disabled: boolean;
   htmlPreviewOpen: boolean;
   onHtmlPreviewToggle: () => void;
+  showInvisibles: boolean;
+  onToggleInvisibles: () => void;
 }
 
 // Basic emmet expansion for common patterns
@@ -61,7 +63,7 @@ function beautifyHtml(html: string): string {
   return lines.join('\n');
 }
 
-export function HtmlCssToolbar({ editorRef, disabled, htmlPreviewOpen, onHtmlPreviewToggle }: Props) {
+export function HtmlCssToolbar({ editorRef, disabled, htmlPreviewOpen, onHtmlPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const [emmetInput, setEmmetInput] = useState('');
   const [showEmmet, setShowEmmet] = useState(false);
@@ -148,6 +150,8 @@ export function HtmlCssToolbar({ editorRef, disabled, htmlPreviewOpen, onHtmlPre
         {sep}
         <button className="ctx-btn" onClick={() => ins('color: var(--accent-color);\n')} disabled={disabled} title="CSS variable template">var()</button>
         <button className="ctx-btn" onClick={() => ins(':root {\n  --variable-name: value;\n}\n')} disabled={disabled} title=":root variables">:root</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

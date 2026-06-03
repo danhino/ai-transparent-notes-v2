@@ -715,7 +715,7 @@ input {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 8px;
   cursor: pointer;
   font-size: var(--ui-text-size, 11px);
   color: rgba(255, 255, 255, 0.65);
@@ -724,6 +724,8 @@ input {
   margin: 0 4px;
   transition: background-color 0.12s ease, color 0.12s ease;
   position: relative;
+  line-height: 1.4;
+  min-height: 22px;
 }
 
 /* ── Vertical lines via background-image (immune to overflow clipping) ── */
@@ -848,7 +850,7 @@ input {
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
-  line-height: 1;
+  line-height: 1.4;
 }
 
 /* ── Light theme ── */
@@ -1170,6 +1172,7 @@ input {
 
 .pane-note-select {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -1386,6 +1389,38 @@ input {
   border-color: var(--accent-color);
 }
 
+/* ─── Note title resize wrapper ─── */
+.note-title-wrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 80px;
+  max-width: 350px;
+}
+
+.note-title-resizer {
+  width: 6px;
+  align-self: stretch;
+  flex-shrink: 0;
+  cursor: ew-resize;
+  border-radius: 0 2px 2px 0;
+  transition: background 0.12s ease;
+}
+.note-title-resizer:hover,
+.note-title-resizer.dragging {
+  background: var(--accent-color);
+  opacity: 0.5;
+}
+
+.format-select-wrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: center;
+  min-width: 120px;
+  max-width: 400px;
+}
+
 .format-select {
   height: 22px;
   background: var(--bg-glass);
@@ -1394,8 +1429,8 @@ input {
   color: var(--text-secondary);
   font-size: 10px;
   padding: 0 6px;
-  max-width: 160px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 .format-select:hover {
@@ -1404,11 +1439,26 @@ input {
   color: var(--text-primary);
 }
 
+.format-select-resizer {
+  width: 6px;
+  align-self: stretch;
+  flex-shrink: 0;
+  cursor: ew-resize;
+  border-radius: 0 2px 2px 0;
+  transition: background 0.12s ease;
+}
+.format-select-resizer:hover,
+.format-select-resizer.dragging {
+  background: var(--accent-color);
+  opacity: 0.5;
+}
+
 /* ─── Toolbar collapse area ─── */
 .toolbar-area {
   display: flex;
   flex-direction: row;
   flex-shrink: 0;
+  align-items: center;
 }
 .toolbar-area.collapsed {
   border-bottom: 1px solid var(--border-subtle);
@@ -1734,6 +1784,13 @@ input {
   display: none;
 }
 
+/* ─── Show invisibles: spaces (·), tabs (→), line endings (¶) ─── */
+.cm-invisible-char {
+  color: rgba(128, 128, 128, 0.5);
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ─── Editor area (plain and CSV split view) ─── */
 .editor-area {
   flex: 1;
@@ -2057,6 +2114,19 @@ input {
   user-select: none;
 }
 .status-bar__language:hover {
+  color: var(--text-secondary);
+}
+
+.status-bar__right-stat {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 8px;
+  border-left: 1px solid var(--border-subtle, var(--border-default));
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.status-bar__right-stat:hover {
   color: var(--text-secondary);
 }
 

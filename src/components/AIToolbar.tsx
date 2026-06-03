@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useResizable } from '../hooks/useResizable';
 
 type AiAction = 'fix' | 'polish' | 'rephrase' | 'convo' | 'spellcheck' | 'suggest' | 'apply' | 'compare';
 
@@ -29,25 +30,38 @@ export function AIToolbar({ disabled, selectedFormat, onFormatChange, onAction }
     [rawToolbarActions]
   );
 
+  const { width: selectWidth, wrapperRef, isDraggingState: resizerDragging, onResizerMouseDown } =
+    useResizable('format-select-width', 200, 120, 400);
+
   return (
     <div className="ai-toolbar">
       <span className="ai-toolbar-label">AI:</span>
       <div className="ai-toolbar-sep" />
 
       <span className="ai-toolbar-label">Format:</span>
-      <select
-        className="format-select"
-        value={selectedFormat}
-        onChange={(e) => onFormatChange(e.target.value)}
-        disabled={disabled}
-        title="Format"
+      <div
+        ref={wrapperRef}
+        className="format-select-wrapper"
+        style={{ width: selectWidth }}
       >
-        {formatOptions.map((f) => (
-          <option key={f} value={f}>
-            {f}
-          </option>
-        ))}
-      </select>
+        <select
+          className="format-select"
+          value={selectedFormat}
+          onChange={(e) => onFormatChange(e.target.value)}
+          disabled={disabled}
+          title="Format"
+        >
+          {formatOptions.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+        </select>
+        <div
+          className={`format-select-resizer${resizerDragging ? ' dragging' : ''}`}
+          onMouseDown={onResizerMouseDown}
+        />
+      </div>
       <button
         className="ai-btn ai-btn-primary"
         disabled={disabled}

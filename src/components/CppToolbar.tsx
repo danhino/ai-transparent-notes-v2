@@ -2,9 +2,9 @@ import { useRef, useEffect } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { addLinePrefix, removeLinePrefix, wrapSel, getSel } from '../utils/toolbarUtils';
 
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; format?: string; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; format?: string; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function CppToolbar({ editorRef, disabled, format }: Props) {
+export function CppToolbar({ editorRef, disabled, format, showInvisibles, onToggleInvisibles }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
@@ -41,6 +41,8 @@ export function CppToolbar({ editorRef, disabled, format }: Props) {
         <button className="ctx-btn" onClick={() => ins(isCpp ? 'nullptr' : 'NULL')} disabled={disabled} title={isCpp ? 'nullptr' : 'NULL'}>{isCpp ? 'nullptr' : 'NULL'}</button>
         {sep}
         <button className="ctx-btn" onClick={() => ins('int main(int argc, char* argv[]) {\n    return 0;\n}\n')} disabled={disabled} title="main function">main</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

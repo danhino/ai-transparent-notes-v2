@@ -2,9 +2,9 @@ import { useRef, useEffect } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { addLinePrefix, removeLinePrefix, wrapSel, hasSel, getSel, replaceSel } from '../utils/toolbarUtils';
 
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function RustToolbar({ editorRef, disabled }: Props) {
+export function RustToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
@@ -56,6 +56,8 @@ export function RustToolbar({ editorRef, disabled }: Props) {
         }} disabled={disabled} title="Append ? operator">?</button>
         {sep}
         <button className="ctx-btn" onClick={() => ins('#[derive(Debug, Clone)]\n')} disabled={disabled} title="#[derive(...)] attribute">#[derive]</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

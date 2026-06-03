@@ -2,9 +2,9 @@ import { useRef, useEffect } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { replaceSel, wrapSel, hasSel, getSel, addLinePrefix, removeLinePrefix } from '../utils/toolbarUtils';
 
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; format?: string; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; format?: string; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function JsToolbar({ editorRef, disabled, format }: Props) {
+export function JsToolbar({ editorRef, disabled, format, showInvisibles, onToggleInvisibles }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
@@ -73,6 +73,8 @@ export function JsToolbar({ editorRef, disabled, format }: Props) {
           <button className="ctx-btn" onClick={() => ins("/**\n * @param {type} name - description\n * @returns {type}\n */\n")} disabled={disabled} title="JSDoc comment">JSDoc</button>
           <button className="ctx-btn" onClick={() => ins('const obj = {\n  key: value,\n};\n')} disabled={disabled} title="Object literal">Object</button>
         </>}
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

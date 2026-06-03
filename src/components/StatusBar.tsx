@@ -43,9 +43,11 @@ interface Props {
   detectedLanguage: string | null;
   format: string;
   dialect: string;
+  selLabel?: string | null;
+  lineEnding?: string;
 }
 
-export function StatusBar({ charCount, wordCount, lineNumber, detectedLanguage, format, dialect }: Props) {
+export function StatusBar({ charCount, wordCount, lineNumber, detectedLanguage, format, dialect, selLabel, lineEnding }: Props) {
   const languageLabel = format === 'SQL'
     ? (SQL_DIALECT_LABELS[dialect] ?? 'SQL')
     : (FORMAT_LABELS[format] ?? format);
@@ -55,8 +57,12 @@ export function StatusBar({ charCount, wordCount, lineNumber, detectedLanguage, 
       <span>{charCount} chars</span>
       <span>{wordCount} words</span>
       <span>Ln {lineNumber}</span>
+      {selLabel && <span>{selLabel}</span>}
       {detectedLanguage && <span className="status-lang-badge">Detected: {detectedLanguage}</span>}
-      <span className="status-bar__language">{languageLabel}</span>
+      {/* Right side */}
+      <span className="status-bar__language">{lineEnding ?? 'Unix (LF)'}</span>
+      <span className="status-bar__right-stat">UTF-8</span>
+      <span className="status-bar__right-stat">{languageLabel}</span>
     </div>
   );
 }

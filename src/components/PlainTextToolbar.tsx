@@ -3,13 +3,13 @@ import type { NoteEditorRef } from './NoteEditor';
 import { getText, getSel, hasSel, apply, replaceSel } from '../utils/toolbarUtils';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
 function toTitleCase(s: string): string {
   return s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
-export function PlainTextToolbar({ editorRef, disabled }: Props) {
+export function PlainTextToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showStatus(text: string, type: 'success' | 'error', duration = 3000) {
@@ -54,6 +54,8 @@ export function PlainTextToolbar({ editorRef, disabled }: Props) {
         <button className="ctx-btn" onClick={() => applyTarget(target().split('\n').map(l => l.trim()).join('\n'))} disabled={disabled} title="Trim whitespace from each line">Trim</button>
         <button className="ctx-btn" onClick={() => applyTarget(target().split('\n').map(l => '  ' + l).join('\n'))} disabled={disabled} title="Add 2-space indent to each line">Indent</button>
         <button className="ctx-btn" onClick={() => applyTarget(target().split('\n').map(l => l.startsWith('  ') ? l.slice(2) : l).join('\n'))} disabled={disabled} title="Remove 2-space indent from each line">Outdent</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

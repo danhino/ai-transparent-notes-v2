@@ -13,6 +13,7 @@ export interface Note {
   title: string;
   content: string;
   lastModified: string;
+  createdAt: string;
   sourceFilePath?: string;
   format?: string;
 }

@@ -3,6 +3,18 @@ import { useNoteStore } from '../stores/noteStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
 
+function formatTooltipDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+}
+
 const MAX_TABS = 8;
 
 const LANG_DOT_COLORS: Record<string, string> = {
@@ -62,10 +74,15 @@ export function TabBar() {
         const isActive = idx === activeNoteIndex;
         const isUnsaved = unsavedIds.has(note.id);
 
+        const tabTitle = note.sourceFilePath
+          ? `${note.title}\n${note.sourceFilePath}`
+          : `${note.title}\n${formatTooltipDate(note.createdAt)}`;
+
         return (
           <div
             key={note.id}
             className={`tab${isActive ? ' active' : ''}`}
+            title={tabTitle}
             onClick={() => {
               setActiveNoteIndex(idx);
               setPaneNoteId(focusedPaneIndex, note.id);

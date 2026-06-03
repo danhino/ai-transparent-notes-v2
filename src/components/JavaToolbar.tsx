@@ -2,9 +2,9 @@ import { useRef, useEffect } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { addLinePrefix, removeLinePrefix, wrapSel, hasSel, getSel, replaceSel } from '../utils/toolbarUtils';
 
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function JavaToolbar({ editorRef, disabled }: Props) {
+export function JavaToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
@@ -46,6 +46,8 @@ export function JavaToolbar({ editorRef, disabled }: Props) {
         {sep}
         <button className="ctx-btn" onClick={() => ins('@Override\n')} disabled={disabled} title="@Override annotation">@Override</button>
         <button className="ctx-btn" onClick={() => ins('public Type getName() {\n    return name;\n}\n\npublic void setName(Type name) {\n    this.name = name;\n}\n')} disabled={disabled} title="getter/setter pair">getter/setter</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useResizable } from '../hooks/useResizable';
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
@@ -166,6 +167,8 @@ export function Pane({ paneIndex }: Props) {
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
   const [wordCount, setWordCount] = useState(0);
+  const [selLabel, setSelLabel] = useState<string | null>(null);
+  const [showInvisibles, setShowInvisibles] = useState(() => localStorage.getItem('show-invisibles') === 'true');
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -197,6 +200,25 @@ export function Pane({ paneIndex }: Props) {
   const dragStartHeightRef = useRef(0);
   const editorAreaRef = useRef<HTMLDivElement | null>(null);
 
+  const { width: noteTitleWidth, wrapperRef: noteTitleWrapperRef, isDraggingState: noteTitleDragging, onResizerMouseDown: onNoteTitleResizerMouseDown } =
+    useResizable('note-title-width', 160, 80, 350);
+
+  const lineEnding = useMemo(() => {
+    const c = note?.content ?? '';
+    const sample = c.length > 4096 ? c.slice(0, 4096) : c;
+    if (sample.includes('\r\n')) return 'Windows (CR LF)';
+    if (sample.includes('\r')) return 'Mac (CR)';
+    return 'Unix (LF)';
+  }, [note?.content]);
+
+  const handleToggleInvisibles = useCallback(() => {
+    setShowInvisibles((prev) => {
+      const next = !prev;
+      localStorage.setItem('show-invisibles', String(next));
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     const content = note?.content ?? '';
     setCharCount(content.length);
@@ -209,6 +231,7 @@ export function Pane({ paneIndex }: Props) {
     setMarkdownPreviewOpen(false);
     setHtmlPreviewOpen(false);
     setJsonPreviewOpen(false);
+    setSelLabel(null);
   }, [note?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -606,19 +629,29 @@ export function Pane({ paneIndex }: Props) {
             onBlur={commitRename}
           />
         ) : (
-          <select
-            className="pane-note-select"
-            value={noteId ?? ''}
-            onChange={(e) => {
-              const val = e.target.value;
-              setPaneNoteId(paneIndex, val || null);
-            }}
+          <div
+            ref={noteTitleWrapperRef}
+            className="note-title-wrapper"
+            style={{ width: noteTitleWidth }}
           >
-            <option value="">-- no note --</option>
-            {notes.map((n) => (
-              <option key={n.id} value={n.id}>{n.title}</option>
-            ))}
-          </select>
+            <select
+              className="pane-note-select"
+              value={noteId ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPaneNoteId(paneIndex, val || null);
+              }}
+            >
+              <option value="">-- no note --</option>
+              {notes.map((n) => (
+                <option key={n.id} value={n.id}>{n.title}</option>
+              ))}
+            </select>
+            <div
+              className={`note-title-resizer${noteTitleDragging ? ' dragging' : ''}`}
+              onMouseDown={onNoteTitleResizerMouseDown}
+            />
+          </div>
         )}
 
         <button
@@ -772,7 +805,7 @@ export function Pane({ paneIndex }: Props) {
 
           {/* Contextual toolbar — XML */}
           {isXml && (
-            <XmlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <XmlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — JSON */}
           {isJson && (
@@ -781,11 +814,13 @@ export function Pane({ paneIndex }: Props) {
               disabled={paneState.isBusy || !note}
               previewOpen={jsonPreviewOpen}
               onPreviewToggle={() => setJsonPreviewOpen(v => !v)}
+              showInvisibles={showInvisibles}
+              onToggleInvisibles={handleToggleInvisibles}
             />
           )}
           {/* Contextual toolbar — SQL */}
           {isSql && (
-            <SqlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} paneIndex={paneIndex} />
+            <SqlToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} paneIndex={paneIndex} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — Markdown */}
           {isMarkdown && (
@@ -794,39 +829,41 @@ export function Pane({ paneIndex }: Props) {
               disabled={paneState.isBusy || !note}
               previewOpen={markdownPreviewOpen}
               onPreviewToggle={() => setMarkdownPreviewOpen(v => !v)}
+              showInvisibles={showInvisibles}
+              onToggleInvisibles={handleToggleInvisibles}
             />
           )}
           {/* Contextual toolbar — Python */}
           {isPython && (
-            <PythonToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <PythonToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — JavaScript / TypeScript */}
           {isJs && (
-            <JsToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} />
+            <JsToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — C# */}
           {isCsharp && (
-            <CSharpToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <CSharpToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — Bash / PowerShell */}
           {isShell && (
-            <ShellToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} />
+            <ShellToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — Java */}
           {isJava && (
-            <JavaToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <JavaToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — C / C++ */}
           {isCpp && (
-            <CppToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} />
+            <CppToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} format={selectedFormat} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — Plain Text */}
           {isPlainText && (
-            <PlainTextToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <PlainTextToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — Rust */}
           {isRust && (
-            <RustToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} />
+            <RustToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — HTML/CSS */}
           {isHtmlCss && (
@@ -835,6 +872,8 @@ export function Pane({ paneIndex }: Props) {
               disabled={paneState.isBusy || !note}
               htmlPreviewOpen={htmlPreviewOpen}
               onHtmlPreviewToggle={() => setHtmlPreviewOpen(v => !v)}
+              showInvisibles={showInvisibles}
+              onToggleInvisibles={handleToggleInvisibles}
             />
           )}
         </div>
@@ -865,8 +904,10 @@ export function Pane({ paneIndex }: Props) {
             language={paneState.detectedLanguage ?? selectedFormat}
             activeTheme={settings.theme}
             showLineNumbers={showLineNumbers}
+            showInvisibles={showInvisibles}
             onChange={handleEditorChange}
             onLineChange={setLineNumber}
+            onSelectionChange={setSelLabel}
           />
         )}
 
@@ -967,6 +1008,8 @@ export function Pane({ paneIndex }: Props) {
         detectedLanguage={paneState.detectedLanguage}
         format={selectedFormat}
         dialect={paneState.paneDialect}
+        selLabel={selLabel}
+        lineEnding={lineEnding}
       />
 
       {/* AI result dialog */}

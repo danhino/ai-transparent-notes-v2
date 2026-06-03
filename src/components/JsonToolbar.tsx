@@ -8,6 +8,8 @@ interface Props {
   disabled: boolean;
   previewOpen: boolean;
   onPreviewToggle: () => void;
+  showInvisibles: boolean;
+  onToggleInvisibles: () => void;
 }
 
 function sortKeysDeep(val: unknown): unknown {
@@ -71,7 +73,7 @@ function getJsonPathAtOffset(json: string, offset: number): string {
   return path.filter(Boolean).join('.').replace(/\.\[/g, '[');
 }
 
-export function JsonToolbar({ editorRef, disabled, previewOpen, onPreviewToggle }: Props) {
+export function JsonToolbar({ editorRef, disabled, previewOpen, onPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -177,6 +179,8 @@ export function JsonToolbar({ editorRef, disabled, previewOpen, onPreviewToggle 
         {sep}
         <button className="ctx-btn" onClick={handleWrapArray} disabled={disabled} title="Wrap content in [ ]">[ ] Array</button>
         <button className="ctx-btn" onClick={handleWrapObject} disabled={disabled} title="Wrap content in { }">&#123; &#125; Object</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

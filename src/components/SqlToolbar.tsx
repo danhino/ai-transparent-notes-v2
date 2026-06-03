@@ -7,7 +7,7 @@ import { detectSqlDialect } from '../utils/sqlDetect';
 import { useUiStore } from '../stores/uiStore';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; paneIndex: number; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; paneIndex: number; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
 type Dialect = Extract<SqlLanguage, 'sql' | 'mysql' | 'postgresql' | 'sqlite' | 'tsql' | 'plsql'>;
 
@@ -44,7 +44,7 @@ function lowerKeywords(sql: string): string {
   return result;
 }
 
-export function SqlToolbar({ editorRef, disabled, paneIndex }: Props) {
+export function SqlToolbar({ editorRef, disabled, paneIndex, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dialect, setDialect] = useState<Dialect>('sql');
@@ -234,6 +234,8 @@ export function SqlToolbar({ editorRef, disabled, paneIndex }: Props) {
         {sep}
         <button className="ctx-btn" onClick={() => insertTemplate('CREATE TABLE table_name (\n  id INT PRIMARY KEY,\n  name VARCHAR(255) NOT NULL\n);')} disabled={disabled} title="CREATE TABLE template">CREATE</button>
         <button className="ctx-btn" onClick={() => insertTemplate('SELECT\n  t1.col,\n  t2.col\nFROM table1 t1\nINNER JOIN table2 t2 ON t1.id = t2.id\nWHERE condition\nGROUP BY t1.col\nORDER BY t1.col ASC;')} disabled={disabled} title="Full query template">Full query</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );

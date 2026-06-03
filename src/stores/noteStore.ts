@@ -123,11 +123,13 @@ function detectFormat(filename: string, content: string): string {
 }
 
 function makeNote(partial: Partial<Note> = {}): Note {
+  const now = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
     title: 'New note',
     content: '',
-    lastModified: new Date().toISOString(),
+    lastModified: now,
+    createdAt: now,
     ...partial,
   };
 }

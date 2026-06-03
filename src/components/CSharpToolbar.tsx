@@ -2,9 +2,9 @@ import { useRef, useEffect } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { addLinePrefix, removeLinePrefix, wrapSel, hasSel, getSel, replaceSel } from '../utils/toolbarUtils';
 
-interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; }
+interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function CSharpToolbar({ editorRef, disabled }: Props) {
+export function CSharpToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
@@ -50,6 +50,8 @@ export function CSharpToolbar({ editorRef, disabled }: Props) {
           if (hasSel(editorRef)) replaceSel(editorRef, `#region ${sel}\n\n#endregion\n`);
           else ins('#region Region\n\n#endregion\n');
         }} disabled={disabled} title="Wrap in #region">#region</button>
+        {sep}
+        <button className={`ctx-btn${showInvisibles ? ' ctx-btn-active' : ''}`} onClick={onToggleInvisibles} disabled={disabled} title="Show all characters (spaces ·, tabs →, line endings ¶)">¶</button>
       </div>
     </div>
   );
