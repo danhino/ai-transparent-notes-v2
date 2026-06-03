@@ -96,6 +96,7 @@ export const DEFAULT_FORMAT_OPTIONS = [
   'PowerShell',
   'Bash',
   'HTML/CSS',
+  'HTML Viewer',
   'C',
   'C++',
   'CSS',
