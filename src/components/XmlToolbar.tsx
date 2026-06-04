@@ -279,8 +279,8 @@ export function XmlToolbar({ editorRef, disabled, showInvisibles, onToggleInvisi
 
         {sep}
 
-        <button className="ctx-btn" onClick={handleFormat} disabled={disabled} title="Format XML (2-space indent)">
-          ← → Format
+        <button className="ctx-btn" onClick={handleFormat} disabled={disabled} title="Pretty Print/Format XML (2-space indent)">
+          Pretty Print
         </button>
         <button className="ctx-btn" onClick={handleMinify} disabled={disabled} title="Minify XML">
           ⊟ Minify

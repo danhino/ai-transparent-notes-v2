@@ -20,6 +20,7 @@ import { ShellToolbar } from './ShellToolbar';
 import { JavaToolbar } from './JavaToolbar';
 import { CppToolbar } from './CppToolbar';
 import { PlainTextToolbar } from './PlainTextToolbar';
+import { CssToolbar } from './CssToolbar';
 import { RustToolbar } from './RustToolbar';
 import { HtmlCssToolbar } from './HtmlCssToolbar';
 import { CsvTableView } from './CsvTableView';
@@ -586,8 +587,9 @@ export function Pane({ paneIndex }: Props) {
   const isJava       = selectedFormat === 'Java';
   const isCpp        = selectedFormat === 'C' || selectedFormat === 'C++';
   const isPlainText  = selectedFormat === 'Plain Text (Structured Notes)' || selectedFormat === 'Plain text'
-    || selectedFormat === 'CSS' || selectedFormat === 'Go'
+    || selectedFormat === 'Go'
     || selectedFormat === 'INI / Config' || selectedFormat === 'Log' || selectedFormat === 'YAML / ENV';
+  const isCss        = selectedFormat === 'CSS';
   const isRust       = selectedFormat === 'Rust';
   const isHtmlCss    = selectedFormat === 'HTML/CSS';
 
@@ -860,6 +862,10 @@ export function Pane({ paneIndex }: Props) {
           {/* Contextual toolbar — Plain Text */}
           {isPlainText && (
             <PlainTextToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
+          )}
+          {/* Contextual toolbar — CSS */}
+          {isCss && (
+            <CssToolbar editorRef={editorRef} disabled={paneState.isBusy || !note} showInvisibles={showInvisibles} onToggleInvisibles={handleToggleInvisibles} />
           )}
           {/* Contextual toolbar — Rust */}
           {isRust && (
