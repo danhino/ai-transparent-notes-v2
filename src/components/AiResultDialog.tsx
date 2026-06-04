@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { DiffView } from './DiffView';
@@ -18,6 +18,14 @@ interface Props {
 export function AiResultDialog({ actionName, original, result, settings, onApply, onClose }: Props) {
   const [summary, setSummary] = useState('');
   const [summaryLoading, setSummaryLoading] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const blocks: DiffBlock[] = computeLineDiff(original, result);
 
@@ -75,7 +83,14 @@ export function AiResultDialog({ actionName, original, result, settings, onApply
       >
         <div className="modal-header">
           <span className="modal-title">AI Result — {actionName}</span>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button
+            className="diff-dialog-close"
+            onClick={onClose}
+            title="Close"
+            aria-label="Close comparison"
+          >
+            ✕
+          </button>
         </div>
 
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px 20px', gap: 12, flex: 1 }}>
