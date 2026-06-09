@@ -82,7 +82,7 @@ export const OPENAI_MODELS = [
 ];
 
 export const DEFAULT_FORMAT_OPTIONS = [
-  'Plain Text (Structured Notes)',
+  'Plain Text',
   'Auto-detect (Code)',
   'Python',
   'JavaScript',

@@ -119,7 +119,7 @@ function detectFormat(filename: string, content: string): string {
     if (fromExt) return fromExt;
   }
 
-  return 'Plain Text (Structured Notes)';
+  return 'Plain Text';
 }
 
 function makeNote(partial: Partial<Note> = {}): Note {

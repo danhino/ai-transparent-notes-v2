@@ -1277,7 +1277,7 @@ input {
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
-  z-index: 60;
+  z-index: 500;
   background: var(--bg-secondary);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);

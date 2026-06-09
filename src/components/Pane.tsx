@@ -164,7 +164,7 @@ export function Pane({ paneIndex }: Props) {
   const isUnsaved = note != null && unsavedIds.has(note.id);
   const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
-  const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Plain Text (Structured Notes)');
+  const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Plain Text');
   const [toolbarCollapsed, setToolbarCollapsed] = useState(() => window.innerWidth < 768);
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
@@ -231,7 +231,7 @@ export function Pane({ paneIndex }: Props) {
 
   // Sync format, close previews when the note displayed in this pane changes
   useEffect(() => {
-    setSelectedFormat(note?.format ?? settings.formatOptions[0] ?? 'Plain Text (Structured Notes)');
+    setSelectedFormat(note?.format ?? settings.formatOptions[0] ?? 'Plain Text');
     setMarkdownPreviewOpen(false);
     setHtmlPreviewOpen(false);
     setJsonPreviewOpen(false);
@@ -568,11 +568,10 @@ export function Pane({ paneIndex }: Props) {
   }
 
   const formatExt = formatToExt(selectedFormat);
-  const exportOptions = [
+  const exportOptions: { label: string; ext: string }[] = [
     { label: 'Export as .txt', ext: '.txt' },
-    { label: 'Export as .md', ext: '.md' },
   ];
-  if (formatExt !== '.txt' && formatExt !== '.md') {
+  if (formatExt !== '.txt') {
     exportOptions.push({ label: `Export as ${formatExt}`, ext: formatExt });
   }
 
@@ -589,7 +588,7 @@ export function Pane({ paneIndex }: Props) {
   const isShell      = selectedFormat === 'Bash' || selectedFormat === 'PowerShell';
   const isJava       = selectedFormat === 'Java';
   const isCpp        = selectedFormat === 'C' || selectedFormat === 'C++';
-  const isPlainText  = selectedFormat === 'Plain Text (Structured Notes)' || selectedFormat === 'Plain text'
+  const isPlainText  = selectedFormat === 'Plain Text' || selectedFormat === 'Plain Text (Structured Notes)' || selectedFormat === 'Plain text'
     || selectedFormat === 'Go'
     || selectedFormat === 'INI / Config' || selectedFormat === 'Log' || selectedFormat === 'YAML / ENV';
   const isCss        = selectedFormat === 'CSS';
