@@ -104,11 +104,12 @@ interface RtfEditorProps {
   htmlContent: string;
   fontFamily: string;
   fontSize: number;
+  wideMargins: boolean;
   onChange: (html: string) => void;
   editorRef: React.MutableRefObject<HTMLDivElement | null>;
 }
 
-function RtfEditor({ htmlContent, fontFamily, fontSize, onChange, editorRef }: RtfEditorProps) {
+function RtfEditor({ htmlContent, fontFamily, fontSize, wideMargins, onChange, editorRef }: RtfEditorProps) {
   useEffect(() => {
     const div = editorRef.current;
     if (!div) return;
@@ -124,7 +125,7 @@ function RtfEditor({ htmlContent, fontFamily, fontSize, onChange, editorRef }: R
       contentEditable
       suppressContentEditableWarning
       onInput={() => { if (editorRef.current) onChange(editorRef.current.innerHTML); }}
-      className="rtf-editor editor-wrap"
+      className={`rtf-editor editor-wrap${wideMargins ? ' rtf-wide-margins' : ''}`}
       style={{ fontFamily, fontSize: `${fontSize}px` }}
       spellCheck
     />
@@ -177,6 +178,8 @@ export function Pane({ paneIndex }: Props) {
   const [aiDialogData, setAiDialogData] = useState<AiDialogData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [rtfWideMargins, setRtfWideMargins] = useState(false);
 
   // CSV-specific state
   const [showCsvTableView, setShowCsvTableView] = useState(false);
@@ -790,6 +793,8 @@ export function Pane({ paneIndex }: Props) {
           {isRtf && (
             <RtfToolbar
               disabled={paneState.isBusy || !note}
+              wideMargins={rtfWideMargins}
+              onToggleWideMargins={() => setRtfWideMargins((v) => !v)}
             />
           )}
 
@@ -898,6 +903,7 @@ export function Pane({ paneIndex }: Props) {
             htmlContent={rtfDisplayHtml}
             fontFamily={settings.fontFamily}
             fontSize={settings.fontSize}
+            wideMargins={rtfWideMargins}
             onChange={handleEditorChange}
             editorRef={rtfEditorRef}
           />

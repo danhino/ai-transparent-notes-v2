@@ -1948,7 +1948,7 @@ input {
 .rtf-editor {
   flex: 1;
   overflow-y: auto;
-  padding: 32px 40px;
+  padding: 8px 16px;
   outline: none;
   font-family: Arial, sans-serif;
   font-size: 14px;
@@ -1986,6 +1986,15 @@ input {
   flex: 1;
   overflow: hidden;
   position: relative;
+}
+
+/* RTF editor is the scroll container itself — override .editor-wrap's overflow: hidden */
+.rtf-editor.editor-wrap {
+  overflow-y: auto;
+}
+
+.rtf-wide-margins {
+  padding: 32px 40px;
 }
 
 .cm-editor {

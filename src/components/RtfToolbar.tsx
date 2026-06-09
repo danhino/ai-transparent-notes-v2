@@ -53,9 +53,11 @@ function ColorSwatch({ onSelect, onClose }: ColorSwatchProps) {
 
 interface Props {
   disabled: boolean;
+  wideMargins: boolean;
+  onToggleWideMargins: () => void;
 }
 
-export function RtfToolbar({ disabled }: Props) {
+export function RtfToolbar({ disabled, wideMargins, onToggleWideMargins }: Props) {
   const [isBold,      setIsBold]      = useState(false);
   const [isItalic,    setIsItalic]    = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
@@ -256,6 +258,11 @@ export function RtfToolbar({ disabled }: Props) {
           onClick={() => exec('undo')} disabled={disabled} title="Undo">↩</button>
         <button className="ctx-btn" onMouseDown={noFocus}
           onClick={() => exec('redo')} disabled={disabled} title="Redo">↪</button>
+
+        {sep}
+
+        <button className={btnClass(wideMargins)} onMouseDown={noFocus}
+          onClick={onToggleWideMargins} disabled={disabled} title="Wide margins">⟷</button>
 
       </div>
     </div>
