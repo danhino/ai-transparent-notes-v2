@@ -82,6 +82,7 @@ export const OPENAI_MODELS = [
 ];
 
 export const DEFAULT_FORMAT_OPTIONS = [
+  'Plain Text (Structured Notes)',
   'Auto-detect (Code)',
   'Python',
   'JavaScript',
@@ -106,7 +107,6 @@ export const DEFAULT_FORMAT_OPTIONS = [
   'Log',
   'Rust',
   'YAML / ENV',
-  'Plain Text (Structured Notes)',
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {

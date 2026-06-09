@@ -164,7 +164,7 @@ export function Pane({ paneIndex }: Props) {
   const isUnsaved = note != null && unsavedIds.has(note.id);
   const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
-  const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Auto-detect (Code)');
+  const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Plain Text (Structured Notes)');
   const [toolbarCollapsed, setToolbarCollapsed] = useState(() => window.innerWidth < 768);
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
@@ -231,7 +231,7 @@ export function Pane({ paneIndex }: Props) {
 
   // Sync format, close previews when the note displayed in this pane changes
   useEffect(() => {
-    setSelectedFormat(note?.format ?? settings.formatOptions[0] ?? 'Auto-detect (Code)');
+    setSelectedFormat(note?.format ?? settings.formatOptions[0] ?? 'Plain Text (Structured Notes)');
     setMarkdownPreviewOpen(false);
     setHtmlPreviewOpen(false);
     setJsonPreviewOpen(false);
