@@ -35,6 +35,7 @@ A cross-platform desktop notes app with multi-pane layouts, syntax-highlighted e
 - Scratch notes persist in settings; file-backed notes are opened via Import or workspace double-click
 - Save indicator per pane: green "Saved" when clean, amber "↓ Save" when unsaved, muted "Saving..." during write — Ctrl+S also saves the focused pane
 - Tab bar shows an amber dot on unsaved tabs and a colored language dot per format
+- Hover a tab to see the full file path (file-backed notes) or creation timestamp (scratch notes)
 
 ### Workspace panel
 
@@ -52,7 +53,7 @@ A cross-platform desktop notes app with multi-pane layouts, syntax-highlighted e
 
 ### AI features
 
-AI calls run from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions. Supported providers: Claude (Anthropic) and OpenAI — provider, model, and API key are configured in Settings.
+AI calls run from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions. Four providers are supported: Claude (Anthropic), OpenAI, DeepSeek, and Ollama (local). Provider, model, and API key are configured in Settings. Each cloud provider stores its own API key independently, so switching providers does not lose a previously saved key.
 
 | Action | Description |
 |---|---|
@@ -86,16 +87,17 @@ Dark and Blue themes use the CodeMirror One Dark color scheme. Light, Sepia, and
 **Other editor features:**
 
 - Line numbers: per-pane toggle in the pane header; default controlled in Settings and persisted per pane
+- Resizable format dropdown and note title field via drag handles in each pane header
 - CSV table view: a "Table" toggle renders the current CSV as a styled HTML table, updated with 400 ms debounce; auto-enabled when a `.csv` file is opened
 - RTF format uses a `contenteditable` WYSIWYG editor — rich-text formatting is visible directly; no raw RTF syntax is exposed in the editing area
-- Status bar (bottom of each pane): character count, word count, current line number, AI-detected language badge (appears after Apply), and a right-aligned language/dialect label that reflects the active format; for SQL files the label shows the specific dialect (MySQL, PostgreSQL, SQLite, T-SQL, PL/SQL, or generic SQL)
+- Status bar (bottom of each pane): character count, word count, current line number, and selection count (characters selected); right side shows line ending type (LF/CRLF/CR), UTF-8 encoding label, AI-detected language badge (appears after Apply), and a language/dialect label that reflects the active format; for SQL files the label shows the specific dialect (MySQL, PostgreSQL, SQLite, T-SQL, PL/SQL, or generic SQL)
 - Switching away from RTF or HTML-bearing formats automatically strips markup so the next editor receives clean plain text
 
 ### Format toolbars
 
 Selecting most formats reveals a contextual toolbar immediately below the AI toolbar. It hides automatically when switching formats.
 
-**RTF (two rows)** — Style (Normal, Heading 1–3, Title, Subtitle, Quote, Code), Bold, Italic, Underline, Strikethrough, Font family, Font size, Font color, Highlight color, Alignment; Margin, Indent, Page size, Bullet/numbered lists, Insert table, Insert image placeholder, Horizontal rule, Formatting marks, Quick style, Clear formatting.
+**RTF (two rows)** — Style (Normal, Heading 1–3, Title, Subtitle, Quote, Code), Bold, Italic, Underline, Strikethrough, Font family, Font size, Font color, Highlight color, Alignment; Wide margins toggle, Indent, Page size, Bullet/numbered lists, Insert table, Insert image placeholder, Horizontal rule, Formatting marks, Quick style, Clear formatting.
 
 **CSV (two rows)** — Merge cells, Number format, Decimal places, Sort A-Z/Z-A, Filter row, Insert/delete row; Insert column, Header row toggle, Transpose, Delimiter selector (Comma/Tab/Semicolon/Pipe).
 
@@ -123,9 +125,13 @@ Selecting most formats reveals a contextual toolbar immediately below the AI too
 
 **Bash / PowerShell (two rows)** — Comment, `if` block, `for` loop, `while` loop, function template, `echo`/`Write-Host`; Pipe, redirect, append, variable declaration, `export`/`$env:`. Bash adds shebang inserter and `set -euo pipefail`; PowerShell adds `param()` block.
 
+**CSS (one row)** — Beautify, Minify, Block comment/uncomment, var() reference, `:root` custom properties, Flexbox template, Grid template, @media query, Vendor prefix helper.
+
 **Plain Text (one row)** — UPPER/lower/Title case, Sort A-Z/Z-A, Reverse lines, Deduplicate lines, Word/char/line count with read-time estimate, Trim whitespace, Add/remove 2-space indent.
 
-The Plain Text toolbar also activates for CSS, Go, INI / Config, Log, and YAML / ENV formats.
+The Plain Text toolbar also activates for Go, INI / Config, Log, and YAML / ENV formats.
+
+Most contextual toolbars include a Show All Characters toggle (¶) that renders spaces as `·`, tabs as `→`, and line endings as `¶`.
 
 ### Inline split previews
 
@@ -167,7 +173,7 @@ Focus mode state persists across launches.
 
 The settings dialog is divided into these sections:
 
-- **AI configuration** — provider (Claude/OpenAI), model filtered by provider, API key with show/hide toggle
+- **AI configuration** — provider (Claude/OpenAI/DeepSeek/Ollama), model dropdown filtered by provider with capability descriptions (Most capable / Balanced / Fastest), per-provider API key with show/hide toggle; Ollama shows a URL field with live connection status indicator and auto-detected model list sorted by size
 - **Appearance** — theme, font family (12 options), font size (12 sizes), line numbers default; UI contrast subsection with sliders for text brightness, UI text size, and border opacity
 - **AI toolbar** — drag-and-drop reorderable list of AI action buttons with ▲/▼ arrows and × remove
 - **Main toolbar** — drag-and-drop reorderable list of main toolbar items
@@ -208,7 +214,7 @@ src/
     settingsStore.ts       # All persisted settings
     uiStore.ts             # Layout, panels, focus mode, per-pane UI state
   services/
-    aiService.ts           # Claude and OpenAI API calls, all AI prompts
+    aiService.ts           # AI API calls (Claude, OpenAI, DeepSeek, Ollama), all AI prompts
     diffService.ts         # Custom LCS-based line diff computation
     storageService.ts      # Tauri fs plugin read/write
   utils/
@@ -229,7 +235,7 @@ src/
     DiffView.tsx           # Shared side-by-side diff component
     AiResultDialog.tsx     # Modal shown after every AI action (diff, apply/revert, export)
     DraggableList.tsx      # Reusable drag-and-drop reorderable list
-    StatusBar.tsx          # Chars, words, line number, detected-language badge, right-aligned format/dialect label
+    StatusBar.tsx          # Chars, words, line number, selection count, line endings, encoding, detected-language badge, format/dialect label
     Pane.tsx               # Individual pane: editor, toolbars, status bar, AI orchestration
     PaneSystem.tsx         # Layout manager with draggable splitters
     WorkspacePanel.tsx     # Collapsible file tree sidebar with watch plugin
@@ -251,6 +257,7 @@ src/
     JavaToolbar.tsx        # Java contextual toolbar (2 rows)
     RustToolbar.tsx        # Rust contextual toolbar (2 rows)
     ShellToolbar.tsx       # Bash/PowerShell contextual toolbar (2 rows)
+    CssToolbar.tsx         # CSS contextual toolbar (1 row)
     PlainTextToolbar.tsx   # Plain Text contextual toolbar (1 row)
   App.tsx                  # Root: init, persistence, theme, focus mode, tray events
   main.tsx                 # React entry point
@@ -259,7 +266,7 @@ src-tauri/
     lib.rs                 # Tauri plugins, tray icon, window events
     main.rs                # Entry point
     commands/
-      ai.rs                # call_ai Tauri command (reqwest HTTP to Claude/OpenAI)
+      ai.rs                # call_ai Tauri command (reqwest HTTP to Claude/OpenAI/DeepSeek/Ollama)
       preview.rs           # HTML preview: open, close, sync opacity, open in browser
   capabilities/default.json  # Tauri permission grants
   tauri.conf.json          # App config: frameless window, tray, version
@@ -375,13 +382,17 @@ The workspace panel also recognises images (🖼️), video (🎬), audio (🎵)
 
 ## AI setup
 
-To use AI features you need an API key from one of these providers:
+To use AI features, select a provider in Settings and enter the required credentials:
 
 **Claude (Anthropic)** — [console.anthropic.com](https://console.anthropic.com) → API Keys → Create key
 
 **OpenAI** — [platform.openai.com](https://platform.openai.com) → API Keys → Create key
 
-Open Settings in the app, select your provider, paste your key, and choose a model.
+**DeepSeek** — [platform.deepseek.com](https://platform.deepseek.com) → API Keys → Create key
+
+**Ollama (Local)** — Install from [ollama.com](https://ollama.com), run `ollama serve`, then pull a model (`ollama pull llama3.2`). No API key needed. The app auto-detects the running instance and lists available models.
+
+Each cloud provider stores its own API key, so switching providers does not lose a previously entered key.
 
 ---
 
