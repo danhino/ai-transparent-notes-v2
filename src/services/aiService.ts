@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { fetch } from '@tauri-apps/plugin-http';
 import { AppSettings } from '../types';
 
 class AiError extends Error {

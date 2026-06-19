@@ -407,7 +407,7 @@ export function SettingsDialog() {
             </div>
             {localProvider === 'ollama' && (
               <div style={{ fontSize: 11, color: 'var(--subtle-text)', marginBottom: 4, paddingLeft: 130 }}>
-                Smaller models (7B) respond faster. Code models work best for Fix and Format; general models (e.g. llama3, mistral) are better for Rephrase, Polish, and Convo.
+                Smaller models (7B) respond faster. Code-focused models work best for Fix and Format; general-purpose models work better for Rephrase, Polish, and Convo.
               </div>
             )}
 
