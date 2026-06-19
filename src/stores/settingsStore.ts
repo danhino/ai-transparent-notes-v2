@@ -14,6 +14,7 @@ interface SettingsStore {
   setAiProvider: (v: AiProvider) => void;
   setAiModel: (v: string) => void;
   setAiApiKey: (v: string) => void;
+  setOllamaUrl: (v: string) => void;
   setPaneNoteId: (paneIndex: number, noteId: string | null) => void;
   addWorkspaceFolder: (path: string) => void;
   removeWorkspaceFolder: (path: string) => void;
@@ -59,6 +60,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 
   setAiApiKey: (aiApiKey) =>
     set((s) => ({ settings: { ...s.settings, aiApiKey } })),
+
+  setOllamaUrl: (ollamaUrl) =>
+    set((s) => ({ settings: { ...s.settings, ollamaUrl } })),
 
   setPaneNoteId: (paneIndex, noteId) =>
     set((s) => {

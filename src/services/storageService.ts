@@ -22,7 +22,7 @@ export async function loadSettings(): Promise<AppSettings> {
     ];
     const savedActions = Array.isArray(parsed.aiToolbarActions) ? parsed.aiToolbarActions : DEFAULT_SETTINGS.aiToolbarActions;
     const migratedActions = savedActions.filter((a) => a !== 'autodetect');
-    return {
+    const merged: AppSettings = {
       ...DEFAULT_SETTINGS,
       ...parsed,
       formatOptions: mergedFormats,
@@ -32,6 +32,16 @@ export async function loadSettings(): Promise<AppSettings> {
           ? parsed.paneNoteIds
           : [...DEFAULT_SETTINGS.paneNoteIds],
     };
+
+    // Migrate legacy shared aiApiKey into the per-provider field
+    if (merged.aiApiKey && !merged.claudeApiKey && !merged.openaiApiKey && !merged.deepseekApiKey) {
+      if (merged.aiProvider === 'claude') merged.claudeApiKey = merged.aiApiKey;
+      else if (merged.aiProvider === 'openai') merged.openaiApiKey = merged.aiApiKey;
+      else if (merged.aiProvider === 'deepseek') merged.deepseekApiKey = merged.aiApiKey;
+      merged.aiApiKey = '';
+    }
+
+    return merged;
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

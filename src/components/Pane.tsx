@@ -994,6 +994,11 @@ export function Pane({ paneIndex }: Props) {
       {paneState.isBusy && (
         <div className="busy-overlay">
           <div className="spinner" />
+          {settings.aiProvider === 'ollama' && (
+            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)' }}>
+              Generating (local model)...
+            </div>
+          )}
         </div>
       )}
 

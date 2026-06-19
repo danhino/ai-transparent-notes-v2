@@ -78,25 +78,79 @@ function applyInstruction(format: string): string {
   );
 }
 
+function getApiKey(settings: AppSettings): string {
+  switch (settings.aiProvider) {
+    case 'claude': return settings.claudeApiKey;
+    case 'openai': return settings.openaiApiKey;
+    case 'deepseek': return settings.deepseekApiKey;
+    default: return '';
+  }
+}
+
 async function callAI(prompt: string, content: string, settings: AppSettings): Promise<string> {
-  if (!settings.aiApiKey.trim()) {
+  const apiKey = getApiKey(settings);
+  if (settings.aiProvider !== 'ollama' && !apiKey.trim()) {
     throw new AiError('No API key configured. Go to Settings to add your key.');
   }
 
   try {
     const result = await invoke<string>('call_ai', {
       provider: settings.aiProvider,
-      apiKey: settings.aiApiKey,
+      apiKey,
       model: settings.aiModel,
       prompt,
       content,
+      ollamaUrl: settings.ollamaUrl || null,
     });
     return result;
   } catch (err) {
     if (err instanceof AiError) throw err;
-    // Tauri invoke errors from Err(String) in Rust come through as plain strings
     const msg = typeof err === 'string' ? err : err instanceof Error ? err.message : 'An unknown error occurred.';
     throw new AiError(msg);
+  }
+}
+
+export async function detectOllama(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${url}/api/tags`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(2000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export interface OllamaModel {
+  name: string;
+  size: number;
+}
+
+function describeOllamaModel(model: OllamaModel): string {
+  const gb = model.size / (1024 ** 3);
+  const sizeTag = gb < 2 ? 'Fastest' : gb < 5 ? 'Balanced' : 'Most capable';
+  const name = model.name.toLowerCase();
+  const typeTag = name.includes('coder') || name.includes('code') ? ' · Code' : '';
+  return `${sizeTag}${typeTag}`;
+}
+
+export async function fetchOllamaModels(url: string): Promise<{ name: string; description: string }[]> {
+  try {
+    const res = await fetch(`${url}/api/tags`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const models: OllamaModel[] = (data.models ?? []).map((m: { name: string; size: number }) => ({
+      name: m.name,
+      size: m.size ?? 0,
+    }));
+    models.sort((a, b) => a.size - b.size);
+    return models.map((m) => ({ name: m.name, description: describeOllamaModel(m) }));
+  } catch {
+    return [];
   }
 }
 

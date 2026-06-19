@@ -6,9 +6,10 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
 import {
-  AiProvider, Theme, CLAUDE_MODELS, OPENAI_MODELS,
+  AiProvider, Theme, CLAUDE_MODELS, OPENAI_MODELS, DEEPSEEK_MODELS, OLLAMA_DEFAULT_URL,
   DEFAULT_SETTINGS, DEFAULT_FORMAT_OPTIONS,
 } from '../types';
+import { detectOllama, fetchOllamaModels } from '../services/aiService';
 
 const FONT_FAMILIES = [
   'Segoe UI', 'Consolas', 'Cascadia Code', 'Courier New', 'Georgia',
@@ -138,10 +139,21 @@ export function SettingsDialog() {
   const { settings, update, setAiProvider, setAiModel, setShowLineNumbersByDefault } = useSettingsStore();
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
-  const [localKey, setLocalKey] = useState(settings.aiApiKey);
+  const [localClaudeKey, setLocalClaudeKey] = useState(settings.claudeApiKey);
+  const [localOpenaiKey, setLocalOpenaiKey] = useState(settings.openaiApiKey);
+  const [localDeepseekKey, setLocalDeepseekKey] = useState(settings.deepseekApiKey);
   const [showKey, setShowKey] = useState(false);
   const [localProvider, setLocalProvider] = useState<AiProvider>(settings.aiProvider);
+  const localKey = localProvider === 'claude' ? localClaudeKey
+    : localProvider === 'deepseek' ? localDeepseekKey
+    : localOpenaiKey;
+  const setLocalKey = localProvider === 'claude' ? setLocalClaudeKey
+    : localProvider === 'deepseek' ? setLocalDeepseekKey
+    : setLocalOpenaiKey;
   const [localModel, setLocalModel] = useState(settings.aiModel);
+  const [localOllamaUrl, setLocalOllamaUrl] = useState(settings.ollamaUrl || OLLAMA_DEFAULT_URL);
+  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null);
+  const [ollamaModels, setOllamaModels] = useState<{ name: string; description: string }[]>([]);
   const [localTheme, setLocalTheme] = useState<Theme>(settings.theme);
   const [localFontFamily, setLocalFontFamily] = useState(settings.fontFamily);
   const [localFontSize, setLocalFontSize] = useState(settings.fontSize);
@@ -178,7 +190,38 @@ export function SettingsDialog() {
     applyComparisonColors(settings.diffAddedColor, settings.diffDeletedColor, settings.diffChangedColor);
   }, []);
 
-  const models = localProvider === 'claude' ? CLAUDE_MODELS : OPENAI_MODELS;
+  useEffect(() => {
+    if (localProvider !== 'ollama') return;
+    let cancelled = false;
+    setOllamaConnected(null);
+    (async () => {
+      const ok = await detectOllama(localOllamaUrl);
+      if (cancelled) return;
+      setOllamaConnected(ok);
+      if (ok) {
+        const fetched = await fetchOllamaModels(localOllamaUrl);
+        if (cancelled) return;
+        setOllamaModels(fetched);
+        if (fetched.length > 0 && !fetched.some((m) => m.name === localModel)) {
+          setLocalModel(fetched[0].name);
+        }
+      } else {
+        setOllamaModels([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [localProvider, localOllamaUrl]);
+
+  const cloudModels = localProvider === 'claude'
+    ? CLAUDE_MODELS
+    : localProvider === 'openai'
+      ? OPENAI_MODELS
+      : localProvider === 'deepseek'
+        ? DEEPSEEK_MODELS
+        : null;
+  const modelOptions = cloudModels
+    ? cloudModels.map((m) => ({ value: m.value, label: `${m.label} — ${m.description}` }))
+    : ollamaModels.map((m) => ({ value: m.name, label: `${m.name} — ${m.description}` }));
 
   const aiLabelMap = new Map(ALL_AI_ACTIONS.map((a) => [a.key, a.label]));
   const mainLabelMap = new Map(ALL_MAIN_ITEMS.map((a) => [a.key, a.label]));
@@ -207,7 +250,11 @@ export function SettingsDialog() {
       theme: localTheme,
       fontFamily: localFontFamily,
       fontSize: localFontSize,
-      aiApiKey: localKey,
+      aiApiKey: '',
+      claudeApiKey: localClaudeKey,
+      openaiApiKey: localOpenaiKey,
+      deepseekApiKey: localDeepseekKey,
+      ollamaUrl: localOllamaUrl,
       diffAddedColor: isValidHex(addedColor) ? addedColor : settings.diffAddedColor,
       diffDeletedColor: isValidHex(deletedColor) ? deletedColor : settings.diffDeletedColor,
       diffChangedColor: isValidHex(changedColor) ? changedColor : settings.diffChangedColor,
@@ -224,9 +271,12 @@ export function SettingsDialog() {
   }
 
   function resetToDefaults() {
-    setLocalKey(DEFAULT_SETTINGS.aiApiKey);
+    setLocalClaudeKey('');
+    setLocalOpenaiKey('');
+    setLocalDeepseekKey('');
     setLocalProvider(DEFAULT_SETTINGS.aiProvider as AiProvider);
     setLocalModel(DEFAULT_SETTINGS.aiModel);
+    setLocalOllamaUrl(DEFAULT_SETTINGS.ollamaUrl);
     setLocalTheme(DEFAULT_SETTINGS.theme as Theme);
     setLocalFontFamily(DEFAULT_SETTINGS.fontFamily);
     setLocalFontSize(DEFAULT_SETTINGS.fontSize);
@@ -324,11 +374,15 @@ export function SettingsDialog() {
                 onChange={(e) => {
                   const p = e.target.value as AiProvider;
                   setLocalProvider(p);
-                  setLocalModel(p === 'claude' ? CLAUDE_MODELS[0] : OPENAI_MODELS[0]);
+                  if (p === 'claude') setLocalModel(CLAUDE_MODELS[0].value);
+                  else if (p === 'openai') setLocalModel(OPENAI_MODELS[0].value);
+                  else if (p === 'deepseek') setLocalModel(DEEPSEEK_MODELS[0].value);
                 }}
               >
                 <option value="claude">Claude (Anthropic)</option>
                 <option value="openai">OpenAI</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="ollama">Ollama (Local)</option>
               </select>
             </div>
 
@@ -338,52 +392,113 @@ export function SettingsDialog() {
                 className="settings-select"
                 value={localModel}
                 onChange={(e) => setLocalModel(e.target.value)}
+                disabled={localProvider === 'ollama' && modelOptions.length === 0}
               >
-                {models.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
+                {modelOptions.length > 0 ? (
+                  modelOptions.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))
+                ) : (
+                  <option value="">
+                    {localProvider === 'ollama' ? 'No models found' : ''}
+                  </option>
+                )}
               </select>
             </div>
-
-            <div className="settings-row">
-              <span className="settings-label">
-                {localProvider === 'claude' ? 'Anthropic API key' : 'OpenAI API key'}
-              </span>
-              <div style={{ display: 'flex', gap: 4, flex: 1 }}>
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  className="settings-input"
-                  style={{ flex: 1 }}
-                  value={localKey}
-                  onChange={(e) => setLocalKey(e.target.value)}
-                  placeholder="sk-..."
-                  autoComplete="off"
-                />
-                <button
-                  className="settings-btn"
-                  onClick={() => setShowKey((v) => !v)}
-                  title={showKey ? 'Hide key' : 'Show key'}
-                  style={{ flexShrink: 0, padding: '5px 10px', lineHeight: 0 }}
-                >
-                  {showKey ? (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                      <line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-            {localProvider === 'claude' && (
+            {localProvider === 'ollama' && (
               <div style={{ fontSize: 11, color: 'var(--subtle-text)', marginBottom: 4, paddingLeft: 130 }}>
-                Get your key at console.anthropic.com → API Keys
+                Smaller models (7B) respond faster. Code models work best for Fix and Format; general models (e.g. llama3, mistral) are better for Rephrase, Polish, and Convo.
               </div>
+            )}
+
+            {localProvider === 'ollama' ? (
+              <>
+                <div className="settings-row">
+                  <span className="settings-label">Ollama URL</span>
+                  <div style={{ display: 'flex', gap: 4, flex: 1, alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      style={{ flex: 1 }}
+                      value={localOllamaUrl}
+                      onChange={(e) => setLocalOllamaUrl(e.target.value)}
+                      placeholder="http://127.0.0.1:11434"
+                    />
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        background:
+                          ollamaConnected === null ? '#888'
+                          : ollamaConnected ? '#4caf50'
+                          : '#f44336',
+                      }}
+                      title={
+                        ollamaConnected === null ? 'Checking...'
+                        : ollamaConnected ? 'Connected'
+                        : 'Not reachable'
+                      }
+                    />
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--subtle-text)', marginBottom: 4, paddingLeft: 130 }}>
+                  {ollamaConnected === null
+                    ? 'Detecting Ollama...'
+                    : ollamaConnected
+                      ? `Connected, ${ollamaModels.length} model${ollamaModels.length === 1 ? '' : 's'} available`
+                      : 'Ollama not detected. Install from ollama.com and run "ollama serve"'}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="settings-row">
+                  <span className="settings-label">
+                    {localProvider === 'claude' ? 'Anthropic API key' : localProvider === 'deepseek' ? 'DeepSeek API key' : 'OpenAI API key'}
+                  </span>
+                  <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                    <input
+                      type={showKey ? 'text' : 'password'}
+                      className="settings-input"
+                      style={{ flex: 1 }}
+                      value={localKey}
+                      onChange={(e) => setLocalKey(e.target.value)}
+                      placeholder="sk-..."
+                      autoComplete="off"
+                    />
+                    <button
+                      className="settings-btn"
+                      onClick={() => setShowKey((v) => !v)}
+                      title={showKey ? 'Hide key' : 'Show key'}
+                      style={{ flexShrink: 0, padding: '5px 10px', lineHeight: 0 }}
+                    >
+                      {showKey ? (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                          <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                      ) : (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                {localProvider === 'claude' && (
+                  <div style={{ fontSize: 11, color: 'var(--subtle-text)', marginBottom: 4, paddingLeft: 130 }}>
+                    Get your key at console.anthropic.com → API Keys
+                  </div>
+                )}
+                {localProvider === 'deepseek' && (
+                  <div style={{ fontSize: 11, color: 'var(--subtle-text)', marginBottom: 4, paddingLeft: 130 }}>
+                    Get your key at platform.deepseek.com → API Keys
+                  </div>
+                )}
+              </>
             )}
           </div>
 

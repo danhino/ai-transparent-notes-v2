@@ -1,6 +1,6 @@
 export type Theme = 'dark' | 'light' | 'blue' | 'sepia' | 'green';
 export type Layout = 'single' | 'side-by-side' | 'top-bottom' | 'grid';
-export type AiProvider = 'claude' | 'openai';
+export type AiProvider = 'claude' | 'openai' | 'deepseek' | 'ollama';
 export type DiffBlockType = 'equal' | 'added' | 'deleted' | 'changed';
 export type Platform = 'windows' | 'macos' | 'linux';
 export type RtfStyle = 'Normal' | 'Heading 1' | 'Heading 2' | 'Heading 3' | 'Title' | 'Subtitle' | 'Quote' | 'Code';
@@ -40,8 +40,12 @@ export interface AppSettings {
   layout: Layout;
   paneNoteIds: (string | null)[];
   aiApiKey: string;
+  claudeApiKey: string;
+  openaiApiKey: string;
+  deepseekApiKey: string;
   aiProvider: AiProvider;
   aiModel: string;
+  ollamaUrl: string;
   notes: Note[];
   formatOptions: string[];
   diffAddedColor: string;
@@ -69,17 +73,31 @@ export interface WorkspaceEntry {
   isLoaded?: boolean;
 }
 
-export const CLAUDE_MODELS = [
-  'claude-haiku-4-5-20251001',
-  'claude-sonnet-4-6',
-  'claude-opus-4-7',
+export interface AiModelOption {
+  value: string;
+  label: string;
+  description: string;
+}
+
+export const CLAUDE_MODELS: AiModelOption[] = [
+  { value: 'claude-opus-4-7',           label: 'Claude Opus 4.7',   description: 'Most capable' },
+  { value: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6', description: 'Balanced' },
+  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5',  description: 'Fastest' },
 ];
 
-export const OPENAI_MODELS = [
-  'gpt-4o-mini',
-  'gpt-4o',
-  'gpt-3.5-turbo',
+export const OPENAI_MODELS: AiModelOption[] = [
+  { value: 'gpt-4-turbo',   label: 'GPT-4 Turbo',   description: 'Most capable' },
+  { value: 'gpt-4o',        label: 'GPT-4o',         description: 'Balanced' },
+  { value: 'gpt-4o-mini',   label: 'GPT-4o Mini',    description: 'Fast' },
+  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo',  description: 'Fastest' },
 ];
+
+export const DEEPSEEK_MODELS: AiModelOption[] = [
+  { value: 'deepseek-v4-pro',   label: 'DeepSeek V4 Pro',   description: 'Most capable' },
+  { value: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', description: 'Fast & cheap' },
+];
+
+export const OLLAMA_DEFAULT_URL = 'http://127.0.0.1:11434';
 
 export const DEFAULT_FORMAT_OPTIONS = [
   'Plain Text',
@@ -123,8 +141,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   layout: 'single',
   paneNoteIds: [null, null, null, null],
   aiApiKey: '',
+  claudeApiKey: '',
+  openaiApiKey: '',
+  deepseekApiKey: '',
   aiProvider: 'claude',
-  aiModel: 'claude-haiku-4-5-20251001',
+  aiModel: 'claude-sonnet-4-6',
+  ollamaUrl: OLLAMA_DEFAULT_URL,
   notes: [],
   formatOptions: DEFAULT_FORMAT_OPTIONS,
   diffAddedColor: '#1A4D1A',
