@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core';
-import { fetch } from '@tauri-apps/plugin-http';
 import { AppSettings } from '../types';
 
 class AiError extends Error {
@@ -113,11 +112,7 @@ async function callAI(prompt: string, content: string, settings: AppSettings): P
 
 export async function detectOllama(url: string): Promise<boolean> {
   try {
-    const res = await fetch(`${url}/api/tags`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(2000),
-    });
-    return res.ok;
+    return await invoke<boolean>('detect_ollama', { url });
   } catch {
     return false;
   }
@@ -138,12 +133,8 @@ function describeOllamaModel(model: OllamaModel): string {
 
 export async function fetchOllamaModels(url: string): Promise<{ name: string; description: string }[]> {
   try {
-    const res = await fetch(`${url}/api/tags`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
+    const raw = await invoke<string>('fetch_ollama_models', { url });
+    const data = JSON.parse(raw);
     const models: OllamaModel[] = (data.models ?? []).map((m: { name: string; size: number }) => ({
       name: m.name,
       size: m.size ?? 0,

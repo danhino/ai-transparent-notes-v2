@@ -197,3 +197,36 @@ pub async fn call_ai(
         _ => Err("Unknown provider".to_string()),
     }
 }
+
+#[tauri::command]
+pub async fn detect_ollama(url: String) -> Result<bool, String> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+        .map_err(|e| format!("Client error: {}", e))?;
+
+    match client.get(format!("{}/api/tags", url.trim_end_matches('/'))).send().await {
+        Ok(res) => Ok(res.status().is_success()),
+        Err(_) => Ok(false),
+    }
+}
+
+#[tauri::command]
+pub async fn fetch_ollama_models(url: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .build()
+        .map_err(|e| format!("Client error: {}", e))?;
+
+    let response = client
+        .get(format!("{}/api/tags", url.trim_end_matches('/')))
+        .send()
+        .await
+        .map_err(|e| format!("Network error: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP {}", response.status()));
+    }
+
+    response.text().await.map_err(|e| format!("Read error: {}", e))
+}
