@@ -35,7 +35,7 @@ pub async fn open_html_preview(
         html_json, opacity
     );
 
-    let _win = tauri::WebviewWindowBuilder::new(
+    let mut builder = tauri::WebviewWindowBuilder::new(
         &app,
         "html-preview",
         tauri::WebviewUrl::App("preview.html".into()),
@@ -44,10 +44,14 @@ pub async fn open_html_preview(
     .inner_size(1000.0, 700.0)
     .min_inner_size(600.0, 400.0)
     .resizable(true)
-    .transparent(true)
-    .initialization_script(&init_script)
-    .build()
-    .map_err(|e| e.to_string())?;
+    .initialization_script(&init_script);
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        builder = builder.transparent(true);
+    }
+
+    let _win = builder.build().map_err(|e| e.to_string())?;
 
     Ok(())
 }
