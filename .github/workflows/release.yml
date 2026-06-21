@@ -61,26 +61,6 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Diagnose certificate (temporary)
-        if: matrix.platform == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > /tmp/cert-check.p12
-          echo "Decoded .p12 file size:"
-          ls -la /tmp/cert-check.p12
-          echo ""
-          echo "OpenSSL version on runner:"
-          openssl version
-          echo ""
-          echo "Attempting openssl pkcs12 verification:"
-          openssl pkcs12 -in /tmp/cert-check.p12 -noout -info -passin pass:"$APPLE_CERTIFICATE_PASSWORD" 2>&1 || echo "OPENSSL VERIFICATION FAILED"
-          echo ""
-          echo "Attempting openssl with -legacy flag:"
-          openssl pkcs12 -in /tmp/cert-check.p12 -noout -info -passin pass:"$APPLE_CERTIFICATE_PASSWORD" -legacy 2>&1 || echo "LEGACY FLAG ALSO FAILED (file itself may be corrupt)"
-          rm -f /tmp/cert-check.p12
-
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
