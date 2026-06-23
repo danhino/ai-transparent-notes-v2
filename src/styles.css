@@ -1965,8 +1965,8 @@ input {
 .rtf-editor h2 { font-size: 1.5em; font-weight: bold; margin: 0.5em 0; }
 .rtf-editor h3 { font-size: 1.17em;font-weight: bold; margin: 0.4em 0; }
 .rtf-editor p  { margin: 0.3em 0; }
-.rtf-editor ul,
-.rtf-editor ol { padding-left: 1.5em; margin: 0.3em 0; }
+.rtf-editor ul { padding-left: 1.5em; margin: 0.3em 0; list-style-type: disc; }
+.rtf-editor ol { padding-left: 1.5em; margin: 0.3em 0; list-style-type: decimal; }
 .rtf-editor li { margin: 0.15em 0; }
 .rtf-editor blockquote {
   border-left: 3px solid var(--accent);
