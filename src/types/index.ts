@@ -159,7 +159,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   focusMode: false,
   aiToolbarActions: ['apply', 'fix', 'spellcheck', 'rephrase', 'convo', 'compare', 'suggest', 'polish'],
   mainToolbarItems: ['pin', 'theme', 'font', 'size', 'opacity', 'layout', 'workspace', 'import', 'focus', 'settings'],
-  paneHeaderItems: ['note-select', 'rename', 'format-select', 'sep-1', 'ai', 'overflow', 'sep-2', 'export', 'linenumbers', 'chat'],
+  paneHeaderItems: ['note-select', 'rename', 'format-select', 'format-toolbar-toggle', 'sep-1', 'ai', 'overflow', 'sep-2', 'export', 'linenumbers', 'chat'],
   paneLineNumbers: [true, true, true, true],
   showLineNumbersByDefault: true,
   uiTextBrightness: 75,

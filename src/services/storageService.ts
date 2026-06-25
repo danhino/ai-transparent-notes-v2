@@ -39,6 +39,12 @@ export async function loadSettings(): Promise<AppSettings> {
       merged.paneHeaderItems.splice(idx >= 0 ? idx + 1 : 1, 0, 'rename');
     }
 
+    // Migrate paneHeaderItems: ensure 'format-toolbar-toggle' is present
+    if (Array.isArray(merged.paneHeaderItems) && !merged.paneHeaderItems.includes('format-toolbar-toggle')) {
+      const idx = merged.paneHeaderItems.indexOf('format-select');
+      merged.paneHeaderItems.splice(idx >= 0 ? idx + 1 : merged.paneHeaderItems.length, 0, 'format-toolbar-toggle');
+    }
+
     // Migrate legacy shared aiApiKey into the per-provider field
     if (merged.aiApiKey && !merged.claudeApiKey && !merged.openaiApiKey && !merged.deepseekApiKey) {
       if (merged.aiProvider === 'claude') merged.claudeApiKey = merged.aiApiKey;

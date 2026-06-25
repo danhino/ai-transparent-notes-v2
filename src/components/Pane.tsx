@@ -6,7 +6,7 @@ import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
 import { AIPalette } from './AIPalette';
 import { createPortal } from 'react-dom';
-import { Sparkles, MoreHorizontal, MessageSquare } from 'lucide-react';
+import { Sparkles, MoreHorizontal, MessageSquare, PanelBottom } from 'lucide-react';
 import { RtfToolbar } from './RtfToolbar';
 import { CsvToolbar } from './CsvToolbar';
 import { XmlToolbar } from './XmlToolbar';
@@ -161,6 +161,7 @@ export function Pane({ paneIndex }: Props) {
     setPaneMarkdownPreviewLayout,
     setPaneAiPaletteOpen,
     setPaneAiChatOpen,
+    setPaneFormatToolbarCollapsed,
   } = useUiStore();
 
   const noteId = settings.paneNoteIds[paneIndex] ?? null;
@@ -171,7 +172,7 @@ export function Pane({ paneIndex }: Props) {
   const showLineNumbers = settings.paneLineNumbers?.[paneIndex] ?? settings.showLineNumbersByDefault ?? true;
 
   const [selectedFormat, setSelectedFormat] = useState(note?.format ?? settings.formatOptions[0] ?? 'Plain Text');
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(() => window.innerWidth < 768);
+  const toolbarCollapsed = paneState.formatToolbarCollapsed;
   const [lineNumber, setLineNumber] = useState(1);
   const [charCount, setCharCount] = useState(0);
   const [wordCount, setWordCount] = useState(0);
@@ -388,12 +389,12 @@ export function Pane({ paneIndex }: Props) {
       const mod = platform === 'macos' ? e.metaKey : e.ctrlKey;
       if (mod && e.shiftKey && e.key === 'T') {
         e.preventDefault();
-        setToolbarCollapsed((v) => !v);
+        setPaneFormatToolbarCollapsed(paneIndex, !toolbarCollapsed);
       }
     }
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isFocused, platform]);
+  }, [isFocused, platform, paneIndex, toolbarCollapsed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ctrl/Cmd+S triggers immediate save on the focused pane
   useEffect(() => {
@@ -970,6 +971,18 @@ export function Pane({ paneIndex }: Props) {
               );
               break;
 
+            case 'format-toolbar-toggle':
+              content = (
+                <button
+                  className={`pane-icon-btn${!toolbarCollapsed ? ' active-subtle' : ''}`}
+                  onClick={() => setPaneFormatToolbarCollapsed(paneIndex, !toolbarCollapsed)}
+                  title={toolbarCollapsed ? 'Show format toolbar' : 'Hide format toolbar'}
+                >
+                  <PanelBottom size={13} />
+                </button>
+              );
+              break;
+
             case 'ai':
               content = (
                 <button
@@ -1132,15 +1145,8 @@ export function Pane({ paneIndex }: Props) {
         document.body
       )}
 
-      {/* Toolbar area: collapse toggle + contextual toolbars */}
+      {/* Toolbar area: contextual toolbars */}
       <div className={`toolbar-area${toolbarCollapsed ? ' collapsed' : ''}`}>
-        <button
-          className="toolbar-toggle"
-          onClick={() => setToolbarCollapsed((v) => !v)}
-          title={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
-        >
-          {toolbarCollapsed ? '›' : '‹'}
-        </button>
         <div className={`toolbar-rows${toolbarCollapsed ? ' collapsed' : ''}`}>
 
           {/* Contextual toolbar — RTF */}

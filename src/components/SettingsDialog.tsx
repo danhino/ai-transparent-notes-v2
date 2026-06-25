@@ -44,6 +44,7 @@ const ALL_PANE_HEADER_ITEMS: { key: string; label: string }[] = [
   { key: 'note-select',   label: 'Note selector' },
   { key: 'rename',        label: 'Rename' },
   { key: 'format-select', label: 'Format selector' },
+  { key: 'format-toolbar-toggle', label: 'Format toolbar toggle' },
   { key: 'sep-1',         label: 'Separator' },
   { key: 'ai',            label: 'AI (Ctrl+K)' },
   { key: 'overflow',      label: 'More actions' },

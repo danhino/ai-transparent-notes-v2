@@ -11,6 +11,7 @@ export interface PaneUiState {
   markdownPreviewLayout: MarkdownPreviewLayout;
   aiPaletteOpen: boolean;
   aiChatOpen: boolean;
+  formatToolbarCollapsed: boolean;
 }
 
 const makePaneState = (): PaneUiState => ({
@@ -21,6 +22,7 @@ const makePaneState = (): PaneUiState => ({
   markdownPreviewLayout: 'off',
   aiPaletteOpen: false,
   aiChatOpen: false,
+  formatToolbarCollapsed: false,
 });
 
 interface UiStore {
@@ -40,6 +42,7 @@ interface UiStore {
   setPaneMarkdownPreviewLayout: (i: number, layout: MarkdownPreviewLayout) => void;
   setPaneAiPaletteOpen: (i: number, v: boolean) => void;
   setPaneAiChatOpen: (i: number, v: boolean) => void;
+  setPaneFormatToolbarCollapsed: (i: number, v: boolean) => void;
   setSettingsOpen: (v: boolean) => void;
   setCompareOpen: (v: boolean) => void;
   setPlatform: (v: Platform) => void;
@@ -81,6 +84,9 @@ export const useUiStore = create<UiStore>((set) => ({
 
   setPaneAiChatOpen: (i, aiChatOpen) =>
     set((s) => ({ paneStates: patchPane(s.paneStates, i, { aiChatOpen }) })),
+
+  setPaneFormatToolbarCollapsed: (i, formatToolbarCollapsed) =>
+    set((s) => ({ paneStates: patchPane(s.paneStates, i, { formatToolbarCollapsed }) })),
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setCompareOpen: (compareOpen) => set({ compareOpen }),
