@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -28,25 +29,35 @@ const exec = (cmd: string, value?: string) =>
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-interface ColorSwatchProps { onSelect: (c: string) => void; onClose: () => void; }
+interface ColorSwatchProps {
+  onSelect: (c: string) => void;
+  onClose: () => void;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
+  pos: { top: number; left: number };
+}
 
-function ColorSwatch({ onSelect, onClose }: ColorSwatchProps) {
+function ColorSwatch({ onSelect, onClose, triggerRef, pos }: ColorSwatchProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     function h(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (ref.current?.contains(target)) return;
+      onClose();
     }
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
-  }, [onClose]);
-  return (
-    <div ref={ref} className="color-swatch-popup">
+  }, [onClose, triggerRef]);
+  return createPortal(
+    <div ref={ref} className="color-swatch-popup"
+      style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999 }}>
       {SWATCH_COLORS.map((c) => (
         <button key={c} className="color-swatch-cell" style={{ background: c }}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => { onSelect(c); onClose(); }} title={c} />
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -68,6 +79,10 @@ export function RtfToolbar({ disabled, wideMargins, onToggleWideMargins }: Props
   const [activeSize,  setActiveSize]  = useState(12);
   const [showFontColor,  setShowFontColor]  = useState(false);
   const [showHighlight,  setShowHighlight]  = useState(false);
+  const [fontColorPos,   setFontColorPos]   = useState({ top: 0, left: 0 });
+  const [highlightPos,   setHighlightPos]   = useState({ top: 0, left: 0 });
+  const fontColorBtnRef  = useRef<HTMLButtonElement>(null);
+  const highlightBtnRef  = useRef<HTMLButtonElement>(null);
 
   // Mirror the browser's format state whenever the selection moves
   useEffect(() => {
@@ -182,33 +197,49 @@ export function RtfToolbar({ disabled, wideMargins, onToggleWideMargins }: Props
 
         {sep}
 
-        <div style={{ position: 'relative' }}>
-          <button className="ctx-btn" onMouseDown={noFocus}
-            onClick={() => { setShowFontColor((v) => !v); setShowHighlight(false); }}
-            disabled={disabled} title="Font color">
-            <span style={{ borderBottom: '2px solid var(--accent)' }}>A</span>
-          </button>
-          {showFontColor && (
-            <ColorSwatch
-              onSelect={(c) => exec('foreColor', c)}
-              onClose={() => setShowFontColor(false)}
-            />
-          )}
-        </div>
+        <button ref={fontColorBtnRef} className="ctx-btn" onMouseDown={noFocus}
+          onClick={() => {
+            if (showFontColor) { setShowFontColor(false); return; }
+            setShowHighlight(false);
+            if (fontColorBtnRef.current) {
+              const r = fontColorBtnRef.current.getBoundingClientRect();
+              setFontColorPos({ top: r.bottom + 4, left: r.left });
+            }
+            setShowFontColor(true);
+          }}
+          disabled={disabled} title="Font color">
+          <span style={{ borderBottom: '2px solid var(--accent)' }}>A</span>
+        </button>
+        {showFontColor && (
+          <ColorSwatch
+            triggerRef={fontColorBtnRef}
+            pos={fontColorPos}
+            onSelect={(c) => exec('foreColor', c)}
+            onClose={() => setShowFontColor(false)}
+          />
+        )}
 
-        <div style={{ position: 'relative' }}>
-          <button className="ctx-btn" onMouseDown={noFocus}
-            onClick={() => { setShowHighlight((v) => !v); setShowFontColor(false); }}
-            disabled={disabled} title="Highlight color">
-            <span style={{ background: '#FFFF00', color: '#000', padding: '0 2px', fontSize: 9 }}>ab</span>
-          </button>
-          {showHighlight && (
-            <ColorSwatch
-              onSelect={(c) => exec('hiliteColor', c)}
-              onClose={() => setShowHighlight(false)}
-            />
-          )}
-        </div>
+        <button ref={highlightBtnRef} className="ctx-btn" onMouseDown={noFocus}
+          onClick={() => {
+            if (showHighlight) { setShowHighlight(false); return; }
+            setShowFontColor(false);
+            if (highlightBtnRef.current) {
+              const r = highlightBtnRef.current.getBoundingClientRect();
+              setHighlightPos({ top: r.bottom + 4, left: r.left });
+            }
+            setShowHighlight(true);
+          }}
+          disabled={disabled} title="Highlight color">
+          <span style={{ background: '#FFFF00', color: '#000', padding: '0 2px', fontSize: 9 }}>ab</span>
+        </button>
+        {showHighlight && (
+          <ColorSwatch
+            triggerRef={highlightBtnRef}
+            pos={highlightPos}
+            onSelect={(c) => exec('hiliteColor', c)}
+            onClose={() => setShowHighlight(false)}
+          />
+        )}
 
         {sep}
 

@@ -1649,10 +1649,6 @@ input {
 
 /* Color swatch popup */
 .color-swatch-popup {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 80;
   background: var(--bg-secondary);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
