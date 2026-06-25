@@ -1170,11 +1170,6 @@ input {
   flex-shrink: 0;
 }
 
-.pane-header-note-select {
-  min-width: 120px;
-  max-width: 240px;
-}
-
 .pane-header-item {
   display: flex;
   align-items: center;
@@ -1466,8 +1461,8 @@ input {
   align-items: center;
   flex-shrink: 0;
   align-self: center;
-  min-width: 120px;
-  max-width: 400px;
+  min-width: 80px;
+  max-width: 280px;
 }
 
 .format-select {

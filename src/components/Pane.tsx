@@ -224,10 +224,11 @@ export function Pane({ paneIndex }: Props) {
   const dragStartWidthRef = useRef(0);
   const editorAreaRef = useRef<HTMLDivElement | null>(null);
 
-  const noteTitleWrapperRef = useRef<HTMLDivElement>(null);
+  const { width: noteSelectWidth, wrapperRef: noteSelectWrapperRef, isDraggingState: noteSelectDragging, onResizerMouseDown: onNoteSelectResizerMouseDown } =
+    useResizable('note-select-width', 160, 80, 280);
 
   const { width: formatSelectWidth, wrapperRef: formatSelectWrapperRef, isDraggingState: formatSelectDragging, onResizerMouseDown: onFormatSelectResizerMouseDown } =
-    useResizable('format-select-width', 120, 80, 280);
+    useResizable('format-select-width', 160, 80, 280);
 
   const lineEnding = useMemo(() => {
     const c = note?.content ?? '';
@@ -792,6 +793,8 @@ export function Pane({ paneIndex }: Props) {
     startX: number;
     startY: number;
     currentIdx: number;
+    itemRects: Array<{ left: number; right: number; centerX: number }>;
+    headerRect: { top: number; bottom: number; left: number; right: number };
   } | null>(null);
   const [activeDragIdx, setActiveDragIdx] = useState<number | null>(null);
   const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
@@ -805,6 +808,8 @@ export function Pane({ paneIndex }: Props) {
       startX: e.clientX,
       startY: e.clientY,
       currentIdx: idx,
+      itemRects: [],
+      headerRect: { top: 0, bottom: 0, left: 0, right: 0 },
     };
 
     const onMouseMove = (ev: MouseEvent) => {
@@ -812,24 +817,31 @@ export function Pane({ paneIndex }: Props) {
       const dx = Math.abs(ev.clientX - headerDragState.current.startX);
       const dy = Math.abs(ev.clientY - headerDragState.current.startY);
       if (!headerDragState.current.isDragging && dx < 4 && dy < 4) return;
-      headerDragState.current.isDragging = true;
-      setActiveDragIdx(headerDragState.current.sourceIdx);
 
-      if (!headerRef.current) return;
-      const headerRect = headerRef.current.getBoundingClientRect();
+      if (!headerDragState.current.isDragging) {
+        headerDragState.current.isDragging = true;
+        setActiveDragIdx(headerDragState.current.sourceIdx);
+        if (headerRef.current) {
+          const hr = headerRef.current.getBoundingClientRect();
+          headerDragState.current.headerRect = { top: hr.top, bottom: hr.bottom, left: hr.left, right: hr.right };
+          headerDragState.current.itemRects = Array.from(
+            headerRef.current.querySelectorAll<HTMLElement>('.pane-header-item')
+          ).map((item) => {
+            const r = item.getBoundingClientRect();
+            return { left: r.left, right: r.right, centerX: r.left + r.width / 2 };
+          });
+        }
+      }
+
+      const { headerRect, itemRects, sourceIdx } = headerDragState.current;
       if (
         ev.clientY < headerRect.top || ev.clientY > headerRect.bottom ||
         ev.clientX < headerRect.left || ev.clientX > headerRect.right
       ) return;
 
-      const items = Array.from(
-        headerRef.current.querySelectorAll<HTMLElement>('.pane-header-item')
-      );
-      let closestIdx = headerDragState.current.sourceIdx;
+      let closestIdx = sourceIdx;
       let closestDist = Infinity;
-      items.forEach((item, i) => {
-        const rect = item.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
+      itemRects.forEach(({ centerX }, i) => {
         const dist = Math.abs(ev.clientX - centerX);
         if (dist < closestDist) {
           closestDist = dist;
@@ -879,7 +891,6 @@ export function Pane({ paneIndex }: Props) {
 
           switch (itemId) {
             case 'note-select':
-              extraClass = 'pane-header-note-select';
               content = isRenaming ? (
                 <input
                   ref={renameInputRef}
@@ -894,12 +905,13 @@ export function Pane({ paneIndex }: Props) {
                 />
               ) : (
                 <div
-                  ref={noteTitleWrapperRef}
-                  className="note-title-wrapper"
+                  ref={noteSelectWrapperRef}
+                  className="format-select-wrapper"
+                  style={{ width: noteSelectWidth }}
                   onDoubleClick={(e) => { e.stopPropagation(); startRename(); }}
                 >
                   <select
-                    className="pane-note-select"
+                    className="format-select"
                     value={noteId ?? ''}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -911,6 +923,10 @@ export function Pane({ paneIndex }: Props) {
                       <option key={n.id} value={n.id}>{n.title}</option>
                     ))}
                   </select>
+                  <div
+                    className={`format-select-resizer${noteSelectDragging ? ' dragging' : ''}`}
+                    onMouseDown={onNoteSelectResizerMouseDown}
+                  />
                 </div>
               );
               break;

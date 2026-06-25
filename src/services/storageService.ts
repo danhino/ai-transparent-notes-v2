@@ -33,6 +33,12 @@ export async function loadSettings(): Promise<AppSettings> {
           : [...DEFAULT_SETTINGS.paneNoteIds],
     };
 
+    // Migrate paneHeaderItems: ensure 'rename' is present
+    if (Array.isArray(merged.paneHeaderItems) && !merged.paneHeaderItems.includes('rename')) {
+      const idx = merged.paneHeaderItems.indexOf('note-select');
+      merged.paneHeaderItems.splice(idx >= 0 ? idx + 1 : 1, 0, 'rename');
+    }
+
     // Migrate legacy shared aiApiKey into the per-provider field
     if (merged.aiApiKey && !merged.claudeApiKey && !merged.openaiApiKey && !merged.deepseekApiKey) {
       if (merged.aiProvider === 'claude') merged.claudeApiKey = merged.aiApiKey;
