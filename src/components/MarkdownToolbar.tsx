@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
+import { EyeOff, PanelBottom, PanelRight } from 'lucide-react';
 import type { NoteEditorRef } from './NoteEditor';
+import type { MarkdownPreviewLayout } from '../stores/uiStore';
 import { getText, getSel, hasSel, replaceSel, wrapSel, addLinePrefix } from '../utils/toolbarUtils';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
 interface Props {
   editorRef: React.RefObject<NoteEditorRef | null>;
   disabled: boolean;
-  previewOpen: boolean;
-  onPreviewToggle: () => void;
+  previewLayout: MarkdownPreviewLayout;
+  onPreviewCycle: () => void;
   showInvisibles: boolean;
   onToggleInvisibles: () => void;
 }
@@ -31,7 +33,13 @@ function generateToc(content: string): string {
   return entries.join('\n');
 }
 
-export function MarkdownToolbar({ editorRef, disabled, previewOpen, onPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
+const PREVIEW_TITLES: Record<MarkdownPreviewLayout, string> = {
+  off: 'Preview off',
+  bottom: 'Preview: top/bottom split',
+  side: 'Preview: side-by-side',
+};
+
+export function MarkdownToolbar({ editorRef, disabled, previewLayout, onPreviewCycle, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,11 +91,15 @@ export function MarkdownToolbar({ editorRef, disabled, previewOpen, onPreviewTog
         <button className="ctx-btn" onClick={() => editorRef.current?.replaceSelection('![alt text](url)')} disabled={disabled} title="Insert image">Image</button>
         {sep}
         <button
-          className={`ctx-btn${previewOpen ? ' ctx-btn-active' : ''}`}
-          onClick={onPreviewToggle}
+          className={`ctx-btn${previewLayout !== 'off' ? ' ctx-btn-active' : ''}`}
+          onClick={onPreviewCycle}
           disabled={disabled}
-          title="Toggle Markdown preview (split view)"
-        >Preview</button>
+          title={PREVIEW_TITLES[previewLayout]}
+        >
+          {previewLayout === 'off' && <EyeOff size={14} />}
+          {previewLayout === 'bottom' && <PanelBottom size={14} />}
+          {previewLayout === 'side' && <PanelRight size={14} />}
+        </button>
       </div>
       <div className="ctx-toolbar-row">
         <button className="ctx-btn" onClick={() => addLinePrefix(editorRef, '- ')} disabled={disabled} title="Bullet list">• List</button>

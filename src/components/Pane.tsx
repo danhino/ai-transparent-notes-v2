@@ -155,6 +155,7 @@ export function Pane({ paneIndex }: Props) {
     setPaneBusy,
     setPaneDetectedLanguage,
     setPaneSavedVisible,
+    setPaneMarkdownPreviewLayout,
   } = useUiStore();
 
   const noteId = settings.paneNoteIds[paneIndex] ?? null;
@@ -188,7 +189,8 @@ export function Pane({ paneIndex }: Props) {
   const [csvFilterText] = useState('');
 
   // Inline preview state
-  const [markdownPreviewOpen, setMarkdownPreviewOpen] = useState(false);
+  const markdownPreviewLayout = paneState.markdownPreviewLayout;
+  const markdownPreviewOpen = markdownPreviewLayout !== 'off';
   const [mdPreviewHtml, setMdPreviewHtml] = useState('');
   const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
   const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
@@ -198,10 +200,14 @@ export function Pane({ paneIndex }: Props) {
 
   // Preview resize state
   const [previewHeight, setPreviewHeight] = useState(200);
+  const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const [isDraggingPreview, setIsDraggingPreview] = useState(false);
   const isDraggingPreviewRef = useRef(false);
+  const dragAxisRef = useRef<'x' | 'y'>('y');
   const dragStartYRef = useRef(0);
+  const dragStartXRef = useRef(0);
   const dragStartHeightRef = useRef(0);
+  const dragStartWidthRef = useRef(0);
   const editorAreaRef = useRef<HTMLDivElement | null>(null);
 
   const { width: noteTitleWidth, wrapperRef: noteTitleWrapperRef, isDraggingState: noteTitleDragging, onResizerMouseDown: onNoteTitleResizerMouseDown } =
@@ -232,7 +238,7 @@ export function Pane({ paneIndex }: Props) {
   // Sync format, close previews when the note displayed in this pane changes
   useEffect(() => {
     setSelectedFormat(note?.format ?? settings.formatOptions[0] ?? 'Plain Text');
-    setMarkdownPreviewOpen(false);
+    setPaneMarkdownPreviewLayout(paneIndex, 'off');
     setHtmlPreviewOpen(false);
     setJsonPreviewOpen(false);
     setSelLabel(null);
@@ -269,10 +275,10 @@ export function Pane({ paneIndex }: Props) {
 
   // Close inline previews when format changes away from their format
   useEffect(() => {
-    if (selectedFormat !== 'Markdown') setMarkdownPreviewOpen(false);
+    if (selectedFormat !== 'Markdown') setPaneMarkdownPreviewLayout(paneIndex, 'off');
     if (selectedFormat !== 'HTML/CSS') setHtmlPreviewOpen(false);
     if (selectedFormat !== 'JSON') setJsonPreviewOpen(false);
-  }, [selectedFormat]);
+  }, [selectedFormat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced Markdown → HTML rendering (400ms)
   useEffect(() => {
@@ -302,17 +308,24 @@ export function Pane({ paneIndex }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note?.content, htmlPreviewOpen, selectedFormat]);
 
-  // Reset preview height when the note changes
-  useEffect(() => { setPreviewHeight(200); }, [noteId]);
+  // Reset preview size when the note changes
+  useEffect(() => { setPreviewHeight(200); setPreviewWidth(null); }, [noteId]);
 
   // Preview drag-to-resize mouse events
   useEffect(() => {
     function onMouseMove(e: MouseEvent) {
       if (!isDraggingPreviewRef.current) return;
-      const delta = dragStartYRef.current - e.clientY;
-      const containerH = editorAreaRef.current?.clientHeight ?? 400;
-      const next = Math.max(80, Math.min(containerH - 80, dragStartHeightRef.current + delta));
-      setPreviewHeight(next);
+      if (dragAxisRef.current === 'y') {
+        const delta = dragStartYRef.current - e.clientY;
+        const containerH = editorAreaRef.current?.clientHeight ?? 400;
+        const next = Math.max(80, Math.min(containerH - 80, dragStartHeightRef.current + delta));
+        setPreviewHeight(next);
+      } else {
+        const delta = dragStartXRef.current - e.clientX;
+        const containerW = editorAreaRef.current?.clientWidth ?? 600;
+        const next = Math.max(200, Math.min(containerW - 200, dragStartWidthRef.current + delta));
+        setPreviewWidth(next);
+      }
     }
     function onMouseUp() {
       if (isDraggingPreviewRef.current) {
@@ -328,11 +341,14 @@ export function Pane({ paneIndex }: Props) {
     };
   }, []);
 
-  function handlePreviewDividerMouseDown(e: React.MouseEvent) {
+  function handlePreviewDividerMouseDown(e: React.MouseEvent, axis: 'x' | 'y') {
     isDraggingPreviewRef.current = true;
+    dragAxisRef.current = axis;
     setIsDraggingPreview(true);
     dragStartYRef.current = e.clientY;
+    dragStartXRef.current = e.clientX;
     dragStartHeightRef.current = previewHeight;
+    dragStartWidthRef.current = previewWidth ?? (editorAreaRef.current ? editorAreaRef.current.clientWidth / 2 : 300);
     e.preventDefault();
   }
 
@@ -833,8 +849,12 @@ export function Pane({ paneIndex }: Props) {
             <MarkdownToolbar
               editorRef={editorRef}
               disabled={paneState.isBusy || !note}
-              previewOpen={markdownPreviewOpen}
-              onPreviewToggle={() => setMarkdownPreviewOpen(v => !v)}
+              previewLayout={markdownPreviewLayout}
+              onPreviewCycle={() => {
+                const next = markdownPreviewLayout === 'off' ? 'bottom'
+                  : markdownPreviewLayout === 'bottom' ? 'side' : 'off';
+                setPaneMarkdownPreviewLayout(paneIndex, next);
+              }}
               showInvisibles={showInvisibles}
               onToggleInvisibles={handleToggleInvisibles}
             />
@@ -895,6 +915,7 @@ export function Pane({ paneIndex }: Props) {
         className={[
           'editor-area',
           isCsv && showCsvTableView ? 'editor-area-split' : '',
+          isMarkdown && markdownPreviewLayout === 'side' ? 'editor-area-side' : '',
         ].filter(Boolean).join(' ')}
       >
         {isRtf ? (
@@ -935,12 +956,18 @@ export function Pane({ paneIndex }: Props) {
         {isMarkdown && markdownPreviewOpen && (
           <>
             <div
-              className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
-              onMouseDown={handlePreviewDividerMouseDown}
+              className={`preview-divider${isDraggingPreview ? ' dragging' : ''}${markdownPreviewLayout === 'side' ? ' preview-divider-side' : ''}`}
+              onMouseDown={(e) => handlePreviewDividerMouseDown(e, markdownPreviewLayout === 'side' ? 'x' : 'y')}
             >
-              <span className="preview-divider-dots">· · ·</span>
+              <span className="preview-divider-dots">{markdownPreviewLayout === 'side' ? '⋮' : '· · ·'}</span>
             </div>
-            <div className="inline-preview-panel" style={{ height: previewHeight, flex: 'none', minHeight: 80 }}>
+            <div
+              className={`inline-preview-panel${markdownPreviewLayout === 'side' ? ' inline-preview-panel-side' : ''}`}
+              style={markdownPreviewLayout === 'side'
+                ? { width: previewWidth ?? undefined, flex: previewWidth ? 'none' : 1, minWidth: 200 }
+                : { height: previewHeight, flex: 'none', minHeight: 80 }
+              }
+            >
               <div className="inline-preview-label">PREVIEW</div>
               <div
                 className="markdown-preview-body"
@@ -955,7 +982,7 @@ export function Pane({ paneIndex }: Props) {
           <>
             <div
               className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
-              onMouseDown={handlePreviewDividerMouseDown}
+              onMouseDown={(e) => handlePreviewDividerMouseDown(e, 'y')}
             >
               <span className="preview-divider-dots">· · ·</span>
             </div>
@@ -976,7 +1003,7 @@ export function Pane({ paneIndex }: Props) {
           <>
             <div
               className={`preview-divider${isDraggingPreview ? ' dragging' : ''}`}
-              onMouseDown={handlePreviewDividerMouseDown}
+              onMouseDown={(e) => handlePreviewDividerMouseDown(e, 'y')}
             >
               <span className="preview-divider-dots">· · ·</span>
             </div>

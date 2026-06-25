@@ -1811,6 +1811,11 @@ input {
 .preview-active-50 .editor-wrap { flex: 0 0 50%; min-height: 0; }
 .preview-active-55 .editor-wrap { flex: 0 0 55%; min-height: 0; }
 
+/* Side-by-side preview layout */
+.editor-area-side {
+  flex-direction: row;
+}
+
 /* ─── Preview resize divider ─── */
 .preview-divider {
   height: 6px;
@@ -1822,6 +1827,13 @@ input {
   flex-shrink: 0;
   user-select: none;
   transition: background 0.12s;
+}
+
+.preview-divider-side {
+  width: 6px;
+  height: auto;
+  cursor: ew-resize;
+  flex-direction: column;
 }
 
 .preview-divider:hover,
@@ -1850,6 +1862,11 @@ input {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+}
+
+.inline-preview-panel-side {
+  border-top: none;
+  border-left: 1px solid var(--border-default);
 }
 
 .inline-preview-label {

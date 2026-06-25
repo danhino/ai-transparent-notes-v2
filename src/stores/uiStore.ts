@@ -1,11 +1,14 @@
 import { create } from 'zustand';
 import { Platform } from '../types';
 
+export type MarkdownPreviewLayout = 'off' | 'bottom' | 'side';
+
 export interface PaneUiState {
   isBusy: boolean;
   detectedLanguage: string | null;
   savedVisible: boolean;
   paneDialect: string;
+  markdownPreviewLayout: MarkdownPreviewLayout;
 }
 
 const makePaneState = (): PaneUiState => ({
@@ -13,6 +16,7 @@ const makePaneState = (): PaneUiState => ({
   detectedLanguage: null,
   savedVisible: false,
   paneDialect: 'sql',
+  markdownPreviewLayout: 'off',
 });
 
 interface UiStore {
@@ -29,6 +33,7 @@ interface UiStore {
   setPaneDetectedLanguage: (i: number, lang: string | null) => void;
   setPaneSavedVisible: (i: number, v: boolean) => void;
   setPaneDialect: (i: number, dialect: string) => void;
+  setPaneMarkdownPreviewLayout: (i: number, layout: MarkdownPreviewLayout) => void;
   setSettingsOpen: (v: boolean) => void;
   setCompareOpen: (v: boolean) => void;
   setPlatform: (v: Platform) => void;
@@ -61,6 +66,9 @@ export const useUiStore = create<UiStore>((set) => ({
 
   setPaneDialect: (i, paneDialect) =>
     set((s) => ({ paneStates: patchPane(s.paneStates, i, { paneDialect }) })),
+
+  setPaneMarkdownPreviewLayout: (i, markdownPreviewLayout) =>
+    set((s) => ({ paneStates: patchPane(s.paneStates, i, { markdownPreviewLayout }) })),
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setCompareOpen: (compareOpen) => set({ compareOpen }),
