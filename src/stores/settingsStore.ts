@@ -22,6 +22,7 @@ interface SettingsStore {
   setWorkspacePanelWidth: (v: number) => void;
   setAiToolbarActions: (v: string[]) => void;
   setMainToolbarItems: (v: string[]) => void;
+  setPaneHeaderItems: (v: string[]) => void;
   setPaneLineNumbers: (paneIndex: number, v: boolean) => void;
   setShowLineNumbersByDefault: (v: boolean) => void;
 }
@@ -105,6 +106,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 
   setMainToolbarItems: (mainToolbarItems) =>
     set((s) => ({ settings: { ...s.settings, mainToolbarItems } })),
+
+  setPaneHeaderItems: (paneHeaderItems) =>
+    set((s) => ({ settings: { ...s.settings, paneHeaderItems } })),
 
   setPaneLineNumbers: (paneIndex, v) =>
     set((s) => {

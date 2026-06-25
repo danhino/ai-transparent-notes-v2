@@ -4,9 +4,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
-import { AIToolbar } from './AIToolbar';
 import { AIPalette } from './AIPalette';
-import { MessageSquare } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Sparkles, MoreHorizontal, MessageSquare } from 'lucide-react';
 import { RtfToolbar } from './RtfToolbar';
 import { CsvToolbar } from './CsvToolbar';
 import { XmlToolbar } from './XmlToolbar';
@@ -147,6 +147,7 @@ export function Pane({ paneIndex }: Props) {
   const { settings } = useSettingsStore();
   const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
   const setPaneLineNumbers = useSettingsStore((s) => s.setPaneLineNumbers);
+  const setPaneHeaderItems = useSettingsStore((s) => s.setPaneHeaderItems);
   const {
     focusMode,
     focusedPaneIndex,
@@ -186,6 +187,12 @@ export function Pane({ paneIndex }: Props) {
 
   const [rtfWideMargins, setRtfWideMargins] = useState(false);
 
+  // Overflow menu state (absorbed from AIToolbar)
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [overflowPos, setOverflowPos] = useState<{ top: number; left: number } | null>(null);
+  const overflowBtnRef = useRef<HTMLButtonElement>(null);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
+
   // Snapshot of editor selection captured when the AI palette opens
   const paletteSnapshotRef = useRef<{ text: string; wasSelection: boolean } | null>(null);
 
@@ -217,8 +224,7 @@ export function Pane({ paneIndex }: Props) {
   const dragStartWidthRef = useRef(0);
   const editorAreaRef = useRef<HTMLDivElement | null>(null);
 
-  const { width: noteTitleWidth, wrapperRef: noteTitleWrapperRef, isDraggingState: noteTitleDragging, onResizerMouseDown: onNoteTitleResizerMouseDown } =
-    useResizable('note-title-width', 160, 80, 350);
+  const noteTitleWrapperRef = useRef<HTMLDivElement>(null);
 
   const { width: formatSelectWidth, wrapperRef: formatSelectWrapperRef, isDraggingState: formatSelectDragging, onResizerMouseDown: onFormatSelectResizerMouseDown } =
     useResizable('format-select-width', 120, 80, 280);
@@ -268,6 +274,18 @@ export function Pane({ paneIndex }: Props) {
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [showExportMenu]);
+
+  useEffect(() => {
+    if (!overflowOpen) return;
+    function handleOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (overflowBtnRef.current?.contains(target)) return;
+      if (overflowMenuRef.current?.contains(target)) return;
+      setOverflowOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [overflowOpen]);
 
   useEffect(() => {
     return () => {
@@ -767,119 +785,292 @@ export function Pane({ paneIndex }: Props) {
       .join('');
   }, [isRtf, content]);
 
+  // Pane header inline drag-to-reorder (mouse events)
+  const headerDragState = useRef<{
+    isDragging: boolean;
+    sourceIdx: number;
+    startX: number;
+    startY: number;
+    currentIdx: number;
+  } | null>(null);
+  const [activeDragIdx, setActiveDragIdx] = useState<number | null>(null);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  function handleDragHandleMouseDown(e: React.MouseEvent, idx: number) {
+    e.preventDefault();
+    headerDragState.current = {
+      isDragging: false,
+      sourceIdx: idx,
+      startX: e.clientX,
+      startY: e.clientY,
+      currentIdx: idx,
+    };
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!headerDragState.current) return;
+      const dx = Math.abs(ev.clientX - headerDragState.current.startX);
+      const dy = Math.abs(ev.clientY - headerDragState.current.startY);
+      if (!headerDragState.current.isDragging && dx < 4 && dy < 4) return;
+      headerDragState.current.isDragging = true;
+      setActiveDragIdx(headerDragState.current.sourceIdx);
+
+      if (!headerRef.current) return;
+      const headerRect = headerRef.current.getBoundingClientRect();
+      if (
+        ev.clientY < headerRect.top || ev.clientY > headerRect.bottom ||
+        ev.clientX < headerRect.left || ev.clientX > headerRect.right
+      ) return;
+
+      const items = Array.from(
+        headerRef.current.querySelectorAll<HTMLElement>('.pane-header-item')
+      );
+      let closestIdx = headerDragState.current.sourceIdx;
+      let closestDist = Infinity;
+      items.forEach((item, i) => {
+        const rect = item.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const dist = Math.abs(ev.clientX - centerX);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIdx = i;
+        }
+      });
+      setDropTargetIdx(closestIdx);
+      headerDragState.current.currentIdx = closestIdx;
+    };
+
+    const onMouseUp = () => {
+      if (headerDragState.current?.isDragging) {
+        const { sourceIdx, currentIdx } = headerDragState.current;
+        if (sourceIdx !== currentIdx) {
+          const newOrder = [...(settings.paneHeaderItems ?? [])];
+          const [moved] = newOrder.splice(sourceIdx, 1);
+          newOrder.splice(currentIdx, 0, moved);
+          setPaneHeaderItems(newOrder);
+        }
+      }
+      headerDragState.current = null;
+      setActiveDragIdx(null);
+      setDropTargetIdx(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+
   return (
     <div
       className={`pane${isFocused ? ' focused' : ''}`}
       onClick={() => setFocusedPane(paneIndex)}
       onDoubleClick={() => { if (focusMode) setFocusMode(false); }}
     >
-      {/* Note selector header */}
-      <div className="pane-header">
-        {isRenaming ? (
-          <input
-            ref={renameInputRef}
-            className="pane-rename-input"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitRename();
-              else if (e.key === 'Escape') setIsRenaming(false);
-            }}
-            onBlur={commitRename}
-          />
-        ) : (
-          <div
-            ref={noteTitleWrapperRef}
-            className="note-title-wrapper"
-            style={{ width: noteTitleWidth }}
-          >
-            <select
-              className="pane-note-select"
-              value={noteId ?? ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                setPaneNoteId(paneIndex, val || null);
-              }}
-            >
-              <option value="">-- no note --</option>
-              {notes.map((n) => (
-                <option key={n.id} value={n.id}>{n.title}</option>
-              ))}
-            </select>
-            <div
-              className={`note-title-resizer${noteTitleDragging ? ' dragging' : ''}`}
-              onMouseDown={onNoteTitleResizerMouseDown}
-            />
-          </div>
-        )}
+      {/* Merged pane header — items rendered from settings.paneHeaderItems */}
+      <div className="pane-header" ref={headerRef}>
+        {(settings.paneHeaderItems ?? []).map((itemId, idx) => {
+          if (itemId.startsWith('sep')) {
+            return <div key={itemId} className="pane-header-sep" />;
+          }
 
-        {/* Format selector — moved from AI toolbar */}
-        <div
-          ref={formatSelectWrapperRef}
-          className="format-select-wrapper"
-          style={{ width: formatSelectWidth }}
-        >
-          <select
-            className="format-select"
-            value={selectedFormat}
-            onChange={(e) => handleFormatChange(e.target.value)}
-            disabled={paneState.isBusy || !note}
-            title="Format"
-          >
-            {settings.formatOptions.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-          <div
-            className={`format-select-resizer${formatSelectDragging ? ' dragging' : ''}`}
-            onMouseDown={onFormatSelectResizerMouseDown}
-          />
-        </div>
+          let content: React.ReactNode = null;
+          let extraClass = '';
 
-        <button
-          className="pane-icon-btn"
-          onClick={startRename}
-          disabled={!note}
-          title="Rename note"
-        >
-          ✏
-        </button>
-
-        <div ref={exportContainerRef} style={{ position: 'relative' }}>
-          <button
-            className="pane-icon-btn"
-            onClick={() => setShowExportMenu((v) => !v)}
-            disabled={!note}
-            title="Export note"
-          >
-            ↓
-          </button>
-          {showExportMenu && (
-            <div className="export-menu">
-              {exportOptions.map((opt) => (
-                <button
-                  key={opt.ext}
-                  className="export-menu-item"
-                  onClick={() => void exportNote(opt.ext)}
+          switch (itemId) {
+            case 'note-select':
+              extraClass = 'pane-header-note-select';
+              content = isRenaming ? (
+                <input
+                  ref={renameInputRef}
+                  className="pane-rename-input"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitRename();
+                    else if (e.key === 'Escape') setIsRenaming(false);
+                  }}
+                  onBlur={commitRename}
+                />
+              ) : (
+                <div
+                  ref={noteTitleWrapperRef}
+                  className="note-title-wrapper"
+                  onDoubleClick={(e) => { e.stopPropagation(); startRename(); }}
                 >
-                  {opt.label}
+                  <select
+                    className="pane-note-select"
+                    value={noteId ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPaneNoteId(paneIndex, val || null);
+                    }}
+                  >
+                    <option value="">-- no note --</option>
+                    {notes.map((n) => (
+                      <option key={n.id} value={n.id}>{n.title}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+              break;
+
+            case 'rename':
+              content = (
+                <button
+                  className="pane-icon-btn"
+                  onClick={startRename}
+                  disabled={!note}
+                  title="Rename note"
+                >
+                  ✏
                 </button>
-              ))}
+              );
+              break;
+
+            case 'format-select':
+              content = (
+                <div
+                  ref={formatSelectWrapperRef}
+                  className="format-select-wrapper"
+                  style={{ width: formatSelectWidth }}
+                >
+                  <select
+                    className="format-select"
+                    value={selectedFormat}
+                    onChange={(e) => handleFormatChange(e.target.value)}
+                    disabled={paneState.isBusy || !note}
+                    title="Format"
+                  >
+                    {settings.formatOptions.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                  <div
+                    className={`format-select-resizer${formatSelectDragging ? ' dragging' : ''}`}
+                    onMouseDown={onFormatSelectResizerMouseDown}
+                  />
+                </div>
+              );
+              break;
+
+            case 'ai':
+              content = (
+                <button
+                  className="ai-btn ai-btn-primary ai-trigger-btn"
+                  disabled={paneState.isBusy || !note}
+                  onClick={openPalette}
+                  title="AI command palette (Ctrl+K)"
+                >
+                  <Sparkles size={13} />
+                  <span>AI</span>
+                  <kbd className="ai-trigger-kbd">Ctrl+K</kbd>
+                </button>
+              );
+              break;
+
+            case 'overflow':
+              content = (
+                <button
+                  ref={overflowBtnRef}
+                  className="ai-btn"
+                  disabled={paneState.isBusy || !note}
+                  onClick={() => {
+                    if (overflowOpen) { setOverflowOpen(false); return; }
+                    if (overflowBtnRef.current) {
+                      const rect = overflowBtnRef.current.getBoundingClientRect();
+                      setOverflowPos({ top: rect.bottom + 4, left: rect.right });
+                    }
+                    setOverflowOpen(true);
+                  }}
+                  title="More actions"
+                >
+                  <MoreHorizontal size={14} />
+                </button>
+              );
+              break;
+
+            case 'export':
+              content = (
+                <div ref={exportContainerRef} style={{ position: 'relative' }}>
+                  <button
+                    className="pane-icon-btn"
+                    onClick={() => setShowExportMenu((v) => !v)}
+                    disabled={!note}
+                    title="Export note"
+                  >
+                    ↓
+                  </button>
+                  {showExportMenu && (
+                    <div className="export-menu">
+                      {exportOptions.map((opt) => (
+                        <button
+                          key={opt.ext}
+                          className="export-menu-item"
+                          onClick={() => void exportNote(opt.ext)}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+              break;
+
+            case 'linenumbers':
+              content = (
+                <button
+                  className={`pane-icon-btn${showLineNumbers ? ' active-subtle' : ''}`}
+                  onClick={() => setPaneLineNumbers(paneIndex, !showLineNumbers)}
+                  title="Toggle line numbers"
+                  style={{ fontSize: 11, fontWeight: 600, fontFamily: 'monospace' }}
+                >
+                  #
+                </button>
+              );
+              break;
+
+            case 'chat':
+              content = (
+                <button
+                  className={`pane-icon-btn${paneState.aiChatOpen ? ' active-subtle' : ''}`}
+                  onClick={() => setPaneAiChatOpen(paneIndex, !paneState.aiChatOpen)}
+                  disabled={!note}
+                  title="Toggle AI chat sidebar"
+                >
+                  <MessageSquare size={13} />
+                </button>
+              );
+              break;
+
+            default:
+              return null;
+          }
+
+          return (
+            <div
+              key={itemId}
+              className={[
+                'pane-header-item',
+                activeDragIdx === idx ? 'pane-header-item--dragging' : '',
+                dropTargetIdx === idx && activeDragIdx !== idx ? 'pane-header-item--drop-target' : '',
+                extraClass,
+              ].filter(Boolean).join(' ')}
+            >
+              <div
+                className="pane-header-drag-handle"
+                onMouseDown={(e) => handleDragHandleMouseDown(e, idx)}
+                title="Drag to reorder"
+              >
+                ⠿
+              </div>
+              {content}
             </div>
-          )}
-        </div>
+          );
+        })}
 
-        {/* Line numbers toggle */}
-        <button
-          className={`pane-icon-btn${showLineNumbers ? ' active-subtle' : ''}`}
-          onClick={() => setPaneLineNumbers(paneIndex, !showLineNumbers)}
-          title="Toggle line numbers"
-          style={{ fontSize: 11, fontWeight: 600, fontFamily: 'monospace' }}
-        >
-          #
-        </button>
-
-        {/* CSV table view toggle */}
+        {/* CSV table view toggle — format-conditional, not configurable */}
         {isCsv && (
           <button
             className={`pane-icon-btn${showCsvTableView ? ' active-subtle' : ''}`}
@@ -891,18 +1082,8 @@ export function Pane({ paneIndex }: Props) {
           </button>
         )}
 
-        {/* AI chat sidebar toggle */}
-        <button
-          className={`pane-icon-btn${paneState.aiChatOpen ? ' active-subtle' : ''}`}
-          onClick={() => setPaneAiChatOpen(paneIndex, !paneState.aiChatOpen)}
-          disabled={!note}
-          title="Toggle AI chat sidebar"
-        >
-          <MessageSquare size={13} />
-        </button>
-
+        {/* Save indicator — always pinned to far right */}
         <div style={{ flex: 1 }} />
-
         {note && (
           <button
             type="button"
@@ -919,7 +1100,23 @@ export function Pane({ paneIndex }: Props) {
         )}
       </div>
 
-      {/* Toolbar area: collapse toggle + AI/contextual toolbars */}
+      {/* Overflow menu portal */}
+      {overflowOpen && overflowPos && createPortal(
+        <div
+          ref={overflowMenuRef}
+          className="ai-overflow-menu"
+          style={{ position: 'fixed', top: overflowPos.top, left: overflowPos.left, transform: 'translateX(-100%)' }}
+        >
+          <button className="ai-overflow-item" onClick={() => { handleAction('compare'); setOverflowOpen(false); }}>Compare</button>
+          <button className="ai-overflow-item" onClick={() => { handleAction('spellcheck'); setOverflowOpen(false); }}>Spell check</button>
+          {selectedFormat === 'HTML Viewer' && (
+            <button className="ai-overflow-item" onClick={() => { handleAction('apply'); setOverflowOpen(false); }}>Open HTML preview</button>
+          )}
+        </div>,
+        document.body
+      )}
+
+      {/* Toolbar area: collapse toggle + contextual toolbars */}
       <div className={`toolbar-area${toolbarCollapsed ? ' collapsed' : ''}`}>
         <button
           className="toolbar-toggle"
@@ -929,12 +1126,6 @@ export function Pane({ paneIndex }: Props) {
           {toolbarCollapsed ? '›' : '‹'}
         </button>
         <div className={`toolbar-rows${toolbarCollapsed ? ' collapsed' : ''}`}>
-          <AIToolbar
-            disabled={paneState.isBusy || !note}
-            onOpenPalette={openPalette}
-            onAction={handleAction}
-            isHtmlViewer={selectedFormat === 'HTML Viewer'}
-          />
 
           {/* Contextual toolbar — RTF */}
           {isRtf && (

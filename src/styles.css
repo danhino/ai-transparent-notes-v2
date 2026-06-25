@@ -1162,12 +1162,66 @@ input {
 .pane-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 0 8px;
-  height: 32px;
+  height: 36px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+}
+
+.pane-header-note-select {
+  min-width: 120px;
+  max-width: 240px;
+}
+
+.pane-header-item {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s ease, opacity 0.1s ease;
+}
+.pane-header-item--drop-target {
+  position: relative;
+}
+.pane-header-item--drop-target::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 10%;
+  height: 80%;
+  width: 2px;
+  background: var(--accent-color);
+  border-radius: 1px;
+}
+.pane-header-item--dragging {
+  opacity: 0.35;
+}
+
+.pane-header-drag-handle {
+  cursor: grab;
+  color: var(--text-hint);
+  font-size: 10px;
+  padding: 0 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+.pane-header:hover .pane-header-drag-handle {
+  opacity: 1;
+}
+.pane-header-drag-handle:active {
+  cursor: grabbing;
+}
+
+.pane-header-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border-default);
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .pane-note-select {

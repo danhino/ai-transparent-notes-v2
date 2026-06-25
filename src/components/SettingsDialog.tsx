@@ -40,6 +40,19 @@ const ALL_MAIN_ITEMS: { key: string; label: string }[] = [
   { key: 'settings',  label: 'Settings' },
 ];
 
+const ALL_PANE_HEADER_ITEMS: { key: string; label: string }[] = [
+  { key: 'note-select',   label: 'Note selector' },
+  { key: 'rename',        label: 'Rename' },
+  { key: 'format-select', label: 'Format selector' },
+  { key: 'sep-1',         label: 'Separator' },
+  { key: 'ai',            label: 'AI (Ctrl+K)' },
+  { key: 'overflow',      label: 'More actions' },
+  { key: 'sep-2',         label: 'Separator' },
+  { key: 'export',        label: 'Export' },
+  { key: 'linenumbers',   label: 'Line numbers' },
+  { key: 'chat',          label: 'AI chat' },
+];
+
 function isValidHex(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color);
 }
@@ -167,6 +180,9 @@ export function SettingsDialog() {
   const [localMainItems, setLocalMainItems] = useState<string[]>(
     settings.mainToolbarItems ?? DEFAULT_SETTINGS.mainToolbarItems
   );
+  const [localPaneHeaderItems, setLocalPaneHeaderItems] = useState<string[]>(
+    settings.paneHeaderItems ?? DEFAULT_SETTINGS.paneHeaderItems
+  );
   const [dataPath, setDataPath] = useState('');
   const [appVersion, setAppVersion] = useState('');
 
@@ -213,6 +229,7 @@ export function SettingsDialog() {
     : ollamaModels.map((m) => ({ value: m.name, label: `${m.name} — ${m.description}` }));
 
   const mainLabelMap = new Map(ALL_MAIN_ITEMS.map((a) => [a.key, a.label]));
+  const paneHeaderLabelMap = new Map(ALL_PANE_HEADER_ITEMS.map((a) => [a.key, a.label]));
 
   function applyContrastPreview(brightness: number, borderOpacity: number, textSize: number) {
     document.documentElement.style.setProperty('--ui-text-brightness', `${brightness / 100}`);
@@ -250,6 +267,7 @@ export function SettingsDialog() {
       formatSort: localFormatSort,
       aiToolbarActions: localAiActions,
       mainToolbarItems: localMainItems,
+      paneHeaderItems: localPaneHeaderItems,
       showLineNumbersByDefault: localLineNumbers,
       uiTextBrightness: localTextBrightness,
       uiBorderOpacity: localBorderOpacity,
@@ -276,6 +294,7 @@ export function SettingsDialog() {
     customOrderRef.current = [...DEFAULT_FORMAT_OPTIONS];
     setLocalAiActions([...DEFAULT_SETTINGS.aiToolbarActions]);
     setLocalMainItems([...DEFAULT_SETTINGS.mainToolbarItems]);
+    setLocalPaneHeaderItems([...DEFAULT_SETTINGS.paneHeaderItems]);
     setLocalLineNumbers(DEFAULT_SETTINGS.showLineNumbersByDefault);
     setLocalTextBrightness(DEFAULT_SETTINGS.uiTextBrightness);
     setLocalTextSize(DEFAULT_SETTINGS.uiTextSize);
@@ -632,8 +651,13 @@ export function SettingsDialog() {
           {/* Pane header */}
           <div className="settings-section">
             <div className="settings-section-title">Pane header</div>
-            <div className="settings-section-desc">Reorder items in the pane header bar (note selector, format, AI, and controls).</div>
-            <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--text-hint)' }}>Coming soon</div>
+            <div className="settings-section-desc">Add, remove, or reorder the controls shown in each pane's header bar.</div>
+            <ReorderList
+              items={localPaneHeaderItems}
+              allItems={ALL_PANE_HEADER_ITEMS}
+              labelMap={paneHeaderLabelMap}
+              onChange={setLocalPaneHeaderItems}
+            />
           </div>
 
           {/* Format options */}
