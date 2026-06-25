@@ -27,17 +27,6 @@ const THEMES: { value: Theme; label: string }[] = [
   { value: 'green', label: 'Green' },
 ];
 
-const ALL_AI_ACTIONS: { key: string; label: string }[] = [
-  { key: 'apply',      label: 'Format / Apply' },
-  { key: 'fix',        label: 'Fix' },
-  { key: 'spellcheck', label: 'Spell check' },
-  { key: 'rephrase',   label: 'Rephrase' },
-  { key: 'convo',      label: 'Convo' },
-  { key: 'compare',    label: 'Compare' },
-  { key: 'suggest',    label: 'Suggest' },
-  { key: 'polish',     label: 'Polish' },
-];
-
 const ALL_MAIN_ITEMS: { key: string; label: string }[] = [
   { key: 'pin',       label: 'Always on top' },
   { key: 'theme',     label: 'Theme' },
@@ -223,7 +212,6 @@ export function SettingsDialog() {
     ? cloudModels.map((m) => ({ value: m.value, label: `${m.label} — ${m.description}` }))
     : ollamaModels.map((m) => ({ value: m.name, label: `${m.name} — ${m.description}` }));
 
-  const aiLabelMap = new Map(ALL_AI_ACTIONS.map((a) => [a.key, a.label]));
   const mainLabelMap = new Map(ALL_MAIN_ITEMS.map((a) => [a.key, a.label]));
 
   function applyContrastPreview(brightness: number, borderOpacity: number, textSize: number) {
@@ -629,18 +617,6 @@ export function SettingsDialog() {
             </div>
           </div>
 
-          {/* AI toolbar */}
-          <div className="settings-section">
-            <div className="settings-section-title">AI toolbar</div>
-            <div className="settings-section-desc">Add, remove, or reorder the buttons shown in the AI toolbar of each note pane.</div>
-            <ReorderList
-              items={localAiActions}
-              allItems={ALL_AI_ACTIONS}
-              labelMap={aiLabelMap}
-              onChange={setLocalAiActions}
-            />
-          </div>
-
           {/* Main toolbar */}
           <div className="settings-section">
             <div className="settings-section-title">Main toolbar</div>
@@ -651,6 +627,13 @@ export function SettingsDialog() {
               labelMap={mainLabelMap}
               onChange={setLocalMainItems}
             />
+          </div>
+
+          {/* Pane header */}
+          <div className="settings-section">
+            <div className="settings-section-title">Pane header</div>
+            <div className="settings-section-desc">Reorder items in the pane header bar (note selector, format, AI, and controls).</div>
+            <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--text-hint)' }}>Coming soon</div>
           </div>
 
           {/* Format options */}
@@ -677,7 +660,7 @@ export function SettingsDialog() {
                 ))}
               </div>
             </div>
-            <div className="settings-section-desc">Manage the list of formats shown in the AI Format dropdown. Add custom languages or text types.</div>
+            <div className="settings-section-desc">Manage the list of formats shown in the pane header format selector. Add custom languages or text types.</div>
             <DraggableList
               items={localFormats}
               onReorder={handleFormatReorder}
