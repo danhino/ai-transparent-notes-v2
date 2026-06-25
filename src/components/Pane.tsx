@@ -5,6 +5,8 @@ import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { NoteEditor, NoteEditorRef } from './NoteEditor';
 import { AIToolbar } from './AIToolbar';
+import { AIPalette } from './AIPalette';
+import { MessageSquare } from 'lucide-react';
 import { RtfToolbar } from './RtfToolbar';
 import { CsvToolbar } from './CsvToolbar';
 import { XmlToolbar } from './XmlToolbar';
@@ -156,6 +158,8 @@ export function Pane({ paneIndex }: Props) {
     setPaneDetectedLanguage,
     setPaneSavedVisible,
     setPaneMarkdownPreviewLayout,
+    setPaneAiPaletteOpen,
+    setPaneAiChatOpen,
   } = useUiStore();
 
   const noteId = settings.paneNoteIds[paneIndex] ?? null;
@@ -181,6 +185,9 @@ export function Pane({ paneIndex }: Props) {
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [rtfWideMargins, setRtfWideMargins] = useState(false);
+
+  // Snapshot of editor selection captured when the AI palette opens
+  const paletteSnapshotRef = useRef<{ text: string; wasSelection: boolean } | null>(null);
 
   // CSV-specific state
   const [showCsvTableView, setShowCsvTableView] = useState(false);
@@ -212,6 +219,9 @@ export function Pane({ paneIndex }: Props) {
 
   const { width: noteTitleWidth, wrapperRef: noteTitleWrapperRef, isDraggingState: noteTitleDragging, onResizerMouseDown: onNoteTitleResizerMouseDown } =
     useResizable('note-title-width', 160, 80, 350);
+
+  const { width: formatSelectWidth, wrapperRef: formatSelectWrapperRef, isDraggingState: formatSelectDragging, onResizerMouseDown: onFormatSelectResizerMouseDown } =
+    useResizable('format-select-width', 120, 80, 280);
 
   const lineEnding = useMemo(() => {
     const c = note?.content ?? '';
@@ -380,6 +390,88 @@ export function Pane({ paneIndex }: Props) {
     return () => window.removeEventListener('keydown', handler);
   }, [isFocused, platform, isUnsaved, isSaving]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  function openPalette() {
+    if (paneState.aiPaletteOpen) {
+      setPaneAiPaletteOpen(paneIndex, false);
+      paletteSnapshotRef.current = null;
+      return;
+    }
+
+    let wasSelection = false;
+    let text = '';
+
+    if (selectedFormat === 'RTF' && rtfEditorRef.current) {
+      const sel = window.getSelection();
+      const selectedText = sel && sel.rangeCount > 0 ? sel.toString() : '';
+      wasSelection = selectedText.trim().length > 0;
+      text = wasSelection
+        ? selectedText
+        : (rtfEditorRef.current.innerText ?? note?.content ?? '');
+    } else {
+      wasSelection = editorRef.current?.hasSelection() ?? false;
+      text = wasSelection
+        ? (editorRef.current?.getSelection() ?? '')
+        : (editorRef.current?.getText() ?? note?.content ?? '');
+    }
+
+    paletteSnapshotRef.current = { text, wasSelection };
+    setPaneAiPaletteOpen(paneIndex, true);
+  }
+
+  // Ctrl/Cmd+K opens AI command palette for the focused pane
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (!isFocused) return;
+      const mod = platform === 'macos' ? e.metaKey : e.ctrlKey;
+      if (mod && !e.shiftKey && e.key === 'k') {
+        e.preventDefault();
+        openPalette();
+      }
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isFocused, platform, paneIndex, paneState.aiPaletteOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleFormatChange(fmt: string) {
+    if (note) {
+      if (fmt === 'RTF' && selectedFormat !== 'RTF') {
+        const current = editorRef.current?.getText() ?? note.content;
+        let asHtml: string;
+        if (current.trim().startsWith('{\\rtf')) {
+          asHtml = rtfToHtml(current);
+        } else if (current.trim().startsWith('<')) {
+          asHtml = current;
+        } else {
+          asHtml = current
+            .split('\n')
+            .map((line) => {
+              const safe = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              return `<p>${safe || '<br>'}</p>`;
+            })
+            .join('');
+        }
+        updateNote(note.id, { content: asHtml });
+      } else if (selectedFormat === 'RTF' && fmt !== 'RTF') {
+        const html = rtfEditorRef.current?.innerHTML ?? note.content;
+        const plain = html
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi,  '\n')
+          .replace(/<\/li>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&amp;/g,  '&').replace(/&lt;/g, '<')
+          .replace(/&gt;/g,   '>').replace(/&nbsp;/g, ' ')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+        if (plain !== note.content) {
+          updateNote(note.id, { content: plain });
+        }
+      }
+      setNoteFormat(note.id, fmt);
+    }
+    setSelectedFormat(fmt);
+    setPaneDetectedLanguage(paneIndex, null);
+  }
+
   function handleEditorChange(text: string) {
     if (!note) return;
     updateNote(note.id, { content: text });
@@ -495,7 +587,10 @@ export function Pane({ paneIndex }: Props) {
   }
 
   const handleAction = useCallback(
-    async (action: 'fix' | 'polish' | 'rephrase' | 'convo' | 'spellcheck' | 'suggest' | 'apply' | 'compare') => {
+    async (
+      action: 'fix' | 'polish' | 'rephrase' | 'convo' | 'spellcheck' | 'suggest' | 'apply' | 'compare',
+      snapshot?: { text: string; wasSelection: boolean } | null,
+    ) => {
       if (!note || paneState.isBusy) return;
 
       if (action === 'compare') {
@@ -503,8 +598,8 @@ export function Pane({ paneIndex }: Props) {
         return;
       }
 
-      const wasSelection = editorRef.current?.hasSelection() ?? false;
-      const text = getAiText();
+      const wasSelection = snapshot ? snapshot.wasSelection : (editorRef.current?.hasSelection() ?? false);
+      const text = snapshot ? snapshot.text : getAiText();
       if (!text.trim()) return;
 
       setPaneBusy(paneIndex, true);
@@ -543,6 +638,50 @@ export function Pane({ paneIndex }: Props) {
       }
     },
     [note, paneState.isBusy, selectedFormat, settings, paneIndex] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const handleCustomPrompt = useCallback(
+    async (instruction: string, snapshot?: { text: string; wasSelection: boolean } | null) => {
+      if (!note || paneState.isBusy) return;
+      const wasSelection = snapshot ? snapshot.wasSelection : (editorRef.current?.hasSelection() ?? false);
+      const text = snapshot ? snapshot.text : getAiText();
+      if (!text.trim()) return;
+
+      setPaneBusy(paneIndex, true);
+      try {
+        const apiKey = settings.aiProvider === 'claude' ? settings.claudeApiKey
+          : settings.aiProvider === 'openai' ? settings.openaiApiKey
+          : settings.aiProvider === 'deepseek' ? settings.deepseekApiKey : '';
+
+        if (settings.aiProvider !== 'ollama' && !apiKey.trim()) {
+          showError('No API key configured. Go to Settings to add your key.');
+          return;
+        }
+
+        const result = await invoke<string>('call_ai', {
+          provider: settings.aiProvider,
+          apiKey,
+          model: settings.aiModel,
+          prompt: instruction,
+          content: text,
+          ollamaUrl: settings.ollamaUrl || null,
+        });
+
+        setAiDialogData({
+          actionName: 'AI',
+          original: text,
+          result,
+          wasSelection,
+          detectedLanguage: null,
+        });
+      } catch (err) {
+        console.error('AI custom prompt failed:', err);
+        showError(getAiErrorMessage(err));
+      } finally {
+        setPaneBusy(paneIndex, false);
+      }
+    },
+    [note, paneState.isBusy, settings, paneIndex] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   function applyAiResult() {
@@ -674,6 +813,29 @@ export function Pane({ paneIndex }: Props) {
           </div>
         )}
 
+        {/* Format selector — moved from AI toolbar */}
+        <div
+          ref={formatSelectWrapperRef}
+          className="format-select-wrapper"
+          style={{ width: formatSelectWidth }}
+        >
+          <select
+            className="format-select"
+            value={selectedFormat}
+            onChange={(e) => handleFormatChange(e.target.value)}
+            disabled={paneState.isBusy || !note}
+            title="Format"
+          >
+            {settings.formatOptions.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+          <div
+            className={`format-select-resizer${formatSelectDragging ? ' dragging' : ''}`}
+            onMouseDown={onFormatSelectResizerMouseDown}
+          />
+        </div>
+
         <button
           className="pane-icon-btn"
           onClick={startRename}
@@ -729,6 +891,16 @@ export function Pane({ paneIndex }: Props) {
           </button>
         )}
 
+        {/* AI chat sidebar toggle */}
+        <button
+          className={`pane-icon-btn${paneState.aiChatOpen ? ' active-subtle' : ''}`}
+          onClick={() => setPaneAiChatOpen(paneIndex, !paneState.aiChatOpen)}
+          disabled={!note}
+          title="Toggle AI chat sidebar"
+        >
+          <MessageSquare size={13} />
+        </button>
+
         <div style={{ flex: 1 }} />
 
         {note && (
@@ -759,49 +931,9 @@ export function Pane({ paneIndex }: Props) {
         <div className={`toolbar-rows${toolbarCollapsed ? ' collapsed' : ''}`}>
           <AIToolbar
             disabled={paneState.isBusy || !note}
-            selectedFormat={selectedFormat}
-            onFormatChange={(fmt) => {
-              if (note) {
-                if (fmt === 'RTF' && selectedFormat !== 'RTF') {
-                  // Switching TO RTF: convert current content to HTML for WYSIWYG
-                  const current = editorRef.current?.getText() ?? note.content;
-                  let asHtml: string;
-                  if (current.trim().startsWith('{\\rtf')) {
-                    asHtml = rtfToHtml(current);
-                  } else if (current.trim().startsWith('<')) {
-                    asHtml = current; // already HTML
-                  } else {
-                    asHtml = current
-                      .split('\n')
-                      .map((line) => {
-                        const safe = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                        return `<p>${safe || '<br>'}</p>`;
-                      })
-                      .join('');
-                  }
-                  updateNote(note.id, { content: asHtml });
-                } else if (selectedFormat === 'RTF' && fmt !== 'RTF') {
-                  // Switching FROM RTF: extract plain text from the WYSIWYG div
-                  const html = rtfEditorRef.current?.innerHTML ?? note.content;
-                  const plain = html
-                    .replace(/<br\s*\/?>/gi, '\n')
-                    .replace(/<\/p>/gi,  '\n')
-                    .replace(/<\/li>/gi, '\n')
-                    .replace(/<[^>]+>/g, '')
-                    .replace(/&amp;/g,  '&').replace(/&lt;/g, '<')
-                    .replace(/&gt;/g,   '>').replace(/&nbsp;/g, ' ')
-                    .replace(/\n{3,}/g, '\n\n')
-                    .trim();
-                  if (plain !== note.content) {
-                    updateNote(note.id, { content: plain });
-                  }
-                }
-                setNoteFormat(note.id, fmt);
-              }
-              setSelectedFormat(fmt);
-              setPaneDetectedLanguage(paneIndex, null);
-            }}
+            onOpenPalette={openPalette}
             onAction={handleAction}
+            isHtmlViewer={selectedFormat === 'HTML Viewer'}
           />
 
           {/* Contextual toolbar — RTF */}
@@ -909,6 +1041,9 @@ export function Pane({ paneIndex }: Props) {
         </div>
       </div>
 
+      {/* Editor + optional chat sidebar wrapper */}
+      <div className="editor-chat-wrapper">
+
       {/* Editor area — split view when CSV table or inline preview is active */}
       <div
         ref={editorAreaRef}
@@ -1015,7 +1150,52 @@ export function Pane({ paneIndex }: Props) {
             </div>
           </>
         )}
+
+        {/* AI command palette */}
+        {paneState.aiPaletteOpen && (
+          <AIPalette
+            format={selectedFormat}
+            hasSelection={paletteSnapshotRef.current?.wasSelection ?? false}
+            onAction={(action) => {
+              const snap = paletteSnapshotRef.current;
+              paletteSnapshotRef.current = null;
+              setPaneAiPaletteOpen(paneIndex, false);
+              handleAction(action, snap);
+            }}
+            onCustomPrompt={(prompt) => {
+              const snap = paletteSnapshotRef.current;
+              paletteSnapshotRef.current = null;
+              setPaneAiPaletteOpen(paneIndex, false);
+              handleCustomPrompt(prompt, snap);
+            }}
+            onClose={() => {
+              paletteSnapshotRef.current = null;
+              setPaneAiPaletteOpen(paneIndex, false);
+            }}
+          />
+        )}
       </div>
+
+      {/* AI chat sidebar */}
+      {paneState.aiChatOpen && (
+        <div className="ai-chat-sidebar">
+          <div className="ai-chat-sidebar-header">
+            <span className="ai-chat-sidebar-title">AI chat</span>
+            <button
+              className="ai-chat-sidebar-close"
+              onClick={() => setPaneAiChatOpen(paneIndex, false)}
+              title="Close"
+            >
+              x
+            </button>
+          </div>
+          <div className="ai-chat-sidebar-body">
+            <span className="ai-chat-placeholder">AI chat coming soon</span>
+          </div>
+        </div>
+      )}
+
+      </div>{/* end editor-chat-wrapper */}
 
       {/* Busy overlay */}
       {paneState.isBusy && (

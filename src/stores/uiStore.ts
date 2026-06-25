@@ -9,6 +9,8 @@ export interface PaneUiState {
   savedVisible: boolean;
   paneDialect: string;
   markdownPreviewLayout: MarkdownPreviewLayout;
+  aiPaletteOpen: boolean;
+  aiChatOpen: boolean;
 }
 
 const makePaneState = (): PaneUiState => ({
@@ -17,6 +19,8 @@ const makePaneState = (): PaneUiState => ({
   savedVisible: false,
   paneDialect: 'sql',
   markdownPreviewLayout: 'off',
+  aiPaletteOpen: false,
+  aiChatOpen: false,
 });
 
 interface UiStore {
@@ -34,6 +38,8 @@ interface UiStore {
   setPaneSavedVisible: (i: number, v: boolean) => void;
   setPaneDialect: (i: number, dialect: string) => void;
   setPaneMarkdownPreviewLayout: (i: number, layout: MarkdownPreviewLayout) => void;
+  setPaneAiPaletteOpen: (i: number, v: boolean) => void;
+  setPaneAiChatOpen: (i: number, v: boolean) => void;
   setSettingsOpen: (v: boolean) => void;
   setCompareOpen: (v: boolean) => void;
   setPlatform: (v: Platform) => void;
@@ -69,6 +75,12 @@ export const useUiStore = create<UiStore>((set) => ({
 
   setPaneMarkdownPreviewLayout: (i, markdownPreviewLayout) =>
     set((s) => ({ paneStates: patchPane(s.paneStates, i, { markdownPreviewLayout }) })),
+
+  setPaneAiPaletteOpen: (i, aiPaletteOpen) =>
+    set((s) => ({ paneStates: patchPane(s.paneStates, i, { aiPaletteOpen }) })),
+
+  setPaneAiChatOpen: (i, aiChatOpen) =>
+    set((s) => ({ paneStates: patchPane(s.paneStates, i, { aiChatOpen }) })),
 
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setCompareOpen: (compareOpen) => set({ compareOpen }),

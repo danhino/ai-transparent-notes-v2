@@ -1,93 +1,98 @@
-import { useMemo } from 'react';
-import { useSettingsStore } from '../stores/settingsStore';
-import { useResizable } from '../hooks/useResizable';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Sparkles, MoreHorizontal } from 'lucide-react';
 
 type AiAction = 'fix' | 'polish' | 'rephrase' | 'convo' | 'spellcheck' | 'suggest' | 'apply' | 'compare';
 
 interface Props {
   disabled: boolean;
-  selectedFormat: string;
-  onFormatChange: (format: string) => void;
+  onOpenPalette: () => void;
   onAction: (action: AiAction) => void;
+  isHtmlViewer: boolean;
 }
 
-const AI_ACTION_META: Record<string, { label: string; title: string }> = {
-  fix:        { label: 'Fix',         title: 'Fix code' },
-  polish:     { label: 'Polish',      title: 'Polish writing' },
-  spellcheck: { label: 'Spell check', title: 'Fix spelling' },
-  rephrase:   { label: 'Rephrase',    title: 'Rephrase' },
-  convo:      { label: 'Convo',       title: 'Rewrite in conversational tone' },
-  suggest:    { label: 'Suggest',     title: 'Suggest improvements' },
-  compare:    { label: 'Compare',     title: 'Compare with another note' },
-};
+export function AIToolbar({ disabled, onOpenPalette, onAction, isHtmlViewer }: Props) {
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-export function AIToolbar({ disabled, selectedFormat, onFormatChange, onAction }: Props) {
-  const formatOptions = useSettingsStore((s) => s.settings.formatOptions);
-  const rawToolbarActions = useSettingsStore((s) => s.settings.aiToolbarActions);
-  // 'apply' is always shown in the fixed slot before the separator; skip it in the dynamic list
-  const aiToolbarActions = useMemo(
-    () => rawToolbarActions.filter((k) => k !== 'apply'),
-    [rawToolbarActions]
-  );
+  function handleOverflowToggle() {
+    if (overflowOpen) {
+      setOverflowOpen(false);
+      return;
+    }
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 4, left: rect.right });
+    }
+    setOverflowOpen(true);
+  }
 
-  const { width: selectWidth, wrapperRef, isDraggingState: resizerDragging, onResizerMouseDown } =
-    useResizable('format-select-width', 200, 120, 400);
+  useEffect(() => {
+    if (!overflowOpen) return;
+    function handleOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOverflowOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [overflowOpen]);
 
   return (
     <div className="ai-toolbar">
-      <span className="ai-toolbar-label">AI:</span>
-      <div className="ai-toolbar-sep" />
-
-      <span className="ai-toolbar-label">Format:</span>
-      <div
-        ref={wrapperRef}
-        className="format-select-wrapper"
-        style={{ width: selectWidth }}
-      >
-        <select
-          className="format-select"
-          value={selectedFormat}
-          onChange={(e) => onFormatChange(e.target.value)}
-          disabled={disabled}
-          title="Format"
-        >
-          {formatOptions.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-        </select>
-        <div
-          className={`format-select-resizer${resizerDragging ? ' dragging' : ''}`}
-          onMouseDown={onResizerMouseDown}
-        />
-      </div>
       <button
-        className="ai-btn ai-btn-primary"
+        className="ai-btn ai-btn-primary ai-trigger-btn"
         disabled={disabled}
-        onClick={() => onAction('apply')}
-        title="Format / Apply"
+        onClick={onOpenPalette}
+        title="AI command palette (Ctrl+K)"
       >
-        Apply
+        <Sparkles size={13} />
+        <span>AI</span>
+        <kbd className="ai-trigger-kbd">Ctrl+K</kbd>
       </button>
 
-      <div className="ai-toolbar-sep" />
+      <button
+        ref={buttonRef}
+        className="ai-btn"
+        disabled={disabled}
+        onClick={handleOverflowToggle}
+        title="More actions"
+      >
+        <MoreHorizontal size={14} />
+      </button>
 
-      {aiToolbarActions.map((key) => {
-        const meta = AI_ACTION_META[key];
-        if (!meta) return null;
-        return (
+      {overflowOpen && menuPos && createPortal(
+        <div
+          ref={menuRef}
+          className="ai-overflow-menu"
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, transform: 'translateX(-100%)' }}
+        >
           <button
-            key={key}
-            className="ai-btn"
-            disabled={disabled}
-            onClick={() => onAction(key as AiAction)}
-            title={meta.title}
+            className="ai-overflow-item"
+            onClick={() => { onAction('compare'); setOverflowOpen(false); }}
           >
-            {meta.label}
+            Compare
           </button>
-        );
-      })}
+          <button
+            className="ai-overflow-item"
+            onClick={() => { onAction('spellcheck'); setOverflowOpen(false); }}
+          >
+            Spell check
+          </button>
+          {isHtmlViewer && (
+            <button
+              className="ai-overflow-item"
+              onClick={() => { onAction('apply'); setOverflowOpen(false); }}
+            >
+              Open HTML preview
+            </button>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
