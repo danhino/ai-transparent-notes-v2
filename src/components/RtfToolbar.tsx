@@ -43,6 +43,7 @@ function ColorSwatch({ onSelect, onClose }: ColorSwatchProps) {
     <div ref={ref} className="color-swatch-popup">
       {SWATCH_COLORS.map((c) => (
         <button key={c} className="color-swatch-cell" style={{ background: c }}
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => { onSelect(c); onClose(); }} title={c} />
       ))}
     </div>
