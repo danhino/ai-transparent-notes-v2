@@ -41,10 +41,7 @@ export function TabBar() {
   function handleAdd() {
     if (notes.length >= MAX_TABS) return;
     const note = addNote();
-    setActiveNoteIndex(notes.length);
-    if (!paneNoteIds[0]) {
-      setPaneNoteId(0, note.id);
-    }
+    setPaneNoteId(focusedPaneIndex, note.id);
   }
 
   function handleClose(e: React.MouseEvent, id: string) {

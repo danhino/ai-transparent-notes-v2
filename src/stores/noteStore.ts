@@ -160,7 +160,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
   addNote: (partial = {}) => {
     const note = makeNote(partial);
-    set((s) => ({ notes: [...s.notes, note] }));
+    set((s) => ({ notes: [...s.notes, note], activeNoteIndex: s.notes.length }));
     return note;
   },
 
