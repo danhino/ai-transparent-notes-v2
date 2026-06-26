@@ -28,6 +28,7 @@ A cross-platform desktop notes app with multi-pane layouts, syntax-highlighted e
 ### Notes and tabs
 
 - Up to 8 note tabs, renameable by double-clicking the tab label or clicking the pencil button in each pane
+- Creating a new note immediately opens it as the active tab
 - Four layouts: single pane, side by side, top/bottom, and 2x2 grid
 - Draggable dividers between panes; each pane has an independent note and format selector
 - Per-pane export: save as `.txt`, `.md`, or the current format's native extension
@@ -55,18 +56,20 @@ A cross-platform desktop notes app with multi-pane layouts, syntax-highlighted e
 
 AI calls run from Rust via a `call_ai` Tauri command (reqwest), bypassing webview network restrictions. Four providers are supported: Claude (Anthropic), OpenAI, DeepSeek, and Ollama (local). Provider, model, and API key are configured in Settings. Each cloud provider stores its own API key independently, so switching providers does not lose a previously saved key.
 
-| Action | Description |
-|---|---|
-| Fix | Finds and fixes syntax errors, logic errors, and bugs |
-| Polish | Improves grammar, clarity, and flow without changing meaning |
-| Rephrase | Rewrites text to be clearer and more concise |
-| Convo | Rewrites in a natural, conversational tone |
-| Spell check | Corrects spelling only, no other changes |
-| Suggest | Suggests improvements or a natural continuation |
-| Apply | Formats and cleans content using the selected format's rules |
-| Auto-detect (Code) | Detects the programming language, formats the code, and shows the detected language in the status bar |
-| Compare | Opens a side-by-side diff of two notes with AI summary, copy A↔B, and export |
-| HTML Viewer | Renders the current note as a live webpage in a separate window |
+**AI command palette** — a single AI trigger button in each pane header (or Ctrl+K / Cmd+K) opens a floating command palette centered over the editor. The palette shows context-aware suggestions based on the active format and whether text is selected:
+
+- SQL: Optimize query, Explain SQL query, Rewrite as subquery
+- Python: Find and fix bugs, Refactor function, Explain code, Optimize performance
+- JavaScript/TypeScript: Find and fix bugs, Refactor function, Explain code
+- Markdown: Summarize, Improve writing, Generate outline
+- JSON: Validate and fix schema, Explain structure
+- Plain Text and RTF: Improve writing, Rewrite in conversational tone, Summarize, Convert to bullet points, Fix errors, Rephrase
+- All formats with selected text: "Explain selection" is prepended to the list
+- Rust, C#, Java, C, C++, HTML/CSS, CSS, XML, CSV also have format-specific suggestions
+
+Users can also type a freeform custom instruction directly into the palette input and press Enter to send it. Navigate suggestions with Up/Down arrow keys, select with Enter, close with Escape.
+
+A **More Actions** overflow menu (three-dot button) provides Compare, Spell Check, and HTML Viewer.
 
 After every AI action, a result dialog shows the original and result side by side with diff highlighting. Choose "Apply changes" to keep or "Revert" to discard. An optional AI summary can be generated, and changes can be exported as a `.diff` file.
 
@@ -95,7 +98,7 @@ Dark and Blue themes use the CodeMirror One Dark color scheme. Light, Sepia, and
 
 ### Format toolbars
 
-Selecting most formats reveals a contextual toolbar immediately below the AI toolbar. It hides automatically when switching formats.
+Selecting most formats reveals a contextual toolbar below the pane header. A format toolbar toggle button (PanelBottom icon) in the pane header shows or hides the toolbar per pane. The toolbar hides automatically when switching formats.
 
 **RTF (two rows)** — Style (Normal, Heading 1–3, Title, Subtitle, Quote, Code), Bold, Italic, Underline, Strikethrough, Font family, Font size, Font color, Highlight color, Alignment; Wide margins toggle, Indent, Page size, Bullet/numbered lists, Insert table, Insert image placeholder, Horizontal rule, Formatting marks, Quick style, Clear formatting.
 
@@ -137,7 +140,7 @@ Most contextual toolbars include a Show All Characters toggle (¶) that renders 
 
 Three formats open a live panel inside the editor area when their Preview button is clicked:
 
-- **Markdown** — rendered HTML via `marked`, updated with 400 ms debounce
+- **Markdown** — rendered HTML via `marked`, updated with 400 ms debounce. The preview button cycles through three modes: off, top/bottom split (editor above, preview below), and side-by-side (editor left, preview right). Each split has a draggable resize divider. State is per-pane and persists across note switches.
 - **HTML/CSS** — live iframe rendering the note content
 - **JSON** — collapsible tree explorer
 
@@ -175,8 +178,8 @@ The settings dialog is divided into these sections:
 
 - **AI configuration** — provider (Claude/OpenAI/DeepSeek/Ollama), model dropdown filtered by provider with capability descriptions (Most capable / Balanced / Fastest), per-provider API key with show/hide toggle; Ollama shows a URL field with live connection status indicator and auto-detected model list sorted by size
 - **Appearance** — theme, font family (12 options), font size (12 sizes), line numbers default; UI contrast subsection with sliders for text brightness, UI text size, and border opacity
-- **AI toolbar** — drag-and-drop reorderable list of AI action buttons with ▲/▼ arrows and × remove
 - **Main toolbar** — drag-and-drop reorderable list of main toolbar items
+- **Pane header** — drag-and-drop reorderable list of pane header controls (note selector, rename, format selector, format toolbar toggle, AI, overflow, export, line numbers, chat)
 - **Format options** — drag-and-drop reorderable list; add custom formats, remove built-ins
 - **Comparison colors** — clickable color swatches that open a native OS color picker; changes apply live to both the diff row backgrounds and the stat labels (added / deleted / changed); includes a Reset to defaults button
 - **Storage** — data folder path with Open button to reveal in file manager
@@ -231,7 +234,7 @@ src/
     TabBar.tsx             # Tab bar with language dots, rename, unsaved indicator
     NoteEditor.tsx         # CodeMirror 6 wrapper with optional line numbers
     RichTextEditor.tsx     # contenteditable RTF editor
-    AIToolbar.tsx          # Per-pane AI action buttons and format dropdown
+    AIPalette.tsx          # Floating AI command palette with context-aware suggestions
     DiffView.tsx           # Shared side-by-side diff component
     AiResultDialog.tsx     # Modal shown after every AI action (diff, apply/revert, export)
     DraggableList.tsx      # Reusable drag-and-drop reorderable list
@@ -321,9 +324,10 @@ Notes and settings are saved at:
 | Shortcut | Action |
 |---|---|
 | Ctrl/Cmd+S | Save the focused pane immediately |
-| Ctrl/Cmd+Shift+T | Toggle toolbar collapse for the focused pane |
+| Ctrl/Cmd+K | Open AI command palette for the focused pane |
+| Ctrl/Cmd+Shift+T | Toggle format toolbar for the focused pane |
 | Ctrl+Shift+F | Format SQL (when a SQL note is active) |
-| Escape | Exit focus mode |
+| Escape | Exit focus mode or close AI palette |
 
 ---
 

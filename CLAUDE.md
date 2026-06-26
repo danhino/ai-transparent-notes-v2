@@ -31,11 +31,15 @@ Cross-platform desktop notes app (Windows, macOS, Linux) with:
 - Up to 8 note tabs per pane
 - Four layouts: Single, Side-by-Side, Top/Bottom, 2x2 Grid with draggable splitters
 - Folder Workspace panel (left sidebar, collapsible, tree branch connector lines up to 5 levels deep)
-- AI features: Fix, Polish, Rephrase, Convo, Spell Check, Suggest, Apply, Compare, HTML Viewer
+- AI command palette (Ctrl+K): context-aware suggestions per format, freeform custom prompts, replaces individual AI action buttons
+- AI actions available via palette: Fix, Polish, Rephrase, Convo, Suggest, Apply; Compare, Spell Check, and HTML Viewer in the overflow menu
 - AI providers: Claude (Anthropic), OpenAI, DeepSeek, Ollama (local)
 - Per-provider API key storage — each cloud provider stores its own key independently
 - Ollama: auto-detect at 127.0.0.1:11434 via Rust invoke() commands (NOT frontend fetch), manual URL override, model list sorted by size with capability descriptions
 - AI diff highlighting: green added, red removed, Accept/Revert banner in AiResultDialog
+- Markdown preview: three-mode toggle (off, top/bottom split, side-by-side) with draggable resize dividers, per-pane state
+- Configurable pane header: drag-to-reorder controls (note-select, rename, format-select, format-toolbar-toggle, AI, overflow, export, linenumbers, chat)
+- Format toolbar toggle: PanelBottom icon in pane header shows/hides contextual toolbar, state per-pane via uiStore
 - Format toolbars: contextual two-row toolbars per format
 - SQL: Format SQL (sql-formatter, Ctrl+Shift+F), dialect dropdown (Auto/MySQL/PostgreSQL/SQLite/T-SQL/PL/SQL), auto-detect on file open via sqlDetect.ts, passive validation indicator
 - CSS: dedicated CssToolbar with Beautify/Minify (not Plain Text toolbar)
@@ -63,8 +67,8 @@ src/
   styles.css               # All theme variables and component styles
   stores/
     noteStore.ts           # Notes, active tab, unsaved tracking, format auto-detect
-    settingsStore.ts       # All persisted settings including per-provider API keys
-    uiStore.ts             # Layout, panels, focus mode, per-pane UI state, paneDialect
+    settingsStore.ts       # All persisted settings including per-provider API keys, paneHeaderItems order
+    uiStore.ts             # Layout, panels, focus mode, per-pane UI state (paneDialect, markdownPreviewLayout, aiPaletteOpen, aiChatOpen, formatToolbarCollapsed)
   services/
     aiService.ts           # AI calls (all providers use invoke, not fetch)
     diffService.ts         # LCS-based line diff computation
@@ -82,7 +86,8 @@ src/
     TitleBar.tsx / Toolbar.tsx / TabBar.tsx
     NoteEditor.tsx         # CodeMirror 6 wrapper
     RichTextEditor.tsx     # contenteditable RTF WYSIWYG editor
-    AIToolbar.tsx / DiffView.tsx / AiResultDialog.tsx / DraggableList.tsx
+    AIPalette.tsx          # Floating AI command palette (context-aware suggestions, custom prompts)
+    DiffView.tsx / AiResultDialog.tsx / DraggableList.tsx
     StatusBar.tsx / Pane.tsx / PaneSystem.tsx
     WorkspacePanel.tsx / SettingsDialog.tsx / CompareDialog.tsx
     JsonTreeView.tsx / CsvTableView.tsx
@@ -112,6 +117,7 @@ src-tauri/src/
 - Ollama HTTP calls go through Rust invoke() commands — do NOT use frontend fetch() for Ollama. Frontend fetch() from tauri://localhost origin is rejected by Ollama with HTTP 403 in production builds. detect_ollama and fetch_ollama_models are Rust commands in ai.rs.
 - PKCS12 certificates must be exported with -legacy flag when using OpenSSL 3.x — macOS SecKeychainItemImport does not support AES-256-CBC (OpenSSL 3.x default), only RC2/3DES
 - The .transparent() method on WebviewWindowBuilder is gated behind #[cfg(not(target_os = "macos"))] in preview.rs — do not remove this gate
+- ColorSwatch popup in RtfToolbar renders via createPortal to document.body — .toolbar-rows has overflow:hidden for collapse animation, so any dropdown that extends below the toolbar must use a portal
 
 ## Known TODOs
 - Find in Files: workspace panel right-click "Find in Files..." not yet implemented
