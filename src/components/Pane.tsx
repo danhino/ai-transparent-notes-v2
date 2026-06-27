@@ -143,26 +143,30 @@ export function Pane({ paneIndex }: Props) {
   const renameInputRef = useRef<HTMLInputElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
 
-  const { notes, updateNote, markSaved, unsavedIds, setNoteFormat } = useNoteStore();
-  const { settings } = useSettingsStore();
-  const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
+  const notes         = useNoteStore((s) => s.notes);
+  const unsavedIds    = useNoteStore((s) => s.unsavedIds);
+  const updateNote    = useNoteStore((s) => s.updateNote);
+  const markSaved     = useNoteStore((s) => s.markSaved);
+  const setNoteFormat = useNoteStore((s) => s.setNoteFormat);
+
+  const settings         = useSettingsStore((s) => s.settings);
+  const setPaneNoteId    = useSettingsStore((s) => s.setPaneNoteId);
   const setPaneLineNumbers = useSettingsStore((s) => s.setPaneLineNumbers);
   const setPaneHeaderItems = useSettingsStore((s) => s.setPaneHeaderItems);
-  const {
-    focusMode,
-    focusedPaneIndex,
-    paneStates,
-    platform,
-    setFocusedPane,
-    setFocusMode,
-    setPaneBusy,
-    setPaneDetectedLanguage,
-    setPaneSavedVisible,
-    setPaneMarkdownPreviewLayout,
-    setPaneAiPaletteOpen,
-    setPaneAiChatOpen,
-    setPaneFormatToolbarCollapsed,
-  } = useUiStore();
+
+  const focusMode        = useUiStore((s) => s.focusMode);
+  const focusedPaneIndex = useUiStore((s) => s.focusedPaneIndex);
+  const paneStates       = useUiStore((s) => s.paneStates);
+  const platform         = useUiStore((s) => s.platform);
+  const setFocusedPane              = useUiStore((s) => s.setFocusedPane);
+  const setFocusMode                = useUiStore((s) => s.setFocusMode);
+  const setPaneBusy                 = useUiStore((s) => s.setPaneBusy);
+  const setPaneDetectedLanguage     = useUiStore((s) => s.setPaneDetectedLanguage);
+  const setPaneSavedVisible         = useUiStore((s) => s.setPaneSavedVisible);
+  const setPaneMarkdownPreviewLayout = useUiStore((s) => s.setPaneMarkdownPreviewLayout);
+  const setPaneAiPaletteOpen        = useUiStore((s) => s.setPaneAiPaletteOpen);
+  const setPaneAiChatOpen           = useUiStore((s) => s.setPaneAiChatOpen);
+  const setPaneFormatToolbarCollapsed = useUiStore((s) => s.setPaneFormatToolbarCollapsed);
 
   const noteId = settings.paneNoteIds[paneIndex] ?? null;
   const note = notes.find((n) => n.id === noteId) ?? null;

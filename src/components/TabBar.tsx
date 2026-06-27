@@ -29,10 +29,16 @@ const LANG_DOT_COLORS: Record<string, string> = {
 };
 
 export function TabBar() {
-  const { notes, activeNoteIndex, unsavedIds, addNote, removeNote, updateNote, setActiveNoteIndex } =
-    useNoteStore();
-  const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
-  const paneNoteIds = useSettingsStore((s) => s.settings.paneNoteIds);
+  const notes            = useNoteStore((s) => s.notes);
+  const activeNoteIndex  = useNoteStore((s) => s.activeNoteIndex);
+  const unsavedIds       = useNoteStore((s) => s.unsavedIds);
+  const addNote          = useNoteStore((s) => s.addNote);
+  const removeNote       = useNoteStore((s) => s.removeNote);
+  const updateNote       = useNoteStore((s) => s.updateNote);
+  const setActiveNoteIndex = useNoteStore((s) => s.setActiveNoteIndex);
+
+  const setPaneNoteId    = useSettingsStore((s) => s.setPaneNoteId);
+  const paneNoteIds      = useSettingsStore((s) => s.settings.paneNoteIds);
   const focusedPaneIndex = useUiStore((s) => s.focusedPaneIndex);
 
   const [renamingId, setRenamingId] = useState<string | null>(null);

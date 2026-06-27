@@ -235,11 +235,14 @@ function TreeItem({
 // ─── WorkspacePanel ───────────────────────────────────────────────────────────
 
 export function WorkspacePanel() {
-  const { settings, addWorkspaceFolder, removeWorkspaceFolder, setWorkspacePanelWidth } =
-    useSettingsStore();
-  const { notes } = useNoteStore();
-  const { focusedPaneIndex } = useUiStore();
-  const setPaneNoteId = useSettingsStore((s) => s.setPaneNoteId);
+  const settings              = useSettingsStore((s) => s.settings);
+  const addWorkspaceFolder    = useSettingsStore((s) => s.addWorkspaceFolder);
+  const removeWorkspaceFolder = useSettingsStore((s) => s.removeWorkspaceFolder);
+  const setWorkspacePanelWidth = useSettingsStore((s) => s.setWorkspacePanelWidth);
+  const setPaneNoteId         = useSettingsStore((s) => s.setPaneNoteId);
+
+  const notes          = useNoteStore((s) => s.notes);
+  const focusedPaneIndex = useUiStore((s) => s.focusedPaneIndex);
 
   const [roots, setRoots] = useState<WorkspaceEntry[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
