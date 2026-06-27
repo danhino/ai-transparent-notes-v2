@@ -55,7 +55,9 @@ export default function App() {
 
   // ─── Tray "New note" ─────────────────────────────────────────────────────────
   useEffect(() => {
-    const p = listen('tray-new-note', () => {
+    let unlisten: (() => void) | null = null;
+
+    listen('tray-new-note', () => {
       const { notes: n } = useNoteStore.getState();
       const { settings: s } = useSettingsStore.getState();
       if (n.length >= 8) return;
@@ -63,8 +65,13 @@ export default function App() {
       setActiveNoteIndex(n.length);
       const emptyPane = s.paneNoteIds.findIndex((id) => !id);
       setPaneNoteId(emptyPane >= 0 ? emptyPane : 0, note.id);
+    }).then((fn) => {
+      unlisten = fn;
     });
-    return () => void p.then((fn) => fn());
+
+    return () => {
+      unlisten?.();
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Escape exits focus mode ──────────────────────────────────────────────────

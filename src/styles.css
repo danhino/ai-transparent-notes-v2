@@ -325,25 +325,9 @@ select {
 
 /* Ensure native select option lists are always readable */
 select option {
-  background: #1a1a2e;
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-size: 12px;
-}
-[data-theme="light"] select option {
-  background: #ffffff;
-  color: rgba(0, 0, 0, 0.9);
-}
-[data-theme="sepia"] select option {
-  background: #FDF6E3;
-  color: rgba(74, 55, 40, 0.9);
-}
-[data-theme="blue"] select option {
-  background: #0A1628;
-  color: #BFD7FF;
-}
-[data-theme="green"] select option {
-  background: #0D1F0D;
-  color: #98E898;
 }
 
 input {

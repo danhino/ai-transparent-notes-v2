@@ -28,8 +28,9 @@ pub fn run() {
 
             let menu = Menu::with_items(app, &[&show_hide, &new_note, &separator, &quit])?;
 
+            if let Some(icon) = app.default_window_icon() {
             TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(icon.clone())
                 .menu(&menu)
                 .tooltip("AI Transparent Notes")
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -68,6 +69,7 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+            }
 
             Ok(())
         })
