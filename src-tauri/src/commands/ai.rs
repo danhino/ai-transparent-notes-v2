@@ -133,7 +133,8 @@ pub async fn call_ai(
             }
             if !response.status().is_success() {
                 let status = response.status();
-                let body_text = response.text().await.unwrap_or_default();
+                let body_text = response.text().await
+                    .unwrap_or_else(|e| format!("[could not read response body: {}]", e));
                 return Err(format!("DeepSeek API error ({}): {}", status, body_text));
             }
 
@@ -180,7 +181,8 @@ pub async fn call_ai(
 
             if !response.status().is_success() {
                 let status = response.status();
-                let body_text = response.text().await.unwrap_or_default();
+                let body_text = response.text().await
+                    .unwrap_or_else(|e| format!("[could not read response body: {}]", e));
                 return Err(format!("Ollama error (HTTP {}): {}", status, body_text));
             }
 

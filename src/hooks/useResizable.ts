@@ -10,6 +10,10 @@ export function useResizable(lsKey: string, defaultWidth: number, min: number, m
   const isDragging = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
+  const minRef = useRef(min);
+  const maxRef = useRef(max);
+  minRef.current = min;
+  maxRef.current = max;
 
   const onResizerMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
@@ -22,7 +26,7 @@ export function useResizable(lsKey: string, defaultWidth: number, min: number, m
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragging.current) return;
-      const newWidth = Math.max(min, Math.min(max, startWidth.current + (e.clientX - startX.current)));
+      const newWidth = Math.max(minRef.current, Math.min(maxRef.current, startWidth.current + (e.clientX - startX.current)));
       setWidth(newWidth);
     };
     const onMouseUp = () => {
@@ -38,7 +42,7 @@ export function useResizable(lsKey: string, defaultWidth: number, min: number, m
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [lsKey, min, max]);
+  }, [lsKey]);
 
   return { width, wrapperRef, isDraggingState, onResizerMouseDown };
 }

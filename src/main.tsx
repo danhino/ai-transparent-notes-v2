@@ -20,9 +20,44 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.error) {
       return (
-        <div style={{ color: 'red', padding: 20, fontFamily: 'monospace', background: '#1a1a2e' }}>
-          <strong>Error:</strong> {this.state.error.message}
-          <pre style={{ marginTop: 10, fontSize: 11 }}>{this.state.error.stack}</pre>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          background: 'var(--bg-base, #16161b)',
+          color: 'var(--text-primary, #e0e0e0)',
+          fontFamily: 'var(--font-ui, system-ui)',
+          gap: '16px',
+          padding: '32px',
+        }}>
+          <div style={{ fontSize: 32 }}>⚠</div>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>Something went wrong</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary, #888)', textAlign: 'center', maxWidth: 400 }}>
+            {this.state.error.message}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              marginTop: 8,
+              padding: '8px 20px',
+              background: 'var(--accent-color, #5a9cf7)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 13,
+            }}
+          >
+            Reload app
+          </button>
+          <details style={{ marginTop: 8, fontSize: 11, color: 'var(--text-hint, #555)', maxWidth: 600 }}>
+            <summary style={{ cursor: 'pointer' }}>Technical details</summary>
+            <pre style={{ marginTop: 8, overflow: 'auto', maxHeight: 200 }}>
+              {this.state.error.stack}
+            </pre>
+          </details>
         </div>
       );
     }
