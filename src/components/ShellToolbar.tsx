@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { addLinePrefix, removeLinePrefix, getText, apply } from '../utils/toolbarUtils';
 
 interface StatusMsg { text: string; type: 'success' | 'error'; }
 interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; format?: string; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function ShellToolbar({ editorRef, disabled, format, showInvisibles, onToggleInvisibles }: Props) {
+export const ShellToolbar = memo(function ShellToolbar({ editorRef, disabled, format, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showStatus(text: string, type: 'success' | 'error', duration = 3000) {
@@ -76,4 +76,4 @@ export function ShellToolbar({ editorRef, disabled, format, showInvisibles, onTo
       </div>
     </div>
   );
-}
+});

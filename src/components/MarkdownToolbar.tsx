@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { EyeOff, PanelBottom, PanelRight } from 'lucide-react';
 import type { NoteEditorRef } from './NoteEditor';
 import type { MarkdownPreviewLayout } from '../stores/uiStore';
@@ -39,7 +39,7 @@ const PREVIEW_TITLES: Record<MarkdownPreviewLayout, string> = {
   side: 'Preview: side-by-side',
 };
 
-export function MarkdownToolbar({ editorRef, disabled, previewLayout, onPreviewCycle, showInvisibles, onToggleInvisibles }: Props) {
+export const MarkdownToolbar = memo(function MarkdownToolbar({ editorRef, disabled, previewLayout, onPreviewCycle, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -121,4 +121,4 @@ export function MarkdownToolbar({ editorRef, disabled, previewLayout, onPreviewC
       </div>
     </div>
   );
-}
+});

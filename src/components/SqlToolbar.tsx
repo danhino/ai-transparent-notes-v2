@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { format } from 'sql-formatter';
 import type { SqlLanguage } from 'sql-formatter';
 import type { NoteEditorRef } from './NoteEditor';
@@ -44,7 +44,7 @@ function lowerKeywords(sql: string): string {
   return result;
 }
 
-export function SqlToolbar({ editorRef, disabled, paneIndex, showInvisibles, onToggleInvisibles }: Props) {
+export const SqlToolbar = memo(function SqlToolbar({ editorRef, disabled, paneIndex, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dialect, setDialect] = useState<Dialect>('sql');
@@ -239,4 +239,4 @@ export function SqlToolbar({ editorRef, disabled, paneIndex, showInvisibles, onT
       </div>
     </div>
   );
-}
+});

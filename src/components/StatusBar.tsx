@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 const FORMAT_LABELS: Record<string, string> = {
   'Auto-detect (Code)':            'Auto',
   'Plain Text (Structured Notes)': 'Plain text',
@@ -47,7 +49,7 @@ interface Props {
   lineEnding?: string;
 }
 
-export function StatusBar({ charCount, wordCount, lineNumber, detectedLanguage, format, dialect, selLabel, lineEnding }: Props) {
+export const StatusBar = memo(function StatusBar({ charCount, wordCount, lineNumber, detectedLanguage, format, dialect, selLabel, lineEnding }: Props) {
   const languageLabel = format === 'SQL'
     ? (SQL_DIALECT_LABELS[dialect] ?? 'SQL')
     : (FORMAT_LABELS[format] ?? format);
@@ -65,4 +67,4 @@ export function StatusBar({ charCount, wordCount, lineNumber, detectedLanguage, 
       <span className="status-bar__right-stat">{languageLabel}</span>
     </div>
   );
-}
+});

@@ -1,10 +1,10 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { addLinePrefix, removeLinePrefix, wrapSel, getSel } from '../utils/toolbarUtils';
 
 interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; format?: string; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function CppToolbar({ editorRef, disabled, format, showInvisibles, onToggleInvisibles }: Props) {
+export const CppToolbar = memo(function CppToolbar({ editorRef, disabled, format, showInvisibles, onToggleInvisibles }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
@@ -46,4 +46,4 @@ export function CppToolbar({ editorRef, disabled, format, showInvisibles, onTogg
       </div>
     </div>
   );
-}
+});

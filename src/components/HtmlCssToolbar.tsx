@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { getText, apply, wrapSel, hasSel, getSel, replaceSel } from '../utils/toolbarUtils';
 
@@ -63,7 +63,7 @@ function beautifyHtml(html: string): string {
   return lines.join('\n');
 }
 
-export function HtmlCssToolbar({ editorRef, disabled, htmlPreviewOpen, onHtmlPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
+export const HtmlCssToolbar = memo(function HtmlCssToolbar({ editorRef, disabled, htmlPreviewOpen, onHtmlPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const [emmetInput, setEmmetInput] = useState('');
   const [showEmmet, setShowEmmet] = useState(false);
@@ -155,4 +155,4 @@ export function HtmlCssToolbar({ editorRef, disabled, htmlPreviewOpen, onHtmlPre
       </div>
     </div>
   );
-}
+});

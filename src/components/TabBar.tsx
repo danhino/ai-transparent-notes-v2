@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useNoteStore } from '../stores/noteStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
@@ -28,7 +28,7 @@ const LANG_DOT_COLORS: Record<string, string> = {
   'Markdown':    '#a855f7',
 };
 
-export function TabBar() {
+export const TabBar = memo(function TabBar() {
   const notes            = useNoteStore((s) => s.notes);
   const activeNoteIndex  = useNoteStore((s) => s.activeNoteIndex);
   const unsavedIds       = useNoteStore((s) => s.unsavedIds);
@@ -148,4 +148,4 @@ export function TabBar() {
       )}
     </div>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import {
   addRow,
@@ -25,7 +26,7 @@ interface Props {
   onDelimiterChange: (v: Delimiter) => void;
 }
 
-export function CsvToolbar({
+export const CsvToolbar = memo(function CsvToolbar({
   editorRef,
   disabled,
   hasHeader,
@@ -167,4 +168,4 @@ export function CsvToolbar({
       </div>
     </div>
   );
-}
+});

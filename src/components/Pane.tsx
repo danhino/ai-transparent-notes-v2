@@ -251,6 +251,15 @@ export function Pane({ paneIndex }: Props) {
     });
   }, []);
 
+  const handleToggleWideMargins = useCallback(() => setRtfWideMargins((v) => !v), []);
+  const handleToggleJsonPreview = useCallback(() => setJsonPreviewOpen((v) => !v), []);
+  const handleToggleHtmlPreview = useCallback(() => setHtmlPreviewOpen((v) => !v), []);
+  const handleMarkdownPreviewCycle = useCallback(() => {
+    const next = markdownPreviewLayout === 'off' ? 'bottom'
+      : markdownPreviewLayout === 'bottom' ? 'side' : 'off';
+    setPaneMarkdownPreviewLayout(paneIndex, next);
+  }, [markdownPreviewLayout, paneIndex, setPaneMarkdownPreviewLayout]);
+
   useEffect(() => {
     const content = note?.content ?? '';
     setCharCount(content.length);
@@ -1158,7 +1167,7 @@ export function Pane({ paneIndex }: Props) {
             <RtfToolbar
               disabled={paneState.isBusy || !note}
               wideMargins={rtfWideMargins}
-              onToggleWideMargins={() => setRtfWideMargins((v) => !v)}
+              onToggleWideMargins={handleToggleWideMargins}
             />
           )}
 
@@ -1184,7 +1193,7 @@ export function Pane({ paneIndex }: Props) {
               editorRef={editorRef}
               disabled={paneState.isBusy || !note}
               previewOpen={jsonPreviewOpen}
-              onPreviewToggle={() => setJsonPreviewOpen(v => !v)}
+              onPreviewToggle={handleToggleJsonPreview}
               showInvisibles={showInvisibles}
               onToggleInvisibles={handleToggleInvisibles}
             />
@@ -1199,11 +1208,7 @@ export function Pane({ paneIndex }: Props) {
               editorRef={editorRef}
               disabled={paneState.isBusy || !note}
               previewLayout={markdownPreviewLayout}
-              onPreviewCycle={() => {
-                const next = markdownPreviewLayout === 'off' ? 'bottom'
-                  : markdownPreviewLayout === 'bottom' ? 'side' : 'off';
-                setPaneMarkdownPreviewLayout(paneIndex, next);
-              }}
+              onPreviewCycle={handleMarkdownPreviewCycle}
               showInvisibles={showInvisibles}
               onToggleInvisibles={handleToggleInvisibles}
             />
@@ -1250,7 +1255,7 @@ export function Pane({ paneIndex }: Props) {
               editorRef={editorRef}
               disabled={paneState.isBusy || !note}
               htmlPreviewOpen={htmlPreviewOpen}
-              onHtmlPreviewToggle={() => setHtmlPreviewOpen(v => !v)}
+              onHtmlPreviewToggle={handleToggleHtmlPreview}
               showInvisibles={showInvisibles}
               onToggleInvisibles={handleToggleInvisibles}
             />

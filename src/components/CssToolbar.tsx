@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { getText, apply, getSel, hasSel, replaceSel } from '../utils/toolbarUtils';
 
@@ -55,7 +55,7 @@ function minifyCss(css: string): string {
     .trim();
 }
 
-export function CssToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
+export const CssToolbar = memo(function CssToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -120,4 +120,4 @@ export function CssToolbar({ editorRef, disabled, showInvisibles, onToggleInvisi
       </div>
     </div>
   );
-}
+});

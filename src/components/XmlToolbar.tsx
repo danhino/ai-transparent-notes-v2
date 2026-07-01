@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import {
   formatXml,
@@ -48,7 +48,7 @@ interface Props {
   onToggleInvisibles: () => void;
 }
 
-export function XmlToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
+export const XmlToolbar = memo(function XmlToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const [showWrapInput, setShowWrapInput] = useState(false);
   const [wrapTagName, setWrapTagName] = useState('');
   const [xpathQuery, setXpathQuery] = useState('');
@@ -426,4 +426,4 @@ export function XmlToolbar({ editorRef, disabled, showInvisibles, onToggleInvisi
       </div>
     </div>
   );
-}
+});

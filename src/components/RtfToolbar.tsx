@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ interface Props {
   onToggleWideMargins: () => void;
 }
 
-export function RtfToolbar({ disabled, wideMargins, onToggleWideMargins }: Props) {
+export const RtfToolbar = memo(function RtfToolbar({ disabled, wideMargins, onToggleWideMargins }: Props) {
   const [isBold,      setIsBold]      = useState(false);
   const [isItalic,    setIsItalic]    = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
@@ -299,4 +299,4 @@ export function RtfToolbar({ disabled, wideMargins, onToggleWideMargins }: Props
       </div>
     </div>
   );
-}
+});

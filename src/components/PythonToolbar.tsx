@@ -1,10 +1,10 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { addLinePrefix, removeLinePrefix, wrapSel, getSel, hasSel, replaceSel } from '../utils/toolbarUtils';
 
 interface Props { editorRef: React.RefObject<NoteEditorRef | null>; disabled: boolean; showInvisibles: boolean; onToggleInvisibles: () => void; }
 
-export function PythonToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
+export const PythonToolbar = memo(function PythonToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
@@ -56,4 +56,4 @@ export function PythonToolbar({ editorRef, disabled, showInvisibles, onToggleInv
       </div>
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { getText, getSel, hasSel, apply, replaceSel, wrapSel, copyText } from '../utils/toolbarUtils';
 
@@ -73,7 +73,7 @@ function getJsonPathAtOffset(json: string, offset: number): string {
   return path.filter(Boolean).join('.').replace(/\.\[/g, '[');
 }
 
-export function JsonToolbar({ editorRef, disabled, previewOpen, onPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
+export const JsonToolbar = memo(function JsonToolbar({ editorRef, disabled, previewOpen, onPreviewToggle, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -184,4 +184,4 @@ export function JsonToolbar({ editorRef, disabled, previewOpen, onPreviewToggle,
       </div>
     </div>
   );
-}
+});

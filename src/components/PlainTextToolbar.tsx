@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import type { NoteEditorRef } from './NoteEditor';
 import { getText, getSel, hasSel, apply, replaceSel } from '../utils/toolbarUtils';
 
@@ -9,7 +9,7 @@ function toTitleCase(s: string): string {
   return s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
-export function PlainTextToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
+export const PlainTextToolbar = memo(function PlainTextToolbar({ editorRef, disabled, showInvisibles, onToggleInvisibles }: Props) {
   const [status, setStatus] = useState<StatusMsg | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showStatus(text: string, type: 'success' | 'error', duration = 3000) {
@@ -59,4 +59,4 @@ export function PlainTextToolbar({ editorRef, disabled, showInvisibles, onToggle
       </div>
     </div>
   );
-}
+});

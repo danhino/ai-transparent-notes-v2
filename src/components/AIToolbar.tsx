@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, MoreHorizontal } from 'lucide-react';
 
@@ -11,7 +11,7 @@ interface Props {
   isHtmlViewer: boolean;
 }
 
-export function AIToolbar({ disabled, onOpenPalette, onAction, isHtmlViewer }: Props) {
+export const AIToolbar = memo(function AIToolbar({ disabled, onOpenPalette, onAction, isHtmlViewer }: Props) {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -95,4 +95,4 @@ export function AIToolbar({ disabled, onOpenPalette, onAction, isHtmlViewer }: P
       )}
     </div>
   );
-}
+});
