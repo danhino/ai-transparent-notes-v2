@@ -64,6 +64,7 @@ export interface AppSettings {
   uiBorderOpacity: number;
   uiTextSize: number;
   formatSort?: 'custom' | 'asc' | 'desc';
+  settingsVersion: number;
 }
 
 export interface WorkspaceEntry {
@@ -166,4 +167,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiBorderOpacity: 14,
   uiTextSize: 11,
   formatSort: 'custom',
+  settingsVersion: 1,
 };
